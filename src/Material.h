@@ -153,6 +153,22 @@ public:
 	__forceinline int KRNKx(int eval, uint32 key2) {
 		switch (key2 & ~all_pawns) {
 			case kr:
+				if (key2 & all_pawns) return min(eval/32, eval); 
+				else return eval/32;
+			case kbb:
+			case kbn:
+			case knn:
+				if (key2 & all_pawns) return min(eval/16, eval); 
+				else return eval/16;
+			default:
+				break;
+		}
+		return eval;
+	}
+
+	__forceinline int KRBKx(int eval, uint32 key2) {
+		switch (key2 & ~all_pawns) {
+			case kr:
 				if (key2 & all_pawns) return min(eval/16, eval); 
 				else return eval/16;
 			case kbb:
@@ -166,27 +182,11 @@ public:
 		return eval;
 	}
 
-	__forceinline int KRBKx(int eval, uint32 key2) {
-		switch (key2 & ~all_pawns) {
-			case kr:
-				if (key2 & all_pawns) return min(eval/8, eval); 
-				else return eval/8;
-			case kbb:
-			case kbn:
-			case knn:
-				if (key2 & all_pawns) return min(eval/4, eval); 
-				else return eval/4;
-			default:
-				break;
-		}
-		return eval;
-	}
-
 	__forceinline int KBBKx(int eval, uint32 key2) {
 		switch (key2 & ~all_pawns) {
 			case kb:
-				if (key2 & all_pawns) return min(eval/8, eval); 
-				else return eval/8;
+				if (key2 & all_pawns) return min(eval/16, eval); 
+				else return eval/16;
 			case kn:
 				break;
 			default:
@@ -201,11 +201,11 @@ public:
 				if ((key2 & all_pawns) == 0) return KBNK(eval, side1);
 				break;
 			case kb:
+				if (key2 & all_pawns) return min(eval/16, eval); 
+				else return eval/16;
+			case kn:
 				if (key2 & all_pawns) return min(eval/8, eval); 
 				else return eval/8;
-			case kn:
-				if (key2 & all_pawns) return min(eval/4, eval); 
-				else return eval/4;
 			default:
 				break;
 		}
@@ -254,12 +254,12 @@ public:
 		switch (key2 & ~all_pawns) {
 			case kb:
 			case kn:
-				if (key2 & all_pawns) return min(eval/4, eval); 
-				return eval/4;
+				if (key2 & all_pawns) return min(eval/16, eval); 
+				return eval/16;
 			case kbb:
 			case kbn:
 			case knn:
-				if ((key2 & all_pawns) == 0) return eval/8; 
+				if ((key2 & all_pawns) == 0) return eval/16; 
 				break;
 			default:
 				break;

@@ -62,8 +62,7 @@ public:
 		}
 		else {
 			if (search->time_left > 30000 || search->time_inc > 0) {
-				search->search_time = min(search->search_time * 1.5, 
-					search->search_time + millis() - search->start_time);
+				search->search_time = min(search->search_time * 1.5, search->search_time + millis() - search->start_time);
 			}
 		}
 		return 0;
@@ -82,7 +81,7 @@ public:
 		return false;
 	}
 
-	int goBook() {
+	void goBook() {
 		char fen[128];
 		game->getFen(fen);
 		uint64 key = book->hash(fen);
@@ -93,23 +92,13 @@ public:
 				search->pv[0][0].move = *move;
 			}
 		}
-		return 0;
 	}
 
-	int goSearch(int wtime, int btime, int movestogo, int winc, 
-		int binc, int movetime) 
-	{
-		if (num_threads > 1) {
-			// Simple MT with shared transposition table.
-			startWorkers();
-			search->go(wtime, btime, movestogo, winc, binc, movetime);
-			stopWorkers();
-		}
-		else {
-			search->go(wtime, btime, movestogo, winc, binc, movetime);
-		}
-		printSearchData();
-		return 0;
+	void goSearch(int wtime, int btime, int movestogo, int winc, int binc, int movetime) {
+		// Simple MT with shared transposition table.
+		startWorkers();
+		search->go(wtime, btime, movestogo, winc, binc, movetime);
+		stopWorkers();
 	}
 
 	void startWorkers() {

@@ -16,8 +16,6 @@
   along with Bobcat.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// Currently only setup for Windows platform / MSVC 2008 Express.
-
 // Windows
 #if defined(WIN32) || defined(WIN64)
 

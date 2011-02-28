@@ -272,7 +272,7 @@ protected:
 					}
 				}
 				if (score > alpha && next_depth < depth - 1*2) {
-					score = searchNextDepth(depth - 1*2, -beta, -alpha, is_pv_node); // just research without the reduction
+					score = searchNextDepth(depth - 1*2, -beta, -alpha, is_pv_node); 
 				}
 
 				unmakeMove();

@@ -17,6 +17,10 @@
 */
 
 struct KeyValue {
+	~KeyValue() {
+		delete [] key;
+		delete [] value;
+	}
 	char* key;
 	char* value;
 };
@@ -30,11 +34,9 @@ public:
 
 	ConfigSection::~ConfigSection() {
 		for (int i = 0; i < size; i++) {
-			delete pairs[i]->key;
-			delete pairs[i]->value;
 			delete pairs[i];
 		}
-		delete key;
+		delete [] key;
 	}
 
 	void add(const char* key, const char* value) {

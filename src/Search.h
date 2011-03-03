@@ -191,43 +191,32 @@ protected:
 			return -searchQuiesce(alpha, beta, 0);
 		}
 		else {
-			if (is_pv_node){//beta - alpha > 1) {
+			findTranspositionRefineEval(depth, alpha, beta);
+			if (beta - alpha > 1) {
 				return -searchAllPv(depth, alpha, beta, is_pv_node);
 			}
 			else {
+				if (pos->transp_score_valid && pos->transp_depth_valid) { 
+					return -searchNodeScore(pos->transp_score);
+				} 
 				return -searchAllNonPv(depth, alpha, beta, is_pv_node);
 			}
 		}
 	}
 
  	Score searchAllPv(const Depth depth, Score alpha, const Score beta, const bool is_pv_node) {
-		if (game->isRepetition()) {
-			return searchNodeScore(0);
-		}
-		
-		findTranspositionRefineEval(depth, alpha, beta);
-
-		if (!is_pv_node && pos->transp_score_valid && pos->transp_depth_valid) { 
-			return searchNodeScore(pos->transp_score);
-		} 
-		
 		if (ply >= max_plies - 1) {
 			return searchNodeScore(pos->eval_score);
 		}
 
 		Score score;
 
-		if (!pos->transp_move && pos->eval_score >= beta - 100 && depth >= 4*2) {
+		if (!pos->transp_move && depth >= 4*2) {
 			score = searchAllPv(depth - 2*2, alpha, beta, true);
 			findTranspositionRefineEval(depth, alpha, beta);
 		}
 
-		if (pos->in_check) {
-			pos->generateMoves(this, 0, LegalMoves);
-		}
-		else {
-			pos->generateMoves(this, pos->transp_move, Stages);
-		}
+		pos->generateMoves(this, pos->transp_move, Stages);
 
 		Move best_move = 0;
 		Score best_score = -MAXSCORE, orig_alpha = alpha;
@@ -238,11 +227,6 @@ protected:
 
 			if (makeMove(m)) {
 				Depth next_depth = getNextDepth(is_pv_node, depth, ++move_count, 5, m, alpha, move_data->score);
-
-				if (okToPruneLastMove(best_score, next_depth, depth, alpha, is_pv_node)) {
-					unmakeMove();
-					continue;
-				}
 
 				if (move_count == 1) {
 					score = searchNextDepth(next_depth, -beta, -alpha, is_pv_node);
@@ -289,16 +273,6 @@ protected:
 	}
 
  	Score searchAllNonPv(const Depth depth, Score alpha, const Score beta, const bool is_pv_node) {
-		if (game->isRepetition()) {
-			return searchNodeScore(0);
-		}
-		
-		findTranspositionRefineEval(depth, alpha, beta);
-
-		if (!is_pv_node && pos->transp_score_valid && pos->transp_depth_valid) { 
-			return searchNodeScore(pos->transp_score);
-		} 
-		
 		if (ply >= max_plies - 1) {
 			return searchNodeScore(pos->eval_score);
 		}
@@ -329,17 +303,12 @@ protected:
 			}
 		}
 
-		if (!pos->transp_move && pos->eval_score >= beta - 100 && depth >= 8*2) {
+		if (!pos->transp_move && pos->eval_score >= beta && depth >= 8*2) {
 			score = searchAllNonPv(depth/2, alpha, beta, false);
 			findTranspositionRefineEval(depth, alpha, beta);
 		}
 
-		if (pos->in_check) {
-			pos->generateMoves(this, 0, LegalMoves);
-		}
-		else {
-			pos->generateMoves(this, pos->transp_move, Stages);
-		}
+		pos->generateMoves(this, pos->transp_move, Stages);
 
 		Move best_move = 0;
 		Score best_score = -MAXSCORE, orig_alpha = alpha;
@@ -356,7 +325,7 @@ protected:
 					continue;
 				}
 
-					score = searchNextDepth(next_depth, -alpha - 1, -alpha, false);
+				score = searchNextDepth(next_depth, -alpha - 1, -alpha, false);
 
 				if (score > alpha && next_depth < depth - 1*2) {
 					score = searchNextDepth(depth - 1*2, -beta, -alpha, is_pv_node); 

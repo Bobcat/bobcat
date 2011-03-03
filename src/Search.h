@@ -191,7 +191,6 @@ protected:
 			return -searchQuiesce(alpha, beta, 0);
 		}
 		else {
-			findTranspositionRefineEval(depth, alpha, beta);
 			if (is_pv_node){//beta - alpha > 1) {
 				return -searchAllPv(depth, alpha, beta, is_pv_node);
 			}
@@ -217,30 +216,6 @@ protected:
 		}
 
 		Score score;
-		if (okToTryNullMove(depth, beta, is_pv_node)) {
-			makeMove(0);
-			score = searchNextDepth(depth - 4*2 - (depth/16)*2, -beta, -beta + 1, false);
-			unmakeMove();
-			if (score >= beta) {
-				return searchNodeScore(score);
-			}
-		}
-
-		if (!is_pv_node && !pos->in_check && depth <= 3*2) {
-			if (pos->eval_score + 125 < alpha) {
-				if (depth <= 1*2) {
-					score = searchQuiesce(alpha, beta, 0);
-					return max(score, pos->eval_score + 125);
-				}
-				else {
-					if (pos->eval_score + 400 < alpha) {
-						if ((score = searchQuiesce(alpha, beta, 0)) < alpha) {
-							return max(score, pos->eval_score + 400);
-						}
-					}
-				}
-			}
-		}
 
 		if (!pos->transp_move && pos->eval_score >= beta - 100 && depth >= 4*2) {
 			score = searchAllPv(depth - 2*2, alpha, beta, true);
@@ -275,8 +250,8 @@ protected:
 				else {
 					score = searchNextDepth(next_depth, -alpha - 1, -alpha, false);
 
-					if (score > alpha && score < beta) { // only in pv nodes
-						score = searchNextDepth(next_depth, -beta, -alpha, false); // false better than true, why? in root is exactly other way around. 
+					if (score > alpha && score < beta) { 
+						score = searchNextDepth(next_depth, -beta, -alpha, true);  
 					}
 				}
 				if (score > alpha && next_depth < depth - 1*2) {
@@ -338,7 +313,7 @@ protected:
 			}
 		}
 
-		if (!is_pv_node && !pos->in_check && depth <= 3*2) {
+		if (!pos->in_check && depth <= 3*2) {
 			if (pos->eval_score + 125 < alpha) {
 				if (depth <= 1*2) {
 					score = searchQuiesce(alpha, beta, 0);
@@ -381,16 +356,8 @@ protected:
 					continue;
 				}
 
-				if (move_count == 1) {
-					score = searchNextDepth(next_depth, -beta, -alpha, is_pv_node);
-				}
-				else {
 					score = searchNextDepth(next_depth, -alpha - 1, -alpha, false);
 
-					if (score > alpha && score < beta) { // only in pv nodes
-						score = searchNextDepth(next_depth, -beta, -alpha, false); // false better than true, why? in root is exactly other way around. 
-					}
-				}
 				if (score > alpha && next_depth < depth - 1*2) {
 					score = searchNextDepth(depth - 1*2, -beta, -alpha, is_pv_node); 
 				}
@@ -430,8 +397,7 @@ protected:
 			&& pos->null_moves_in_row < 1 // not really necessary now
 			&& depth > 1*2 
 			&& !pos->material.hasPawnsOnly(pos->side_to_move) 
-			&& pos->eval_score >= beta 
-			&& !is_pv_node;
+			&& pos->eval_score >= beta;
 	}
 
 	__forceinline bool okToPruneLastMove(const Score best_score, const Depth next_depth, const Depth depth, const Score alpha, 
@@ -440,7 +406,6 @@ protected:
 		return next_depth <= 3*2  
 			&& next_depth < depth - 1*2 // only prune when move was already reduced
 			&& -pos->eval_score + fp_margin[max(0, next_depth)] < alpha 
-			&& !is_pv_node
 			&& best_score > -MAXSCORE;
 	}
 

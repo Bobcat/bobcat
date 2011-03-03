@@ -124,16 +124,16 @@ protected:
 
 					Score score;
 					if (move_count == 1) {
-						score = searchNextDepth(next_depth, -beta, -alpha, true);
+						score = searchNextDepth(next_depth, -beta, -alpha);
 					}
 					else {
-						score = searchNextDepth(next_depth, -alpha - 1, -alpha, false);
+						score = searchNextDepth(next_depth, -alpha - 1, -alpha);
 						if (score > alpha && score < beta) {
-							score = searchNextDepth(next_depth, -beta, -alpha, true);
+							score = searchNextDepth(next_depth, -beta, -alpha);
 						}
 					}
 					if (score > alpha && next_depth < depth - 1*2) {
-						score = searchNextDepth(depth - 1*2, -beta, -alpha, true);
+						score = searchNextDepth(depth - 1*2, -beta, -alpha);
 					}
 
 					unmakeMove();
@@ -183,7 +183,7 @@ protected:
 		pos->gotoMove(0);
 	}
 
-	__forceinline Score searchNextDepth(const Depth depth, const Score alpha, const Score beta, bool is_pv_node) {
+	__forceinline Score searchNextDepth(const Depth depth, const Score alpha, const Score beta) {
 		if (game->isRepetition()) {
 			return searchNodeScore(0);
 		}
@@ -191,6 +191,7 @@ protected:
 			return -searchQuiesce(alpha, beta, 0);
 		}
 		else {
+			bool is_pv_node = beta - alpha > 1;
 			findTranspositionRefineEval(depth, alpha, beta);
 			if (beta - alpha > 1) {
 				return -searchAllPv(depth, alpha, beta, is_pv_node);
@@ -229,17 +230,17 @@ protected:
 				Depth next_depth = getNextDepth(is_pv_node, depth, ++move_count, 5, m, alpha, move_data->score);
 
 				if (move_count == 1) {
-					score = searchNextDepth(next_depth, -beta, -alpha, is_pv_node);
+					score = searchNextDepth(next_depth, -beta, -alpha);
 				}
 				else {
-					score = searchNextDepth(next_depth, -alpha - 1, -alpha, false);
+					score = searchNextDepth(next_depth, -alpha - 1, -alpha);
 
 					if (score > alpha && score < beta) { 
-						score = searchNextDepth(next_depth, -beta, -alpha, true);  
+						score = searchNextDepth(next_depth, -beta, -alpha);  
 					}
 				}
 				if (score > alpha && next_depth < depth - 1*2) {
-					score = searchNextDepth(depth - 1*2, -beta, -alpha, is_pv_node); 
+					score = searchNextDepth(depth - 1*2, -beta, -alpha); 
 				}
 
 				unmakeMove();
@@ -280,7 +281,7 @@ protected:
 		Score score;
 		if (okToTryNullMove(depth, beta, is_pv_node)) {
 			makeMove(0);
-			score = searchNextDepth(depth - 4*2 - (depth/16)*2, -beta, -beta + 1, false);
+			score = searchNextDepth(depth - 4*2 - (depth/16)*2, -beta, -beta + 1);
 			unmakeMove();
 			if (score >= beta) {
 				return searchNodeScore(score);
@@ -325,10 +326,10 @@ protected:
 					continue;
 				}
 
-				score = searchNextDepth(next_depth, -alpha - 1, -alpha, false);
+				score = searchNextDepth(next_depth, -alpha - 1, -alpha);
 
 				if (score > alpha && next_depth < depth - 1*2) {
-					score = searchNextDepth(depth - 1*2, -beta, -alpha, is_pv_node); 
+					score = searchNextDepth(depth - 1*2, -beta, -alpha); 
 				}
 
 				unmakeMove();

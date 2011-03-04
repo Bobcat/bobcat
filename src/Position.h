@@ -39,7 +39,7 @@ public:
 		if (m[0] < 'a' || m[0] > 'h' || m[1] < '1' || m[1] > '8' || 
 			m[2] < 'a' || m[2] > 'h' || m[3] < '1' || m[3] > '8') 
 		{
-			return 0;
+			return NULL;
 		}
 		Square from = square(m[0] - 'a', m[1] - '1');
 		Square to = square(m[2] - 'a', m[3] - '1');
@@ -58,17 +58,18 @@ public:
 		}
 		return NULL;
 	}
-	int			reversible_half_move_count;
-	uint64		pawn_structure_key;
-	uint64		key;
-	Material	material;
-	bool		null_search;
-	int			null_moves_in_row;
-	int			pv_length;
-	Move		last_move; 
-	int			eval_score, transp_score;
-	bool		transp_score_valid, transp_depth_valid;
-	Move		transp_move;
-
+	int reversible_half_move_count;
+	uint64 pawn_structure_key;
+	uint64 key;
+	Material material;
+	bool null_search;
+	int null_moves_in_row;
+	int pv_length;
+	Move last_move; 
+	int eval_score;
+	int transp_score;
+	bool transp_score_valid;
+	bool transp_depth_valid;
+	Move transp_move;
 	Transposition* transposition;
 };

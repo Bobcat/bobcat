@@ -299,23 +299,23 @@ private:
 	}
 
 public:
-	Side			side_to_move;
-	int				castle_rights;
-	bool			in_check;
-	BB				en_passant_square; 
-	Board*			board;
+	Side side_to_move;
+	int castle_rights;
+	bool in_check;
+	BB en_passant_square; 
+	Board* board;
 
 private:
-	BB*				piece;
-	BB*				occupied_by_side;
-	BB				occupied;
-	int				iteration;
-	int				stage;
-	int				max_stage;
-	int				number_moves;
-	BB				pinned;
-	MoveSorter*		sorter;
-	Move			transposition_move;
-	int				flags;
-	MoveData		move_list[256];
+	BB* piece;
+	BB* occupied_by_side;
+	BB occupied;
+	int iteration;
+	int stage;
+	int max_stage;
+	int number_moves;
+	BB pinned;
+	MoveSorter* sorter;
+	Move transposition_move;
+	int flags;
+	MoveData move_list[256];
 };

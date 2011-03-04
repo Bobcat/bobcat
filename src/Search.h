@@ -130,11 +130,17 @@ protected:
 					else {
 						score = searchNextDepth(next_depth, -alpha - 1, -alpha);
 						if (score > alpha && score < beta) {
-							score = searchNextDepth(next_depth, -beta, -alpha);
+							if (next_depth == depth - 1*2) {
+								score = searchNextDepth(next_depth, -beta, -score);
+							}
+							else {
+								next_depth = depth - 1*2;
+								score = searchNextDepth(next_depth, -beta, -alpha);
+							}
 						}
 					}
 					if (score > alpha && next_depth < depth - 1*2) {
-						score = searchNextDepth(depth - 1*2, -beta, -alpha);
+						score = searchNextDepth(depth - 1*2, -beta, -score);
 					}
 
 					unmakeMove();
@@ -232,9 +238,14 @@ protected:
 				}
 				else {
 					score = searchNextDepth(next_depth, -alpha - 1, -alpha);
-
-					if (score > alpha && score < beta) { 
-						score = searchNextDepth(next_depth, -beta, -alpha);  
+					if (score > alpha && score < beta) {
+						if (next_depth == depth - 1*2) {
+							score = searchNextDepth(next_depth, -beta, -score);
+						}
+						else {
+							next_depth = depth - 1*2;
+							score = searchNextDepth(next_depth, -beta, -alpha);
+						}
 					}
 				}
 				if (score > alpha && next_depth < depth - 1*2) {
@@ -271,11 +282,6 @@ protected:
 		return storeSearchNodeScore(best_score, depth, nodeType(best_score, orig_alpha, beta), best_move);
 	}
 
-	// One method for both expected cut and expected all nodes.
-	// to do: try to find formula for expected all or cut nodes. This seems 
-	// tricky. Probably there are nodes that fall in neither category? How to 
-	// proceed in an expected cut node after first move failed low. What does 
-	// it mean when hash score contradicts the formula? etc. 
  	Score searchAllNonPv(const Depth depth, const Score beta) {
 		Score alpha = beta - 1;
 		if (okToTryNullMove(depth, beta)) {
@@ -374,8 +380,12 @@ protected:
 	{
 		return next_depth <= 3*2  
 			&& next_depth < depth - 1*2 // only prune when move was already reduced
-			&& -pos->eval_score + fp_margin[max(0, next_depth)] < alpha 
+			&& -pos->eval_score + forwardPruneMargin(next_depth) < alpha 
 			&& best_score > -MAXSCORE;
+	}
+
+	__forceinline const Score forwardPruneMargin(const Depth next_depth) const {
+		return fp_margin[max(0, next_depth)];
 	}
 
 	Score searchQuiesce(Score alpha, const Score beta, int qs_depth) {

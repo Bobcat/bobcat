@@ -29,7 +29,7 @@ public:
 		initialise(NULL, game, eval, see, transt, true);
 	}
 
-	int go(int wtime = 0, int btime = 0, int movestogo = 0, int winc = 0, int binc = 0, int movetime = 2000) {
+	int go(int wtime, int btime, int movestogo, int winc, int binc, int movetime) {
 		pos = game->pos; // updated in makeMove and unmakeMove from here on
 
 		initialiseSearch(wtime, btime, movestogo, winc, binc, movetime);
@@ -41,11 +41,12 @@ public:
 
 		while (!stop_search && search_depth < 96*2) {
 			try {
-				max_ply = 0;
+				selective_depth = 0;
 				max_plies = max(32, search_depth/2 + 16);
+				
 				Score score = searchRoot(search_depth, alpha, beta);
-				savePv();
 
+				savePv();
 				if (isEasyMove()) {
 					break;
 				}
@@ -60,7 +61,7 @@ public:
 				savePv();
 			}
 		}
-		postInfo(0, -1, search_depth/2, max_ply, node_count, nodesPerSecond(), timeUsed(), transt->getLoad());
+		postInfo(0, -1, search_depth/2, selective_depth, node_count, nodesPerSecond(), timeUsed(), transt->getLoad());
 		stopped = true;
 		return 0;
 	}
@@ -74,7 +75,7 @@ public:
 	}
 
 	virtual void run() {
-		go();
+		go(0, 0, 0, 0, 0, 0);
 	}
 
 	virtual void newGame() {
@@ -96,7 +97,7 @@ protected:
 		uint64 nodes_per_sec, uint64 time, int hash_full)
 	{
 		if (!worker) {
-			protocol->postInfo(0, -1, search_depth/2, max_ply, node_count, nodesPerSecond(), timeUsed(), transt->getLoad());
+			protocol->postInfo(0, -1, search_depth/2, selective_depth, node_count, nodesPerSecond(), timeUsed(), transt->getLoad());
 		}
 	}
 
@@ -118,7 +119,7 @@ protected:
 					Depth next_depth = getNextDepth(true, depth, ++move_count, 5, m, alpha, move_data->score);
 
 					if (search_depth > 10*2 && search_time > 5000) {
-						postInfo(m, move_count, search_depth/2, max_ply, node_count, nodesPerSecond(), timeUsed(), 
+						postInfo(m, move_count, search_depth/2, selective_depth, node_count, nodesPerSecond(), timeUsed(), 
 							transt->getLoad());
 					}
 
@@ -191,29 +192,26 @@ protected:
 			return -searchQuiesce(alpha, beta, 0);
 		}
 		else {
-			bool is_pv_node = beta - alpha > 1;
 			findTranspositionRefineEval(depth, alpha, beta);
+			if (ply >= max_plies - 1) {
+				return -searchNodeScore(pos->eval_score);
+			}
 			if (beta - alpha > 1) {
-				return -searchAllPv(depth, alpha, beta, is_pv_node);
+				return -searchAllPv(depth, alpha, beta);
 			}
 			else {
 				if (pos->transp_score_valid && pos->transp_depth_valid) { 
 					return -searchNodeScore(pos->transp_score);
 				} 
-				return -searchAllNonPv(depth, alpha, beta, is_pv_node);
+				return -searchAllNonPv(depth, beta);
 			}
 		}
 	}
 
- 	Score searchAllPv(const Depth depth, Score alpha, const Score beta, const bool is_pv_node) {
-		if (ply >= max_plies - 1) {
-			return searchNodeScore(pos->eval_score);
-		}
-
+ 	Score searchAllPv(const Depth depth, Score alpha, const Score beta) {
 		Score score;
-
 		if (!pos->transp_move && depth >= 4*2) {
-			score = searchAllPv(depth - 2*2, alpha, beta, true);
+			searchAllPv(depth - 2*2, alpha, beta);
 			findTranspositionRefineEval(depth, alpha, beta);
 		}
 
@@ -227,7 +225,7 @@ protected:
 			const Move m = move_data->move;
 
 			if (makeMove(m)) {
-				Depth next_depth = getNextDepth(is_pv_node, depth, ++move_count, 5, m, alpha, move_data->score);
+				Depth next_depth = getNextDepth(true, depth, ++move_count, 5, m, alpha, move_data->score);
 
 				if (move_count == 1) {
 					score = searchNextDepth(next_depth, -beta, -alpha);
@@ -273,15 +271,16 @@ protected:
 		return storeSearchNodeScore(best_score, depth, nodeType(best_score, orig_alpha, beta), best_move);
 	}
 
- 	Score searchAllNonPv(const Depth depth, Score alpha, const Score beta, const bool is_pv_node) {
-		if (ply >= max_plies - 1) {
-			return searchNodeScore(pos->eval_score);
-		}
-
-		Score score;
-		if (okToTryNullMove(depth, beta, is_pv_node)) {
+	// One method for both expected cut and expected all nodes.
+	// to do: try to find formula for expected all or cut nodes. This seems 
+	// tricky. Probably there are nodes that fall in neither category? How to 
+	// proceed in an expected cut node after first move failed low. What does 
+	// it mean when hash score contradicts the formula? etc. 
+ 	Score searchAllNonPv(const Depth depth, const Score beta) {
+		Score alpha = beta - 1;
+		if (okToTryNullMove(depth, beta)) {
 			makeMove(0);
-			score = searchNextDepth(depth - 4*2 - (depth/16)*2, -beta, -beta + 1);
+			Score score = searchNextDepth(depth - 4*2 - (depth/16)*2, -beta, -beta + 1);
 			unmakeMove();
 			if (score >= beta) {
 				return searchNodeScore(score);
@@ -291,12 +290,13 @@ protected:
 		if (!pos->in_check && depth <= 3*2) {
 			if (pos->eval_score + 125 < alpha) {
 				if (depth <= 1*2) {
-					score = searchQuiesce(alpha, beta, 0);
+					Score score = searchQuiesce(alpha, beta, 0);
 					return max(score, pos->eval_score + 125);
 				}
 				else {
 					if (pos->eval_score + 400 < alpha) {
-						if ((score = searchQuiesce(alpha, beta, 0)) < alpha) {
+						Score score = searchQuiesce(alpha, beta, 0);
+						if (score < alpha) {
 							return max(score, pos->eval_score + 400);
 						}
 					}
@@ -305,7 +305,7 @@ protected:
 		}
 
 		if (!pos->transp_move && pos->eval_score >= beta && depth >= 8*2) {
-			score = searchAllNonPv(depth/2, alpha, beta, false);
+			searchAllNonPv(depth/2, beta);
 			findTranspositionRefineEval(depth, alpha, beta);
 		}
 
@@ -319,14 +319,14 @@ protected:
 			const Move m = move_data->move;
 
 			if (makeMove(m)) {
-				Depth next_depth = getNextDepth(is_pv_node, depth, ++move_count, 5, m, alpha, move_data->score);
+				Depth next_depth = getNextDepth(false, depth, ++move_count, 5, m, alpha, move_data->score);
 
-				if (okToPruneLastMove(best_score, next_depth, depth, alpha, is_pv_node)) {
+				if (okToPruneLastMove(best_score, next_depth, depth, alpha)) {
 					unmakeMove();
 					continue;
 				}
 
-				score = searchNextDepth(next_depth, -alpha - 1, -alpha);
+				Score score = searchNextDepth(next_depth, -alpha - 1, -alpha);
 
 				if (score > alpha && next_depth < depth - 1*2) {
 					score = searchNextDepth(depth - 1*2, -beta, -alpha); 
@@ -341,7 +341,6 @@ protected:
 						if (score >= beta) {
 							break;
 						}
-						updatePv(m, best_score, depth);
 						alpha = best_score; 
 					}
 				}
@@ -362,7 +361,7 @@ protected:
 		return storeSearchNodeScore(best_score, depth, nodeType(best_score, orig_alpha, beta), best_move);
 	}
 
-	__forceinline bool okToTryNullMove(const Depth depth, const Score beta, const bool is_pv_node) const {
+	__forceinline bool okToTryNullMove(const Depth depth, const Score beta) const {
 		return !pos->in_check 
 			&& pos->null_moves_in_row < 1 // not really necessary now
 			&& depth > 1*2 
@@ -370,8 +369,8 @@ protected:
 			&& pos->eval_score >= beta;
 	}
 
-	__forceinline bool okToPruneLastMove(const Score best_score, const Depth next_depth, const Depth depth, const Score alpha, 
-		const bool is_pv_node) const 
+	__forceinline bool okToPruneLastMove(const Score best_score, const Depth next_depth, const Depth depth, 
+		const Score alpha) const 
 	{
 		return next_depth <= 3*2  
 			&& next_depth < depth - 1*2 // only prune when move was already reduced
@@ -463,8 +462,8 @@ protected:
 			}
 			pos->in_check = (eval->attacks(them) & bb_square(board->king_square[us])) != 0;
 			ply++;
-			if (ply > max_ply) {
-				max_ply = ply;
+			if (ply > selective_depth) {
+				selective_depth = ply;
 			}
 			pv_length[ply] = ply;
 			node_count++;
@@ -493,7 +492,7 @@ protected:
 			}
 		}
 		if ((node_count & 0x3FFFFF) == 0) {
-			postInfo(0, -1, search_depth/2, max_ply, node_count, nodesPerSecond(), timeUsed(), transt->getLoad());
+			postInfo(0, -1, search_depth/2, selective_depth, node_count, nodesPerSecond(), timeUsed(), transt->getLoad());
 		}
 	}
 
@@ -526,11 +525,13 @@ protected:
 			}
 			if (!worker) {
 				if (pos->material.key[pos->side_to_move] == 0x00000 && pos->material.key[pos->side_to_move ^ 1] == 0x00110) {
-					if (score > -MAXSCORE / 2) {
+					// Many have difficulties to give check mate with B+N. Prevent that GUI resigns for us because 
+					// we keep returning scores < -900 (as that threshold seems widely used).
+					if (score > -MAXSCORE/2) {
 						score += 250;
 					}
 				}
-				protocol->postPv(search_depth/2, max_ply, node_count, nodesPerSecond(), timeUsed(), transt->getLoad(), score, 
+				protocol->postPv(search_depth/2, selective_depth, node_count, nodesPerSecond(), timeUsed(), transt->getLoad(), score, 
 					buf);
 			}
 		}
@@ -547,7 +548,7 @@ protected:
 	}
 
 	uint64 nodesPerSecond() const {
-		return (uint64)(node_count * 1000 / max(1, (millis() - start_time)));
+		return (uint64)(node_count*1000/max(1, (millis() - start_time)));
 	}
 
 	__forceinline void updateHistoryScores(const Move m, const Depth depth) {
@@ -725,7 +726,7 @@ protected:
 	}
 
 	bool isEasyMove() const { // not so much yet
-		if (pos->moveCount() == 1 && search_depth > 7) {
+		if (pos->moveCount() == 1 && search_depth >= 4*2) {
 			return true;
 		}
 		return false;
@@ -747,29 +748,31 @@ protected:
 	};
 
 public:
-	Depth		ply;
-	Depth		max_ply;
-	PVEntry		pv[128][128];
-	int			pv_length[128];
-	uint64		start_time;
-	uint64		search_time, time_left, time_inc;
-	bool		stop_search;
-	int			max_plies;
+	Depth ply;
+	Depth selective_depth;
+	PVEntry pv[128][128];
+	int pv_length[128];
+	uint64 start_time;
+	uint64 search_time;
+	uint64 time_left;
+	uint64 time_inc;
+	bool stop_search;
+	int max_plies;
 
 protected:	
-	Depth		search_depth;
-	bool		worker;
-	Move		killer_moves[4][128];
-	int			history_scores[16][64];
-	Score		root_move_score[256];
-	bool		stopped;
-	Protocol*	protocol;
-	Game*		game;
-	Eval*		eval;
-	Board*		board;
-	SEE*		see;
-	Position*	pos;
-	TTable*		transt;
+	Depth search_depth;
+	bool worker;
+	Move killer_moves[4][128];
+	int history_scores[16][64];
+	Score root_move_score[256];
+	bool stopped;
+	Protocol* protocol;
+	Game* game;
+	Eval* eval;
+	Board* board;
+	SEE* see;
+	Position* pos;
+	TTable* transt;
 
 	static uint64 node_count;
 	static int fp_margin[9];

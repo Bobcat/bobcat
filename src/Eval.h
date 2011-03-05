@@ -261,8 +261,8 @@ protected:
 		poseval_mg[c] += king_mg_pcsq[flip[c][sq]];
 		poseval_eg[c] += king_eg_pcsq[flip[c][sq]];
 		
-		BB pawn_shield = (pawnPush[c](bbsq) | pawnWestAttacks[c](bbsq) | pawnEastAttacks[c](bbsq)) & Pawns(c);
-		poseval_mg[c] += -45 + 15*pop_count(pawn_shield);
+		int ps_count = pop_count((pawnPush[c](bbsq) | pawnWestAttacks[c](bbsq) | pawnEastAttacks[c](bbsq)) & Pawns(c));
+		poseval_mg[c] += board->Queens(c ^ 1) ? pawn_shield_bonus[ps_count] : pawn_shield_bonus[ps_count]/2;
 		
 		if (((c == 0) && 
 				(((sq == f1 || sq == g1) && (bb_square(h1) & board->Rooks(0))) || 
@@ -371,6 +371,7 @@ protected:
 		king_rank_value_eg[8], bishop_mobility_mg[14], rook_mobility_mg[15], knight_mobility_mg[9], queen_file_value_mg[8];
 
 	static BB bishop_trapped_a7h7[2], pawns_trap_bishop_a7h7[2][2];
+	static int pawn_shield_bonus[4];
 };
 
 BB Eval::bishop_trapped_a7h7[2] = { bb_square(a7) | bb_square(h7), bb_square(a2) | bb_square(h2) };
@@ -389,3 +390,4 @@ int Eval::pawn_file_value_inc[8] = { 1, 2, 3, 4, 4, 3, 2, 1 };
 int Eval::king_file_value_eg[8] = { 0, 8, 16, 24, 24, 16, 8, 0 };
 int Eval::king_rank_value_eg[8] = { 0, 8, 16, 24, 24, 16, 8, 0 };
 int Eval::queen_file_value_mg[8] = { -20, -10, 0, 0, 0, 0, -10, -20 };
+int Eval::pawn_shield_bonus[4] = { -120, -60, -20, 0};

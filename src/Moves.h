@@ -146,7 +146,7 @@ private:
 				transposition_move = 0;
 			}
 		}
-		this->flags = in_check ? ((LegalMoves | ~Stages) & flags) : flags;
+		this->flags = flags;
 		iteration = 0;
 		number_moves = 0;
 		stage = 0;

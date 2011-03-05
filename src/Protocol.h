@@ -137,12 +137,16 @@ public:
 			return -1;
 		}
 		if (stricmp(params[0], "uci") == 0) {
-			cout << "id name Bobcat 20110220" << endl;
-			cout << "id author Gunnar Harms" << endl;
-			cout << "option name Hash type spin default 256 min 8 max 1024" << endl;
-			cout << "option name Ponder type check default true" << endl;
-			cout << "option name Threads type spin default 2 min 1 max 4" << endl;
-			cout << "uciok" << endl;
+			char buf[2048];
+			snprintf(buf, sizeof(buf),  
+				"id name Bobcat 20110220\n" \
+				"id author Gunnar Harms\n" \
+				"option name Hash type spin default 256 min 8 max 1024\n" \
+				"option name Ponder type check default true\n" \
+				"option name Threads type spin default 2 min 1 max 4\n" \
+				"uciok\n");
+
+			output->writeLine(buf);
 		}
 		else if (stricmp(params[0], "isready") == 0) {
 			cout << "readyok" << endl;

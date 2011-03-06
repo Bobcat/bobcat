@@ -1,3 +1,21 @@
+/*
+  This file is part of Bobcat.
+  Copyright 2008-2011 Gunnar Harms
+
+  Bobcat is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Bobcat is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with Bobcat.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 typedef int Score; 
 typedef int Depth;
 
@@ -25,9 +43,10 @@ public:
 			try {
 				max_ply = 0;
 				max_plies = max(32, search_depth/2 + 16);
+			
 				Score score = searchRoot(search_depth, alpha, beta);
-				savePv();
 
+				savePv();
 				if (isEasyMove()) {
 					break;
 				}
@@ -83,7 +102,7 @@ protected:
 	}
 
 	Score searchRoot(const Depth depth, Score alpha, Score beta) {
-		while (1) {
+		while (1) { // stay in the loop until an exact score is found
 			pv_length[0] = 0;
 			pos->eval_score = eval->evaluate();
 			findTranspositionRefineEval(depth, alpha, beta);

@@ -685,29 +685,31 @@ protected:
 	};
 
 public:
-	Depth		ply;
-	Depth		max_ply;
-	PVEntry		pv[128][128];
-	int			pv_length[128];
-	uint64		start_time;
-	uint64		search_time, time_left, time_inc;
-	bool		stop_search;
-	int			max_plies;
+	Depth ply;
+	Depth max_ply;
+	PVEntry pv[128][128];
+	int	pv_length[128];
+	uint64 start_time;
+	uint64 search_time; 
+	uint64 time_left;
+	uint64 time_inc;
+	bool stop_search;
+	int max_plies;
 
 protected:	
-	Depth		search_depth;
-	bool		worker;
-	Move		killer_moves[4][128];
-	int			history_scores[16][64];
-	Score		root_move_score[256];
-	bool		stopped;
-	Protocol*	protocol;
-	Game*		game;
-	Eval*		eval;
-	Board*		board;
-	SEE*		see;
-	Position*	pos;
-	TTable*		transt;
+	Depth search_depth;
+	bool worker;
+	Move killer_moves[4][128];
+	int history_scores[16][64];
+	Score root_move_score[256];
+	bool stopped;
+	Protocol* protocol;
+	Game* game;
+	Eval* eval;
+	Board* board;
+	SEE* see;
+	Position* pos;
+	TTable* transt;
 
 	static uint64 node_count;
 	static int fp_margin[9];

@@ -58,6 +58,7 @@ public:
 		}
 		return NULL;
 	}
+
 	int reversible_half_move_count;
 	uint64 pawn_structure_key;
 	uint64 key;

@@ -88,7 +88,7 @@ private:
 					return true;
 				}
 				current_piece[side]++;
-				current_piece_bitboard[side] = board->Knights(side);
+				current_piece_bitboard[side] = board->knights(side);
 			case Knight:
 				if (current_piece_bitboard[side] & board->knightAttacks(to)) {
 					from = lsb(current_piece_bitboard[side] & board->knightAttacks(to));
@@ -96,7 +96,7 @@ private:
 					return true;
 				}
 				current_piece[side]++;
-				current_piece_bitboard[side] = board->Bishops(side);
+				current_piece_bitboard[side] = board->bishops(side);
 			case Bishop:
 				if (current_piece_bitboard[side] & board->bishopAttacks(to)) {
 					from = lsb(current_piece_bitboard[side] & board->bishopAttacks(to));
@@ -104,7 +104,7 @@ private:
 					return true;
 				}
 				current_piece[side]++;
-				current_piece_bitboard[side] = board->Rooks(side);
+				current_piece_bitboard[side] = board->rooks(side);
 			case Rook:
 				if (current_piece_bitboard[side] & board->rookAttacks(to)) {
 					from = lsb(current_piece_bitboard[side] & board->rookAttacks(to));
@@ -112,7 +112,7 @@ private:
 					return true;
 				}
 				current_piece[side]++;
-				current_piece_bitboard[side] = board->Queens(side);
+				current_piece_bitboard[side] = board->queens(side);
 			case Queen:
 				if (current_piece_bitboard[side] & board->queenAttacks(to)) {
 					from = lsb(current_piece_bitboard[side] & board->queenAttacks(to));

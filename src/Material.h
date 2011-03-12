@@ -141,7 +141,7 @@ public:
 	}
 
 	__forceinline int KBxKBy(int eval, uint32 key1, uint32 key2) {
-		if (sameColor(lsb(board->Bishops(0)), lsb(board->Bishops(1)))) {
+		if (sameColor(lsb(board->bishops(0)), lsb(board->bishops(1)))) {
 			return eval;
 		}
 		if (abs(pawnCount(0) - pawnCount(1)) <= 2) {
@@ -215,7 +215,7 @@ public:
 	__forceinline int KBNK(int eval, int side1) {
 		int loosing_king_square = board->king_square[side1 ^ 1];
 		int winning_corner1 = a8, winning_corner2 = h1;
-		if (isDark(lsb(board->Bishops(side1)))) {
+		if (isDark(lsb(board->bishops(side1)))) {
 			winning_corner1 = a1;
 			winning_corner2 = h8;
 		}

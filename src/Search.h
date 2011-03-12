@@ -102,7 +102,7 @@ protected:
 	}
 
 	Score searchRoot(const Depth depth, Score alpha, Score beta) {
-		while (1) { // stay in the loop until an exact score is found
+		do { // stay in the loop until an exact score is found
 			pv_length[0] = 0;
 			pos->eval_score = eval->evaluate();
 			findTranspositionRefineEval(depth, alpha, beta);
@@ -168,7 +168,7 @@ protected:
 			storeTransposition(depth, best_score, nodeType(best_score, orig_alpha, beta), best_move);
 			alpha = -MAXSCORE;
 			beta = MAXSCORE;
-		}
+		} while (true);
 	}
 
 	void sortRootMoves(bool use_root_move_scores) {
@@ -323,7 +323,7 @@ protected:
 		const bool is_pv_node) const 
 	{
 		return next_depth <= 3*2  
-			&& next_depth < depth - 1*2 // only prune when move is already reduced
+			//&& next_depth < depth - 1*2 // only prune when move is already reduced
 			&& -pos->eval_score + fp_margin[max(0, next_depth)] < alpha 
 			//&& !is_pv_node
 			&& best_score > -MAXSCORE;
@@ -483,7 +483,7 @@ protected:
 			}
 			if (!worker) {
 				if (pos->material.key[pos->side_to_move] == 0x00000 && pos->material.key[pos->side_to_move ^ 1] == 0x00110) {
-					if (score > -MAXSCORE / 2) {
+					if (score > -MAXSCORE/2) {
 						score += 250;
 					}
 				}
@@ -504,7 +504,7 @@ protected:
 	}
 
 	uint64 nodesPerSecond() const {
-		return (uint64)(node_count * 1000 / max(1, (millis() - start_time)));
+		return (uint64)(node_count*1000/max(1, (millis() - start_time)));
 	}
 
 	__forceinline void updateHistoryScores(const Move m, const Depth depth) {
@@ -707,7 +707,7 @@ public:
 	Depth ply;
 	Depth max_ply;
 	PVEntry pv[128][128];
-	int	pv_length[128];
+	int pv_length[128];
 	uint64 start_time;
 	uint64 search_time; 
 	uint64 time_left;

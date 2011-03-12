@@ -168,12 +168,12 @@ private:
 
 	void generateCapturesAndPromotions() { 
 		addMoves(occupied_by_side[side_to_move ^ 1]);
-		const BB& pawns = board->Pawns(side_to_move);
-		addPawnMoves(pawnPush[side_to_move](pawns & RankSeven[side_to_move]) & ~occupied, PawnPushDist, QUIET);
-		addPawnMoves(pawnWestAttacks[side_to_move](pawns) & occupied_by_side[side_to_move ^ 1], PawnWestAttackDist, CAPTURE);
-		addPawnMoves(pawnEastAttacks[side_to_move](pawns) & occupied_by_side[side_to_move ^ 1], PawnEastAttackDist, CAPTURE);
-		addPawnMoves(pawnWestAttacks[side_to_move](pawns) & en_passant_square, PawnWestAttackDist, EPCAPTURE);
-		addPawnMoves(pawnEastAttacks[side_to_move](pawns) & en_passant_square, PawnEastAttackDist, EPCAPTURE);
+		const BB& pawns = board->pawns(side_to_move);
+		addPawnMoves(pawnPush[side_to_move](pawns & rank_7[side_to_move]) & ~occupied, pawn_push_dist, QUIET);
+		addPawnMoves(pawnWestAttacks[side_to_move](pawns) & occupied_by_side[side_to_move ^ 1], pawn_west_attack_dist, CAPTURE);
+		addPawnMoves(pawnEastAttacks[side_to_move](pawns) & occupied_by_side[side_to_move ^ 1], pawn_east_attack_dist, CAPTURE);
+		addPawnMoves(pawnWestAttacks[side_to_move](pawns) & en_passant_square, pawn_west_attack_dist, EPCAPTURE);
+		addPawnMoves(pawnEastAttacks[side_to_move](pawns) & en_passant_square, pawn_east_attack_dist, EPCAPTURE);
 		stage++;
 	}
 
@@ -186,10 +186,10 @@ private:
 				addCastleMove(ooo_king_from[side_to_move], ooo_king_to[side_to_move]);
 			}
 		}
-		const BB& pawns = board->Pawns(side_to_move);
-		BB pushed = pawnPush[side_to_move](pawns & ~RankSeven[side_to_move]) & ~occupied;
-		addPawnMoves(pushed, PawnPushDist, QUIET);
-		addPawnMoves(pawnPush[side_to_move](pushed & RankThree[side_to_move]) & ~occupied, PawnDoublePushDist, DOUBLEPUSH);
+		const BB& pawns = board->pawns(side_to_move);
+		BB pushed = pawnPush[side_to_move](pawns & ~rank_7[side_to_move]) & ~occupied;
+		addPawnMoves(pushed, pawn_push_dist, QUIET);
+		addPawnMoves(pawnPush[side_to_move](pushed & rank_3[side_to_move]) & ~occupied, pawn_double_push_dist, DOUBLEPUSH);
 		addMoves(~occupied);
 		stage++;
 	}

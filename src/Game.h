@@ -46,7 +46,7 @@ public:
 			pos->reversible_half_move_count = prev->reversible_half_move_count + 1;
 		}
 		if (TYPE(m) & DOUBLEPUSH) {
-			pos->en_passant_square = bb_square(TO(m) + PawnPushDist[pos->side_to_move]);
+			pos->en_passant_square = bb_square(TO(m) + pawn_push_dist[pos->side_to_move]);
 		} 
 		else {
 			pos->en_passant_square = 0;
@@ -411,10 +411,10 @@ public:
 	}
 
 public:
-	Config*		config;
-	Position*	pos;
-	Position	position_list[2000];
-	Board		board;
+	Config* config;
+	Position* pos;
+	Position position_list[2000];
+	Board board;
 
 	static const char START_POSITION[];
 };

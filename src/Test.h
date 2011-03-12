@@ -100,7 +100,7 @@ private:
 };
 
 void printSearchData() {
-	#ifdef DEBUG
+#ifdef DEBUG
 		printf("\nBF(ply) = nodes[ply]/nodes[ply-1]\n");
 		printf("------");
 		for (int id = 1; id <= search->search_depth - 1; id++) {
@@ -136,5 +136,5 @@ void printSearchData() {
 			printf("--------");
 		}
 		printf("\n");
-	#endif
+#endif
 }

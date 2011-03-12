@@ -26,7 +26,7 @@ const Piece Queen = 4;
 const Piece King = 5;
 const Piece NoPiece = 6;
 
-static char piece_notation[] = " nbrqk"; 
+const static char piece_notation[] = " nbrqk"; 
 
 const char* piece_str(int piece, char* buf) {
 	sprintf(buf, "%c", piece_notation[piece]);

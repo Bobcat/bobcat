@@ -18,7 +18,7 @@
 
 class Bobcat : public ProtocolListener {
 public:
-	Bobcat() : num_threads(2) {
+	Bobcat() : num_threads(1) {
 	}
 
 	virtual ~Bobcat() {
@@ -134,6 +134,7 @@ public:
 
 	int run(int argc, char* argv[]) {
 		setbuf(stdout, NULL);
+		setbuf(stdin, NULL);
 
 		logger = new Logger();
 		config = new Config(argc > 1 ? argv[1] : "bobcat.ini");
@@ -283,18 +284,18 @@ public:
 	}
 
 public:
-	Config*		config;
-	StdIn*		input;
-	StdOut*		output;
-	Logger*		logger;
-	Game*		game;
-	Eval*		eval;
-	SEE*		see;
-	Search*		search;
-	Protocol*	protocol;
-	Book*		book;
-	TTable*		transt;
-	PSTable*	pawnt;
-	Worker		workers[3];
-	int			num_threads;
+	Config* config;
+	StdIn* input;
+	StdOut* output;
+	Logger* logger;
+	Game* game;
+	Eval* eval;
+	SEE* see;
+	Search* search;
+	Protocol* protocol;
+	Book* book;
+	TTable* transt;
+	PSTable* pawnt;
+	Worker workers[3];
+	int num_threads;
 };

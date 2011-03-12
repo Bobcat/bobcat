@@ -165,7 +165,7 @@ public:
 		book = new Book(config, logger);
 		pawnt = new PawnStructureTable(8);
 		eval = new Eval(game, pawnt);
-		see	= new SEE(game);
+		see = new SEE(game);
 		transt = new TranspositionTable(256);
 		search = new Search(protocol, game, eval, see, transt);
 		

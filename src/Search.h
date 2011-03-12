@@ -29,7 +29,7 @@ public:
 		initialise(NULL, game, eval, see, transt, true);
 	}
 
-	int go(int wtime = 0, int btime = 0, int movestogo = 0, int winc = 0, int binc = 0, int movetime = 2000) {
+	int go(int wtime, int btime, int movestogo, int winc, int binc, int movetime) {
 		pos = game->pos; // updated in makeMove and unmakeMove from here on
 
 		initialiseSearch(wtime, btime, movestogo, winc, binc, movetime);
@@ -42,7 +42,7 @@ public:
 		while (!stop_search && search_depth < 96*2) {
 			try {
 				max_ply = 0;
-				max_plies = max(32, search_depth/2 + 16);
+				max_plies = max(32, search_depth/2 + 32);
 			
 				Score score = searchRoot(search_depth, alpha, beta);
 
@@ -75,7 +75,7 @@ public:
 	}
 
 	virtual void run() {
-		go();
+		go(0, 0, 0, 0, 0, 0);
 	}
 
 	virtual void newGame() {
@@ -314,9 +314,8 @@ protected:
 			&& pos->null_moves_in_row < 1 
 			&& depth > 1*2 
 			&& !pos->material.hasPawnsOnly(pos->side_to_move) 
-			&& pos->eval_score >= beta 
-			//&& !is_pv_node
-			;
+			&& pos->eval_score >= beta; 
+			//&& !is_pv_node;
 	}
 
 	__forceinline bool okToPruneLastMove(const Score best_score, const Depth next_depth, const Depth depth, const Score alpha, 
@@ -346,7 +345,7 @@ protected:
 			return searchNodeScore(pos->eval_score);
 		}
 
-		if (qs_depth > 6) {
+		if (!is_pv_node && qs_depth > 6) {
 			return searchNodeScore(pos->eval_score);
 		}
 		
@@ -396,8 +395,8 @@ protected:
 	__forceinline Depth getNextDepth(const bool is_pv_node, const bool is_left_most_node, const Depth depth, 
 		const int move_count, const int L, const Move m, const Score alpha, const int move_score) 
 	{
-		if (pos->in_check) {
-			return is_pv_node ? depth : (is_left_most_node ? depth - 1 : depth - 1*2);
+		if (pos->in_check && (pos - 1)->eval_score > alpha - 125 && see->seeLastMove(pos) >= 0) {
+			return is_pv_node ? depth : depth - 1*2;
 		}
 
 		if (!isPassedPawnMove(m) && !isQueenPromotion(m) && !isCapture(m) && move_count >= L) {

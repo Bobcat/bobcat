@@ -172,7 +172,6 @@ protected:
 				}
 			}
 			bool outpost = (passed_pawn_front_spans[c][sq] & (Pawns(c ^  1) & ~pawn_front_span[c][sq])) == 0;
-
 			if (outpost && (pawn_attacks[c] & bbsq)) {
 				int d = chebyshev_distance[sq][kingSq(c ^ 1)];
 				poseval[c] += 5*(7-d);
@@ -191,23 +190,15 @@ protected:
 		for (BB rooks = board->rooks(c); rooks; reset_lsb(rooks)) {
 			Square sq = lsb(rooks);
 			if (!board->isPieceOnFile(Pawn, sq, c)) { 
-				int bonus;
 				if (!board->isPieceOnFile(Pawn, sq, c ^ 1)) {
-					bonus = 20;
+					poseval[c] += 20;
 				}
 				else {
-					bonus = 10;
+					poseval[c] += 10;
 				}
-				if ((bb_file(sq) | neighbourFiles(bb_square(sq))) & board->king(c ^ 1)) {
-					bonus *= 2;
-				}
-				poseval[c] += bonus;
 			}
 			if (bb_square(sq) & rank_7[c]) {
 				poseval[c] += 20;
-				if (ranks_7_and_8[c] & (Pawns(c ^  1) | board->king(c ^ 1))) {
-					poseval[c] += 20;
-				}
 			}
 			const BB& attacks = Rmagic(sq, occupied);
 			int x = pop_count(attacks & not_occupied);
@@ -227,19 +218,25 @@ protected:
 			poseval_mg[c] += queen_mg_pcsq[flip[c][sq]];
 			if (bb_square(sq) & rank_7[c]) {
 				poseval[c] += 20;
-				if (ranks_7_and_8[c] & (Pawns(c ^  1) | board->king(c ^ 1))) {
-					poseval[c] += 20;
-				}
 			}
 			const BB& attacks = Qmagic(sq, occupied);
 			all_attacks[c] |= attacks;
 
+			if (bb_square(sq) & rank_7[c]) {
+				poseval[c] += 20;
+			}
 			int d = chebyshev_distance[sq][kingSq(c ^ 1)];
 			poseval[c] += 5*(7-d);
 			poseval_eg[c] += 2*(7-d);
 
+			if (!board->isPieceOnFile(Pawn, sq, c)) {
+				if ((bb_file(sq) | neighbourFiles(bb_square(sq))) & board->king(c ^ 1)) {
+					poseval_eg[c] += (7-d)*24;
+				}
+			}
 			const BB& attacksr = Rmagic(sq, occupied & ~board->rooks(c) & ~board->queens(c));
 			int y = pop_count(attacksr & kingmoves[c ^ 1])*300;
+			
 			const BB& attacksb = Bmagic(sq, occupied & ~board->bishops(c) & ~board->queens(c));
 			y += pop_count(attacksb & kingmoves[c ^ 1])*300;
 			attack_points[c] += y;

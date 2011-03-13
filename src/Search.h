@@ -480,9 +480,9 @@ protected:
 			}
 			if (!worker) {
 				if (pos->material.key[pos->side_to_move] == 0x00000 && pos->material.key[pos->side_to_move ^ 1] == 0x00110) {
-					// Prevent the GUI to resign for us when we are KBNK behind (some cannot checkmate us with BN:)
+					// Prevent the GUI to resign for us when we are KBNK behind (some cannot checkmate us with KBN:)
 					if (score > -MAXSCORE/2) {
-						score += 250;
+						score += 250; // as long as it's  not a mate score this keeps it above -900.
 					}
 				}
 				protocol->postPv(search_depth/2, max_ply, node_count, nodesPerSecond(), timeUsed(), transt->getLoad(), score, 

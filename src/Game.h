@@ -146,8 +146,8 @@ public:
 			}
 		}
 		// castling rights
-		if ((pos-1)->castle_rights != pos->castle_rights) {
-			pos->key ^= zobrist_castling[(pos-1)->castle_rights];
+		if ((pos - 1)->castle_rights != pos->castle_rights) {
+			pos->key ^= zobrist_castling[(pos - 1)->castle_rights];
 			pos->key ^= zobrist_castling[pos->castle_rights];
 		}
 		// rook move in castle

@@ -18,6 +18,10 @@
 
 class Board {
 public:
+	BB piece[2 << 3], occupied_by_side[2], occupied;
+	int board[64];
+	Square king_square[2];
+
 	void clear() {
 		memset(piece, 0, sizeof(piece));
 		memset(occupied_by_side, 0, sizeof(occupied_by_side));
@@ -261,34 +265,10 @@ public:
 		os << endl << "   a b c d e f g h" << endl;
 	}
 
-	__forceinline const BB& pawns(int side) const { 
-		return piece[Pawn | (side << 3)]; 
-	}
-
-	__forceinline const BB& knights(int side) const { 
-		return piece[Knight | (side << 3)]; 
-	}
-
-	__forceinline const BB& bishops(int side) const { 
-		return piece[Bishop | (side << 3)]; 
-	}
-
-	__forceinline const BB& rooks(int side) const { 
-		return piece[Rook | (side << 3)]; 
-	}
-
-	__forceinline const BB& queens(int side) const { 
-		return piece[Queen | (side << 3)]; 
-	}
-
-	__forceinline const BB& king(int side) const { 
-		return piece[King | (side << 3)]; 
-	}
-
-	BB piece[2 << 3];
-	BB occupied_by_side[2];
-	BB occupied;
-	int board[64];
-	Square king_square[2];
-
+	__forceinline const BB& pawns(int side) const { return piece[Pawn | (side << 3)]; }
+	__forceinline const BB& knights(int side) const { return piece[Knight | (side << 3)]; }
+	__forceinline const BB& bishops(int side) const { return piece[Bishop | (side << 3)]; }
+	__forceinline const BB& rooks(int side) const { return piece[Rook | (side << 3)]; }
+	__forceinline const BB& queens(int side) const { return piece[Queen | (side << 3)]; }
+	__forceinline const BB& king(int side) const { return piece[King | (side << 3)]; }
 };

@@ -50,37 +50,14 @@ BB colored[2];
 #define bb_rank(x) bb_rank_array[x]
 #define bb_file(x) bb_file_array[x]
 
-__forceinline BB northOne(const BB& bb) { 
-	return bb << 8; 
-}
-
-__forceinline BB southOne(const BB& bb) { 
-	return bb >> 8; 
-}
-
-__forceinline BB eastOne(const BB& bb) { 
-	return (bb & ~HFILE) << 1; 
-}
-
-__forceinline BB westOne(const BB& bb) { 
-	return (bb & ~AFILE) >> 1; 
-}
-
-__forceinline BB northEastOne(const BB& bb) { 
-	return (bb  & ~HFILE) << 9; 
-}
-
-__forceinline BB southEastOne(const BB& bb) { 
-	return (bb  & ~HFILE) >> 7; 
-}
-
-__forceinline BB southWestOne(const BB& bb) { 
-	return (bb  & ~AFILE) >> 9; 
-}
-
-__forceinline BB northWestOne(const BB& bb) { 
-	return (bb  & ~AFILE) << 7; 
-}
+__forceinline BB northOne(const BB& bb) { return bb << 8; }
+__forceinline BB southOne(const BB& bb) { return bb >> 8; }
+__forceinline BB eastOne(const BB& bb) { return (bb & ~HFILE) << 1; }
+__forceinline BB westOne(const BB& bb) { return (bb & ~AFILE) >> 1; }
+__forceinline BB northEastOne(const BB& bb) { return (bb  & ~HFILE) << 9; }
+__forceinline BB southEastOne(const BB& bb) { return (bb  & ~HFILE) >> 7; }
+__forceinline BB southWestOne(const BB& bb) { return (bb  & ~AFILE) >> 9; }
+__forceinline BB northWestOne(const BB& bb) { return (bb  & ~AFILE) << 7; }
 
 __forceinline BB northFill(const BB& bb) {
 	BB fill = bb; 
@@ -182,42 +159,20 @@ __forceinline BB neighbourFiles(const BB& bb) {
 	return northFill(southFill(westOne(bb) | eastOne(bb)));
 }
 
-BB (*pawnPush[2])(const BB&) = { 
-	northOne, southOne 
-};
-BB (*pawnEastAttacks[2])(const BB&) = { 
-	northWestOne, southWestOne 
-};
-BB (*pawnWestAttacks[2])(const BB&) = { 
-	northEastOne, southEastOne 
-};
-BB (*pawnFill[2])(const BB&) = { 
-	northFill, southFill 
-};
-const BB rank_3[2] = { 
-	RANK3, RANK6 
-};
-const BB rank_7[2] = { 
-	RANK7, RANK2 
-};
-const BB ranks_6_and_7[2] = { 
-	RANK6 | RANK7, RANK2 | RANK3 
-};
-const BB ranks_7_and_8[2] = { 
-	RANK7 | RANK8, RANK1 | RANK2 
-};
-const int pawn_push_dist[2] = { 
-	8, -8 
-};
-const int pawn_double_push_dist[2] = { 
-	16, -16 
-};
-const int pawn_west_attack_dist[2] = { 
-	9, -7 
-};
-const int pawn_east_attack_dist[2] = { 
-	7, -9 
-};
+BB (*pawnPush[2])(const BB&) = { northOne, southOne };
+BB (*pawnEastAttacks[2])(const BB&) = { northWestOne, southWestOne };
+BB (*pawnWestAttacks[2])(const BB&) = { northEastOne, southEastOne };
+BB (*pawnFill[2])(const BB&) = { northFill, southFill };
+
+const BB rank_3[2] = { RANK3, RANK6 };
+const BB rank_7[2] = { RANK7, RANK2 };
+const BB rank_6_and_7[2] = { RANK6|RANK7, RANK2|RANK3 };
+const BB rank_7_and_8[2] = { RANK7|RANK8, RANK1|RANK2 };
+
+const int pawn_push_dist[2] = { 8, -8 };
+const int pawn_double_push_dist[2] = { 16, -16 };
+const int pawn_west_attack_dist[2] = { 9, -7 };
+const int pawn_east_attack_dist[2] = { 7, -9 };
 
 } // namespace bitboard
 

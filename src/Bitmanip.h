@@ -16,7 +16,6 @@
   along with Bobcat.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// Currently only setup for Windows platform / MSVC 2008 Express 64 bits builds.
 
 #include <intrin.h>
 
@@ -51,11 +50,47 @@ __forceinline int msb(uint64 x) { // E.N. method
 	return result + msb_table[x];
 }
 
+#if defined(_MSC_VER) && defined(_M_X64)
+// by Microsoft
 __forceinline int lsb(uint64 x) { 
 	DWORD index;
 	_BitScanForward64(&index, x);
 	return index;
 }
+#elif defined(_MSC_VER) && defined(_M_X86)
+// from Strelka
+__forceinline int lsb(uint64 x) { 
+	_asm { 
+		mov  eax, dword ptr x[0]
+		test eax, eax
+		jz   f_hi
+		bsf  eax, eax
+		jmp  f_ret
+f_hi:    
+		bsf  eax, dword ptr x[4]
+		add  eax, 20h
+f_ret:
+	}
+}
+#else
+// by Matt Taylor, the fastest non intrinsic/assembly
+const unsigned char lsb_64_table[64] = {
+	63, 30,  3, 32, 59, 14, 11, 33,
+	60, 24, 50,  9, 55, 19, 21, 34,
+	61, 29,  2, 53, 51, 23, 41, 18,
+	56, 28,  1, 43, 46, 27,  0, 35,
+	62, 31, 58,  4,  5, 49, 54,  6,
+	15, 52, 12, 40,  7, 42, 45, 16,
+	25, 57, 48, 13, 10, 39,  8, 44,
+	20, 47, 38, 22, 17, 37, 36, 26
+};
+
+__forceinline int lsb(uint64 x) {
+	x ^= (x - 1);
+	unsigned int folded = (int) x ^ (x >> 32);
+	return lsb_64_table[folded * 0x78291ACF >> 26];
+}
+#endif
 
 void Bitmanip_h_initialise() {
 	for (int i = 0; i < 256; i++) {

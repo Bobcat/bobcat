@@ -75,7 +75,7 @@ const char* fenFromParams(char* params[], int num_params, int& param, char* fen)
 	return fen;
 }
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_MSC_VER)
 
 __forceinline uint64 millis() {
 	return GetTickCount();
@@ -107,13 +107,13 @@ public:
 	}
  
 protected:
-	static unsigned long __cdecl threadProc(void* param) {
+	static DWORD __stdcall threadProc(LPVOID param) {
 		((Runnable*)param)->run();
 		return 0;
-	} 
+	}
 
 	HANDLE handle;
 	Runnable* runnable; 
 };
 
-#endif // defined(WIN32) || defined(WIN64)
+#endif // defined(_MSCVER)

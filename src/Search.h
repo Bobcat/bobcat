@@ -309,16 +309,16 @@ protected:
 		return storeSearchNodeScore(best_score, depth, nodeType(best_score, orig_alpha, beta), best_move);
 	}
 
-	__forceinline bool okToTryNullMove(const Depth depth, const Score beta, const bool is_pv_node) const {
+	__forceinline bool okToTryNullMove(const Depth depth, const Score beta, const bool is_pv_node/*unused*/) const {
 		return !pos->in_check 
-			&& pos->null_moves_in_row < 1 
+			&& pos->null_moves_in_row < 1 // not really necessary
 			&& depth > 1*2 
 			&& !pos->material.hasPawnsOnly(pos->side_to_move) 
 			&& pos->eval_score >= beta; 
 	}
 
 	__forceinline bool okToPruneLastMove(const Score best_score, const Depth next_depth, const Depth depth, const Score alpha, 
-		const bool is_pv_node) const 
+		const bool is_pv_node/*unused*/) const 
 	{
 		return next_depth <= 3*2  
 			&& next_depth < depth - 1*2 // only prune when move is already reduced
@@ -475,11 +475,12 @@ protected:
 		if (ply == 0) {
 			char buf[2048], buf2[16]; buf[0] = 0;
 			for (int i = ply; i < pv_length[ply]; i++) { 
-				_snprintf(&buf[strlen(buf)], sizeof(buf) - strlen(buf), "%s ", 
+				snprintf(&buf[strlen(buf)], sizeof(buf) - strlen(buf), "%s ", 
 					moveToString(pv[ply][i].move, buf2));
 			}
 			if (!worker) {
 				if (pos->material.key[pos->side_to_move] == 0x00000 && pos->material.key[pos->side_to_move ^ 1] == 0x00110) {
+					// Prevent the GUI to resign for us when we are KBNK behind (some cannot checkmate us with BN:)
 					if (score > -MAXSCORE/2) {
 						score += 250;
 					}

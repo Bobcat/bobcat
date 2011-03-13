@@ -38,9 +38,8 @@ public:
 		return score;
 	}
 
-	int seeLastMove(const Position* pos) {
+	int seeLastMove(const Move move) {
 		initialiseSeeMove();
-		const Move move = pos->last_move;
 		return seeRec(materialChange(move), nextToCapture(move), TO(move), side(move) ^ 1);
 	}
 

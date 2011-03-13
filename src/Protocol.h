@@ -111,12 +111,12 @@ public:
 		char move_buf[32];
 
 		if (curr_move) {
-			snprintf(buf, sizeof(buf), "info currmove %s currmovenumber %d depth %d seldepth %d hashfull %d nodes %ld " \
-				"nps %ld time %ld", moveToString(curr_move, move_buf), curr_move_number, depth, selective_depth, hash_full, 
+			snprintf(buf, sizeof(buf), "info currmove %s currmovenumber %d depth %d seldepth %d hashfull %d nodes %llu " \
+				"nps %llu time %llu", moveToString(curr_move, move_buf), curr_move_number, depth, selective_depth, hash_full, 
 				node_count, nodes_per_sec, time);
 		} 
 		else {
-			snprintf(buf, sizeof(buf), "info depth %d seldepth %d hashfull %d nodes %d nps %d time %ld", depth, 
+			snprintf(buf, sizeof(buf), "info depth %d seldepth %d hashfull %d nodes %d nps %d time %llu", depth, 
 				selective_depth, hash_full, node_count, nodes_per_sec, time);
 		}		
 		output->writeLine(buf);
@@ -126,7 +126,7 @@ public:
 				int score, const char* pv) 
 	{
 		char buf[1024];
-		snprintf(buf, sizeof(buf), "info depth %d seldepth %d score cp %d hashfull %d nodes %ld nps %ld time %ld pv %s", 
+		snprintf(buf, sizeof(buf), "info depth %d seldepth %d score cp %d hashfull %d nodes %llu nps %llu time %llu pv %s", 
 			depth, max_ply, score, hash_full, node_count, nodes_per_second, time, pv);
 
 		output->writeLine(buf);
@@ -139,7 +139,7 @@ public:
 		if (stricmp(params[0], "uci") == 0) {
 			char buf[2048];
 			snprintf(buf, sizeof(buf),  
-				"id name Bobcat 20110220\n" \
+				"id name Bobcat 20110312\n" \
 				"id author Gunnar Harms\n" \
 				"option name Hash type spin default 256 min 8 max 1024\n" \
 				"option name Ponder type check default true\n" \

@@ -67,7 +67,7 @@ public:
 			game->unmakeMove();
 			printf("%7s %11ld\n", moveToString(*m, buf), result.nodes - nodes_start);
 		}
-		printf("total positions is %ld\n", result.nodes);
+		printf("total positions is %llu\n", result.nodes);
 	}
 
 private:

@@ -18,7 +18,7 @@
 
 class Bobcat : public ProtocolListener {
 public:
-	Bobcat() : num_threads(1) {
+	Bobcat() : num_threads(2) {
 	}
 
 	virtual ~Bobcat() {

@@ -46,9 +46,9 @@ BB knight_attacks[64];
 BB king_attacks[64];
 BB colored[2];
 
-#define bbSquare(x) bb_square[x]
-#define bbRank(x) bb_rank[x]
-#define bbFile(x) bb_file[x]
+__forceinline const BB& bbSquare(int sq) { return bb_square[sq]; }
+__forceinline const BB& bbRank(int rank) { return bb_rank[rank]; }
+__forceinline const BB& bbFile(int sq) { return bb_file[sq]; }
 
 __forceinline BB northOne(const BB& bb) { return bb << 8; }
 __forceinline BB southOne(const BB& bb) { return bb >> 8; }

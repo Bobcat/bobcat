@@ -23,7 +23,7 @@ public:
 			return MakeNullMove();
 		}
 		board.makeMove(m);
-		if (check_legal && !(TYPE(m) & CASTLE)) { 
+		if (check_legal && !(moveType(m) & CASTLE)) { 
 			if (board.isAttacked(board.king_square[pos->side_to_move], pos->side_to_move ^ 1)) {
 				board.unmakeMove(m);
 				return false;
@@ -36,17 +36,17 @@ public:
 		if (calculate_in_check) {
 			pos->in_check = board.isAttacked(board.king_square[pos->side_to_move], pos->side_to_move ^ 1);
 		}
-		pos->castle_rights = prev->castle_rights & castle_rights_mask[FROM(m)] & castle_rights_mask[TO(m)]; 
+		pos->castle_rights = prev->castle_rights & castle_rights_mask[moveFrom(m)] & castle_rights_mask[moveTo(m)]; 
 		pos->null_search = prev->null_search;
 		pos->null_moves_in_row = 0;
-		if (isCapture(m) || (PIECE(m) & 7) == Pawn) {
+		if (isCapture(m) || (movePiece(m) & 7) == Pawn) {
 			pos->reversible_half_move_count = 0;
 		}
 		else {
 			pos->reversible_half_move_count = prev->reversible_half_move_count + 1;
 		}
-		if (TYPE(m) & DOUBLEPUSH) {
-			pos->en_passant_square = bb_square(TO(m) + pawn_push_dist[pos->side_to_move]);
+		if (moveType(m) & DOUBLEPUSH) {
+			pos->en_passant_square = bbSquare(moveTo(m) + pawn_push_dist[pos->side_to_move]);
 		} 
 		else {
 			pos->en_passant_square = 0;
@@ -86,7 +86,7 @@ public:
 		uint64 key = 0;
 		for (int piece = Pawn; piece <= King; piece++) {
 			for (int side = 0; side <= 1; side++) {
-				for (BB bb = board.piece[piece | (side << 3)]; bb != 0; reset_lsb(bb)) {
+				for (BB bb = board.piece[piece | (side << 3)]; bb != 0; resetLsb(bb)) {
 					key ^= zobrist_pcsq[piece | (side << 3)][lsb(bb)];
 				}
 			}
@@ -116,33 +116,33 @@ public:
 			return;
 		}
 		// from and to for moving piece
-		if ((PIECE(m) & 7) == Pawn) {
-			pos->pawn_structure_key ^= zobrist_pcsq[PIECE(m)][FROM(m)];
+		if ((movePiece(m) & 7) == Pawn) {
+			pos->pawn_structure_key ^= zobrist_pcsq[movePiece(m)][moveFrom(m)];
 		}
 		else {
-			pos->key ^= zobrist_pcsq[PIECE(m)][FROM(m)];
+			pos->key ^= zobrist_pcsq[movePiece(m)][moveFrom(m)];
 		}
-		if (TYPE(m) & PROMOTION) {
-			pos->key ^= zobrist_pcsq[PROMOTED(m)][TO(m)];
+		if (moveType(m) & PROMOTION) {
+			pos->key ^= zobrist_pcsq[movePromoted(m)][moveTo(m)];
 		}
 		else { 
-			if ((PIECE(m) & 7) == Pawn) {
-				pos->pawn_structure_key ^= zobrist_pcsq[PIECE(m)][TO(m)];
+			if ((movePiece(m) & 7) == Pawn) {
+				pos->pawn_structure_key ^= zobrist_pcsq[movePiece(m)][moveTo(m)];
 			}
 			else {
-				pos->key ^= zobrist_pcsq[PIECE(m)][TO(m)];
+				pos->key ^= zobrist_pcsq[movePiece(m)][moveTo(m)];
 			}
 		}
 		// remove captured piece
 		if (isEpCapture(m)) {
-			pos->pawn_structure_key ^= zobrist_pcsq[CAPTURED(m)][TO(m) + (pos->side_to_move == 1 ? -8 : 8)];
+			pos->pawn_structure_key ^= zobrist_pcsq[moveCaptured(m)][moveTo(m) + (pos->side_to_move == 1 ? -8 : 8)];
 		}
 		else if (isCapture(m)) {
-			if ((CAPTURED(m) & 7) == Pawn) {
-				pos->pawn_structure_key ^= zobrist_pcsq[CAPTURED(m)][TO(m)];
+			if ((moveCaptured(m) & 7) == Pawn) {
+				pos->pawn_structure_key ^= zobrist_pcsq[moveCaptured(m)][moveTo(m)];
 			}
 			else {
-				pos->key ^= zobrist_pcsq[CAPTURED(m)][TO(m)];
+				pos->key ^= zobrist_pcsq[moveCaptured(m)][moveTo(m)];
 			}
 		}
 		// castling rights
@@ -153,8 +153,8 @@ public:
 		// rook move in castle
 		if (isCastleMove(m)) {
 			Piece piece = Rook + sideMask(m);
-			pos->key ^= zobrist_pcsq[piece][rook_castles_from[TO(m)]];
-			pos->key ^= zobrist_pcsq[piece][rook_castles_to[TO(m)]];
+			pos->key ^= zobrist_pcsq[piece][rook_castles_from[moveTo(m)]];
+			pos->key ^= zobrist_pcsq[piece][rook_castles_to[moveTo(m)]];
 		}
 		pos->key ^= pos->pawn_structure_key;
 	}
@@ -259,7 +259,7 @@ public:
 		if (!get_delimiter(&p) || (sq = get_ep_square(&p)) == -1) {
 			return 6;
 		}
-		pos->en_passant_square = sq < 64 ? bb_square(sq) : 0;
+		pos->en_passant_square = sq < 64 ? bbSquare(sq) : 0;
 		pos->reversible_half_move_count = 0;
 
 		if (pos->side_to_move == 1) {

@@ -31,9 +31,9 @@ public:
 	}
 	
 	void addPiece(const Piece p, const Side side, const Square sq) {
-		piece[p + (side << 3)] |= bb_square(sq);
-		occupied_by_side[side] |= bb_square(sq);
-		occupied |= bb_square(sq);
+		piece[p + (side << 3)] |= bbSquare(sq);
+		occupied_by_side[side] |= bbSquare(sq);
+		occupied |= bbSquare(sq);
 		board[sq] = p + (side << 3);
 		if (p == King) {
 			king_square[side] = sq;
@@ -41,74 +41,74 @@ public:
 	}
 
 	__forceinline void removePiece(const int p, const int sq) {
-		piece[p] &= ~bb_square(sq);
-		occupied_by_side[p >> 3] &= ~bb_square(sq);
-		occupied &= ~bb_square(sq);
+		piece[p] &= ~bbSquare(sq);
+		occupied_by_side[p >> 3] &= ~bbSquare(sq);
+		occupied &= ~bbSquare(sq);
 		board[sq] = NoPiece;
 	}
 
 	__forceinline void addPiece(const int p, const int sq) {
-		piece[p] |= bb_square(sq);
-		occupied_by_side[p >> 3] |= bb_square(sq);
-		occupied |= bb_square(sq);
+		piece[p] |= bbSquare(sq);
+		occupied_by_side[p >> 3] |= bbSquare(sq);
+		occupied |= bbSquare(sq);
 		board[sq] = p;
 	}
 
 	//__forceinline 
 	void makeMove(const Move m) {
-		removePiece(PIECE(m), FROM(m));
+		removePiece(movePiece(m), moveFrom(m));
 		if (isEpCapture(m)) {
-			if (PIECE(m) < 8) {
-				removePiece(CAPTURED(m), TO(m) - 8);
+			if (movePiece(m) < 8) {
+				removePiece(moveCaptured(m), moveTo(m) - 8);
 			}
 			else {
-				removePiece(CAPTURED(m), TO(m) + 8);
+				removePiece(moveCaptured(m), moveTo(m) + 8);
 			}
 		}
 		else if (isCapture(m)) {
-			removePiece(CAPTURED(m), TO(m));
+			removePiece(moveCaptured(m), moveTo(m));
 		}
-		if (TYPE(m) & PROMOTION) {
-			addPiece(PROMOTED(m), TO(m));
+		if (moveType(m) & PROMOTION) {
+			addPiece(movePromoted(m), moveTo(m));
 		}
 		else {
-			addPiece(PIECE(m), TO(m));
+			addPiece(movePiece(m), moveTo(m));
 		}
 		if (isCastleMove(m)) {
-			removePiece(Rook + sideMask(m), rook_castles_from[TO(m)]);
-			addPiece(Rook + sideMask(m), rook_castles_to[TO(m)]);
+			removePiece(Rook + sideMask(m), rook_castles_from[moveTo(m)]);
+			addPiece(Rook + sideMask(m), rook_castles_to[moveTo(m)]);
 		}
-		if ((PIECE(m) & 7) == King) {
-			king_square[side(m)] = TO(m);
+		if ((movePiece(m) & 7) == King) {
+			king_square[side(m)] = moveTo(m);
 		}
 	}
 
 	//__forceinline
 	void unmakeMove(const Move m) {
-		if (TYPE(m) & PROMOTION) {
-			removePiece(PROMOTED(m), TO(m));
+		if (moveType(m) & PROMOTION) {
+			removePiece(movePromoted(m), moveTo(m));
 		}
 		else {
-			removePiece(PIECE(m), TO(m));
+			removePiece(movePiece(m), moveTo(m));
 		}
 		if (isEpCapture(m)) {
-			if (PIECE(m) < 8) {
-				addPiece(CAPTURED(m), TO(m) - 8);
+			if (movePiece(m) < 8) {
+				addPiece(moveCaptured(m), moveTo(m) - 8);
 			}
 			else {
-				addPiece(CAPTURED(m), TO(m) + 8);
+				addPiece(moveCaptured(m), moveTo(m) + 8);
 			}
 		}
 		else if (isCapture(m)) {
-			addPiece(CAPTURED(m), TO(m));
+			addPiece(moveCaptured(m), moveTo(m));
 		}
-		addPiece(PIECE(m), FROM(m));
+		addPiece(movePiece(m), moveFrom(m));
 		if (isCastleMove(m)) {
-			removePiece(Rook + sideMask(m), rook_castles_to[TO(m)]);
-			addPiece(Rook + sideMask(m), rook_castles_from[TO(m)]);
+			removePiece(Rook + sideMask(m), rook_castles_to[moveTo(m)]);
+			addPiece(Rook + sideMask(m), rook_castles_from[moveTo(m)]);
 		}
-		if ((PIECE(m) & 7) == King) {
-			king_square[side(m)] = FROM(m);
+		if ((movePiece(m) & 7) == King) {
+			king_square[side(m)] = moveFrom(m);
 		}
 	}
 
@@ -124,14 +124,14 @@ public:
 
 		while (pinners) {
 			pinned_pieces |= bb_between[lsb(pinners)][sq] & occupied_by_side[side];
-			reset_lsb(pinners);
+			resetLsb(pinners);
 		}
 		pinners = xrayRookAttacks(occupied, occupied_by_side[side], sq) & 
 			(piece[Rook + (opp << 3)] | piece[Queen | (opp << 3)]);
 
 		while (pinners) {
 			pinned_pieces |= bb_between[lsb(pinners)][sq] & occupied_by_side[side];
-			reset_lsb(pinners);
+			resetLsb(pinners);
 		}
 		return pinned_pieces;
 	}
@@ -149,27 +149,27 @@ public:
 	}
 
 	__forceinline bool isPawnPassed(const Square sq, const Side side) {
-		return (passed_pawn_front_spans[side][sq] & piece[Pawn + ((side ^ 1) << 3)]) == 0;
+		return (passed_pawn_front_span[side][sq] & piece[Pawn + ((side ^ 1) << 3)]) == 0;
 	}
 
 	__forceinline bool isPieceOnSquare(const Piece p, const Square sq, const Side side) {
-		return ((bb_square(sq) & piece[p + (side << 3)]) != 0);
+		return ((bbSquare(sq) & piece[p + (side << 3)]) != 0);
 	}
 
 	__forceinline bool isPieceOnFile(const Piece p, const Square sq, const Side side) {
-		return ((bb_file(sq) & piece[p + (side << 3)]) != 0);
+		return ((bbFile(sq) & piece[p + (side << 3)]) != 0);
 	}
 
 	__forceinline bool isPawnIsolated(const Square sq, const Side side) {
-		return (piece[Pawn + (side << 3)] & neighbourFiles(bb_square(sq))) == 0;
+		return (piece[Pawn + (side << 3)] & neighbourFiles(bbSquare(sq))) == 0;
 	}
 
 	__forceinline bool isPawnBehind(const Square sq, const Side side) { 
-		BB bb = bb_square(sq);
+		BB bb = bbSquare(sq);
 		return (piece[Pawn + (side << 3)] & (pawnFill[side ^ 1](westOne(bb) | eastOne(bb)))) == 0;
 	}
 
-	#define isOccupied(x) (bb_square(x) & occupied)
+	#define isOccupied(x) (bbSquare(x) & occupied)
 
 	__forceinline bool isCastleAllowed(Square to) {
 		switch (to) {

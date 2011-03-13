@@ -116,7 +116,7 @@ protected:
 				const Move m = move_data->move;
 
 				if (makeMove(m)) {
-					Depth next_depth = getNextDepth(true, true, depth, ++move_count, 5, m, alpha, move_data->score);
+					Depth next_depth = getNextDepth(true, depth, ++move_count, 5, m, alpha, move_data->score);
 
 					if (search_depth > 10*2 && search_time > 5000) {
 						postInfo(m, move_count, search_depth/2, max_ply, node_count, nodesPerSecond(), timeUsed(), 
@@ -125,16 +125,16 @@ protected:
 
 					Score score;
 					if (move_count == 1) {
-						score = searchNextDepth(next_depth, -beta, -alpha, true, true);
+						score = searchNextDepth(next_depth, -beta, -alpha, true);
 					}
 					else {
-						score = searchNextDepth(next_depth, -alpha - 1, -alpha, false, false);
+						score = searchNextDepth(next_depth, -alpha - 1, -alpha, false);
 						if (score > alpha && score < beta) {
-							score = searchNextDepth(next_depth, -beta, -alpha, true, true);
+							score = searchNextDepth(next_depth, -beta, -alpha, true);
 						}
 					}
 					if (score > alpha && next_depth < depth - 1*2) {
-						score = searchNextDepth(depth - 1*2, -beta, -alpha, move_count == 1, true);
+						score = searchNextDepth(depth - 1*2, -beta, -alpha, true);
 					}
 
 					unmakeMove();
@@ -184,13 +184,11 @@ protected:
 		pos->gotoMove(0);
 	}
 
-	__forceinline Score searchNextDepth(const Depth depth, const Score alpha, const Score beta, bool is_left_most_node, 
-		bool is_pv_node) 
-	{
-		return depth <= 0 ? -searchQuiesce(alpha, beta) : -searchAll(depth, alpha, beta, is_left_most_node, is_pv_node);
+	__forceinline Score searchNextDepth(const Depth depth, const Score alpha, const Score beta, bool is_pv_node) {
+		return depth <= 0 ? -searchQuiesce(alpha, beta) : -searchAll(depth, alpha, beta, is_pv_node);
 	}
 
- 	Score searchAll(const Depth depth, Score alpha, const Score beta, const bool is_left_most_node, const bool is_pv_node) {
+ 	Score searchAll(const Depth depth, Score alpha, const Score beta, const bool is_pv_node) {
 		if (game->isRepetition()) {
 			return searchNodeScore(0);
 		}
@@ -208,7 +206,7 @@ protected:
 		Score score;
 		if (okToTryNullMove(depth, beta, is_pv_node)) {
 			makeMove(0);
-			score = searchNextDepth(depth - 4*2 - (depth/16)*2, -beta, -beta + 1, false, false);
+			score = searchNextDepth(depth - 4*2 - (depth/16)*2, -beta, -beta + 1, false);
 			unmakeMove();
 			if (score >= beta) {
 				return searchNodeScore(score);
@@ -233,11 +231,11 @@ protected:
 
 		if (!pos->transp_move && pos->eval_score >= beta - 100) {
 			if (is_pv_node && depth >= 4*2) {
-				score = searchAll(depth - 2*2, alpha, beta, true, true);
+				score = searchAll(depth - 2*2, alpha, beta, true);
 				findTranspositionRefineEval(depth, alpha, beta);
 			}
 			else if (!is_pv_node && depth >= 8*2) {
-				score = searchAll(depth/2, alpha, beta, true, true);
+				score = searchAll(depth/2, alpha, beta, false);
 				findTranspositionRefineEval(depth, alpha, beta);
 			}
 		}
@@ -257,8 +255,7 @@ protected:
 			const Move m = move_data->move;
 
 			if (makeMove(m)) {
-				Depth next_depth = getNextDepth(is_pv_node, is_left_most_node, depth, ++move_count, 5, m, alpha, 
-					move_data->score);
+				Depth next_depth = getNextDepth(is_pv_node, depth, ++move_count, 5, m, alpha, move_data->score);
 
 				if (okToPruneLastMove(best_score, next_depth, depth, alpha, is_pv_node)) {
 					unmakeMove();
@@ -266,17 +263,16 @@ protected:
 				}
 
 				if (move_count == 1) {
-					score = searchNextDepth(next_depth, -beta, -alpha, true, is_pv_node);
+					score = searchNextDepth(next_depth, -beta, -alpha, is_pv_node);
 				}
 				else {
-					score = searchNextDepth(next_depth, -alpha - 1, -alpha, false, false);
-
+					score = searchNextDepth(next_depth, -alpha - 1, -alpha, false);
 					if (score > alpha && score < beta) {
-						score = searchNextDepth(next_depth, -beta, -alpha, true, true);
+						score = searchNextDepth(next_depth, -beta, -alpha, true);
 					}
 				}
 				if (score > alpha && next_depth < depth - 1*2) {
-					score = searchNextDepth(depth - 1*2, -beta, -alpha, move_count == 1, is_pv_node);
+					score = searchNextDepth(depth - 1*2, -beta, -alpha, is_pv_node);
 				}
 
 				unmakeMove();
@@ -361,7 +357,7 @@ protected:
 			const Move m = move_data->move;
 
 			if (!pos->in_check && !isPromotion(m)) {
-				if (move_data->score < 0 || pos->eval_score + piece_value(CAPTURED(m)) + 150 < alpha) {
+				if (move_data->score < 0 || pos->eval_score + piece_value(moveCaptured(m)) + 150 < alpha) {
 					continue;
 				}
 			}
@@ -390,11 +386,11 @@ protected:
 		return storeSearchNodeScore(best_score, 0, nodeType(best_score, orig_alpha, beta), best_move);
 	}
 
-	__forceinline Depth getNextDepth(const bool is_pv_node, const bool is_left_most_node, const Depth depth, 
-		const int move_count, const int L, const Move m, const Score alpha, const int move_score) 
+	__forceinline Depth getNextDepth(const bool is_pv_node, const Depth depth, const int move_count, const int L, 
+		const Move m, const Score alpha, const int move_score) 
 	{
-		if (pos->in_check) {
-			return is_pv_node ? depth : (is_left_most_node ? depth - 1 : depth - 1*2);
+		if (pos->in_check && (pos - 1)->eval_score > alpha - 100) {
+			return depth;
 		}
 
 		if (!isPassedPawnMove(m) && !isQueenPromotion(m) && !isCapture(m) && move_count >= L) {
@@ -408,13 +404,13 @@ protected:
 			pos = game->pos;
 			Side us = pos->side_to_move, them = us ^ 1;	
 			pos->eval_score = eval->evaluate();
-			if (eval->attacks(us) & bb_square(board->king_square[them])) {
+			if (eval->attacks(us) & bbSquare(board->king_square[them])) {
 				game->unmakeMove();
 				pos = game->pos;
 				return false;
 			}
 			pos->in_check = (eval->attacks(them) & 
-				bb_square(board->king_square[us])) != 0;
+				bbSquare(board->king_square[us])) != 0;
 
 			ply++;
 			if (ply > max_ply) {
@@ -506,8 +502,8 @@ protected:
 	}
 
 	__forceinline void updateHistoryScores(const Move m, const Depth depth) {
-		history_scores[PIECE(m)][TO(m)] += (depth/2)*(depth/2);
-		if (history_scores[PIECE(m)][TO(m)] > 50000) {
+		history_scores[movePiece(m)][moveTo(m)] += (depth/2)*(depth/2);
+		if (history_scores[movePiece(m)][moveTo(m)] > 50000) {
 			for (int i = 0; i < 16; i++) for (int k = 0; k < 64; k++) {
 				history_scores[i][k] >>= 2; 
 			}
@@ -586,8 +582,8 @@ protected:
 			move_data.score = 890000;
 		}
 		else if (isCapture(m)) {
-			Score value_captured = piece_value(CAPTURED(m));
-			Score value_piece = piece_value(PIECE(m));
+			Score value_captured = piece_value(moveCaptured(m));
+			Score value_piece = piece_value(movePiece(m));
 			if (value_piece == 0) {
 				value_piece = 1800;
 			}
@@ -605,7 +601,7 @@ protected:
 			}
 		}
 		else if (isPromotion(m)) {
-			move_data.score = 70000 + piece_value(PROMOTED(m));
+			move_data.score = 70000 + piece_value(movePromoted(m));
 		}
 		else if (m == killer_moves[0][ply]) {
 			move_data.score = 125000;
@@ -617,7 +613,7 @@ protected:
 			move_data.score = 124998;
 		}
 		else {
-			move_data.score = history_scores[PIECE(m)][TO(m)];
+			move_data.score = history_scores[movePiece(m)][moveTo(m)];
 		}
 	}
 
@@ -687,11 +683,11 @@ protected:
 	}
 
 	__forceinline bool isPassedPawnMove(const Move& m) const {
-		return (PIECE(m) & 7) == Pawn && board->isPawnPassed(TO(m), side(m));
+		return (movePiece(m) & 7) == Pawn && board->isPawnPassed(moveTo(m), side(m));
 	}
 
 	__forceinline bool isPawnMove(const Move& m) const {
-		return (PIECE(m) & 7) == Pawn;
+		return (movePiece(m) & 7) == Pawn;
 	}
 
 	struct PVEntry {

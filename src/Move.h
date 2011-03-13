@@ -18,19 +18,18 @@
 
 typedef int Move;
 
-// to do: make inlined functions
-#define PIECE(x) ((x >> 26) & 15)
-#define SETPIECE(x,y) (x |= (y) << 26)
-#define CAPTURED(x) ((x >> 22) & 15)
-#define SETCAPTURED(x,y) (x |= (y) << 22)
-#define PROMOTED(x) ((x >> 18) & 15)
-#define SETPROMOTED(x,y) (x |= (y) << 18)
-#define TYPE(x) ((x >> 12) & 63)
-#define SETTYPE(x,y) (x |= (y) << 12)
-#define FROM(x) ((x >> 6) & 63)
-#define SETFROM(x,y) (x |= (y) << 6)
-#define TO(x) (x & 63)
-#define SETTO(x,y) (x |= (y))
+__forceinline int movePiece(const Move& move) { return (move >> 26) & 15; }
+__forceinline void moveSetPiece(Move& move, const int piece) { move |= (piece << 26); }
+__forceinline int moveCaptured(const Move& move) { return (move >> 22) & 15; }
+__forceinline void moveSetCaptured(Move& move, const int piece) { move |= (piece << 22); }
+__forceinline int movePromoted(const Move& move) { return (move >> 18) & 15; }
+__forceinline void moveSetPromoted(Move& move, const int piece) { move |= (piece << 18); }
+__forceinline int moveType(const Move& move) { return (move >> 12) & 63; }
+__forceinline void moveSetType(Move& move, const int type) { move |= (type << 12); }
+__forceinline int moveFrom(const Move& move) { return (move >> 6) & 63; }
+__forceinline void moveSetFrom(Move& move, const int sq) { move |= (sq << 6); }
+__forceinline int moveTo(const Move& move) { return move & 63; }
+__forceinline void moveSetTo(Move& move, const int sq) { move |= sq; }
 
 __forceinline Side side(const Move& m) {
 	return (m >> 29) & 1;
@@ -49,23 +48,23 @@ const int CAPTURE = 32;
 const int ALLMOVES = 63;
 
 __forceinline int isCapture(const Move& m) { 
-	return TYPE(m) & (CAPTURE | EPCAPTURE); 
+	return moveType(m) & (CAPTURE | EPCAPTURE); 
 }
 
 __forceinline int isEpCapture(const Move& m) { 
-	return TYPE(m) & EPCAPTURE; 
+	return moveType(m) & EPCAPTURE; 
 }
 
 __forceinline int isCastleMove(const Move& m) { 
-	return TYPE(m) & CASTLE; 
+	return moveType(m) & CASTLE; 
 }
 
 __forceinline int isPromotion(const Move& m) { 
-	return TYPE(m) & PROMOTION; 
+	return moveType(m) & PROMOTION; 
 }
 
 __forceinline int isQueenPromotion(const Move& m) { 
-	return isPromotion(m) && (PROMOTED(m) & 7) == Queen; 
+	return isPromotion(m) && (movePromoted(m) & 7) == Queen; 
 }
 
 __forceinline void initMove(Move& move, const Piece piece, 
@@ -73,19 +72,19 @@ __forceinline void initMove(Move& move, const Piece piece,
 	const int type, const Piece promoted) 
 {
 	move = 0;
-	SETPIECE(move, piece);
-	SETCAPTURED(move, captured);
-	SETPROMOTED(move, promoted);
-	SETFROM(move, from);
-	SETTO(move, to);
-	SETTYPE(move, type);
+	moveSetPiece(move, piece);
+	moveSetCaptured(move, captured);
+	moveSetPromoted(move, promoted);
+	moveSetFrom(move, from);
+	moveSetTo(move, to);
+	moveSetType(move, type);
 }
 
 const char* moveToString(const Move m, char* buf) {
 	char tmp1[12], tmp2[12], tmp3[12];
-	sprintf(buf, "%s%s", squareToString(FROM(m), tmp1), squareToString(TO(m), tmp2));
+	sprintf(buf, "%s%s", squareToString(moveFrom(m), tmp1), squareToString(moveTo(m), tmp2));
 	if (isPromotion(m)) {
-		sprintf(&buf[strlen(buf)], "%s", piece_str(PROMOTED(m) & 7, tmp3));
+		sprintf(&buf[strlen(buf)], "%s", piece_str(movePromoted(m) & 7, tmp3));
 	}
 	return buf;
 }

@@ -125,8 +125,8 @@ protected:
 				pawn_eval_mg[c] += open_file ? -20 : -8;
 				pawn_eval_eg[c] += -20;
 			}
-			resetLsb(bb);
-			if (bbFile(sq) & bb) {
+			reset_lsb(bb);
+			if (bb_file(sq) & bb) {
 				pawn_eval_mg[c] += -15; 
 				pawn_eval_eg[c] += -15;
 			}
@@ -134,7 +134,7 @@ protected:
 	}
 
 	__forceinline void evalKnightsOneSide(const int c) {
-		for (BB knights = board->knights(c); knights; resetLsb(knights)) {
+		for (BB knights = board->knights(c); knights; reset_lsb(knights)) {
 			Square sq = lsb(knights);
 			poseval[c] += knight_pcsq[flip[c][sq]];
 			const BB& attacks = knight_attacks[sq];
@@ -144,7 +144,7 @@ protected:
 			all_attacks[c] |= attacks;
 			bool outpost = (passed_pawn_front_span[c][sq] & (pawns(c ^  1) & ~pawn_front_span[c][sq])) == 0;
 
-			if (outpost && (pawn_attacks[c] & bbSquare(sq))) {
+			if (outpost && (pawn_attacks[c] & bb_square(sq))) {
 				int d = chebyshev_distance[sq][kingSq(c ^ 1)];
 				poseval[c] += 5*(7-d);
 				poseval_eg[c] += 2*(7-d);
@@ -156,9 +156,9 @@ protected:
 	}
 
 	__forceinline void evalBishopsOneSide(const int c) {
-		for (BB bishops = board->bishops(c); bishops; resetLsb(bishops)) {
+		for (BB bishops = board->bishops(c); bishops; reset_lsb(bishops)) {
 			Square sq = lsb(bishops);
-			const BB& bbsq = bbSquare(sq);
+			const BB& bbsq = bb_square(sq);
 
 			poseval[c] += bishop_pcsq[flip[c][sq]];
 			const BB& attacks = Bmagic(sq, occupied);
@@ -187,7 +187,7 @@ protected:
 	}
 
 	__forceinline void evalRooksOneSide(const int c) {
-		for (BB rooks = board->rooks(c); rooks; resetLsb(rooks)) {
+		for (BB rooks = board->rooks(c); rooks; reset_lsb(rooks)) {
 			Square sq = lsb(rooks);
 			if (!board->isPieceOnFile(Pawn, sq, c)) { 
 				if (!board->isPieceOnFile(Pawn, sq, c ^ 1)) {
@@ -197,7 +197,7 @@ protected:
 					poseval[c] += 10;
 				}
 			}
-			if (bbSquare(sq) & rank_7[c]) {
+			if (bb_square(sq) & rank_7[c]) {
 				poseval[c] += 20;
 			}
 			const BB& attacks = Rmagic(sq, occupied);
@@ -213,9 +213,9 @@ protected:
 	}
 
 	__forceinline void evalQueensOneSide(const int c) {
-		for (BB queens = board->queens(c); queens; resetLsb(queens)) {
+		for (BB queens = board->queens(c); queens; reset_lsb(queens)) {
 			Square sq = lsb(queens);
-			const BB& bbsq = bbSquare(sq);
+			const BB& bbsq = bb_square(sq);
 			poseval_mg[c] += queen_mg_pcsq[flip[c][sq]];
 			if (bbsq & rank_7[c]) {
 				poseval[c] += 20;
@@ -249,7 +249,7 @@ protected:
 
 	__forceinline void evalKingOneSide(const int c) {
 		Square sq = lsb(board->king(c));
-		const BB& bbsq = bbSquare(sq);
+		const BB& bbsq = bb_square(sq);
 
 		poseval_mg[c] += king_mg_pcsq[flip[c][sq]];
 		poseval_eg[c] += king_eg_pcsq[flip[c][sq]];
@@ -260,11 +260,11 @@ protected:
 		poseval_mg[c] += board->queens(c ^ 1) ?  pawn_shield : pawn_shield/2; 
 		
 		if (((c == 0) && 
-				(((sq == f1 || sq == g1) && (bbSquare(h1) & board->rooks(0))) || 
-				((sq == c1 || sq == b1) && (bbSquare(a1) & board->rooks(0))))) ||
+				(((sq == f1 || sq == g1) && (bb_square(h1) & board->rooks(0))) || 
+				((sq == c1 || sq == b1) && (bb_square(a1) & board->rooks(0))))) ||
 			((c == 1) && 
-				(((sq == f8 || sq == g8) && (bbSquare(h8) & board->rooks(1))) || 
-				((sq == c8 || sq == b8) && (bbSquare(a8) & board->rooks(1))))))
+				(((sq == f8 || sq == g8) && (bb_square(h8) & board->rooks(1))) || 
+				((sq == c8 || sq == b8) && (bb_square(a8) & board->rooks(1))))))
 		{
 			poseval_mg[c] += -180;
 		}
@@ -272,8 +272,8 @@ protected:
 	}
 
 	__forceinline void evalPassedPawnsOneSide(int c) {
-		for (BB files = pawnp ? pawnp->passed_pawn_files[c] : 0; files; resetLsb(files)) {
-			for (BB bb = bbFile(lsb(files)) & pawns(c); bb; resetLsb(bb)) {
+		for (BB files = pawnp ? pawnp->passed_pawn_files[c] : 0; files; reset_lsb(files)) {
+			for (BB bb = bb_file(lsb(files)) & pawns(c); bb; reset_lsb(bb)) {
 				int sq = lsb(bb);
 
 				const BB& front_span = pawn_front_span[c][sq];
@@ -369,11 +369,11 @@ protected:
 };
 
 BB Eval::bishop_trapped_a7h7[2] = { 
-	bbSquare(a7) | bbSquare(h7), bbSquare(a2) | bbSquare(h2) 
+	bb_square(a7) | bb_square(h7), bb_square(a2) | bb_square(h2) 
 };
 BB Eval::pawns_trap_bishop_a7h7[2][2] = { 
-	{ bbSquare(b6) | bbSquare(c7), bbSquare(b3) | bbSquare(c2) }, 
-	{ bbSquare(g6) | bbSquare(f7), bbSquare(g3) | bbSquare(f2) } 
+	{ bb_square(b6) | bb_square(c7), bb_square(b3) | bb_square(c2) }, 
+	{ bb_square(g6) | bb_square(f7), bb_square(g3) | bb_square(f2) } 
 };
 int Eval::bishop_mobility_mg[14] = { 
 	-15, -5, 0, 6, 12, 16, 20, 22, 22, 24, 24, 24, 26, 26 

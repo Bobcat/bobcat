@@ -111,24 +111,24 @@ public:
 
 	__forceinline bool isPseudoLegal(const Move m) {
 		// TO DO en passant moves and castle moves
-		if ((piece[movePiece(m)] & bbSquare(moveFrom(m))) == 0) {
+		if ((piece[PIECE(m)] & bb_square(FROM(m))) == 0) {
 			return false;
 		}
 		if (isCapture(m)) {
-			const BB& bb_to = bbSquare(moveTo(m));
+			const BB& bb_to = bb_square(TO(m));
 			if ((occupied_by_side[side(m) ^ 1] & bb_to) == 0) {
 				return false;
 			}
-			if ((piece[moveCaptured(m)] & bb_to) == 0) {
+			if ((piece[CAPTURED(m)] & bb_to) == 0) {
 				return false;
 			}
 		}
-		else if (occupied & bbSquare(moveTo(m))) {
+		else if (occupied & bb_square(TO(m))) {
 			return false;
 		}
-		Piece piece = movePiece(m) & 7;
+		Piece piece = PIECE(m) & 7;
 		if (piece == Bishop || piece == Rook || piece == Queen) {
-			if (bb_between[moveFrom(m)][moveTo(m)] & occupied) {
+			if (bb_between[FROM(m)][TO(m)] & occupied) {
 				return false;
 			}
 		}
@@ -230,37 +230,37 @@ private:
 		BB bb;
 		int offset = side_to_move << 3;
 		Square from;
-		for (bb = piece[Queen + offset]; bb; resetLsb(bb)) {
+		for (bb = piece[Queen + offset]; bb; reset_lsb(bb)) {
 			from = lsb(bb);
 			addMoves(Queen + offset, from, board->queenAttacks(from) & to_squares);
 		}
-		for (bb = piece[Rook + offset]; bb; resetLsb(bb)) {
+		for (bb = piece[Rook + offset]; bb; reset_lsb(bb)) {
 			from = lsb(bb);
 			addMoves(Rook + offset, from, board->rookAttacks(from) & to_squares);
 		}
-		for (bb = piece[Bishop + offset]; bb; resetLsb(bb)) {
+		for (bb = piece[Bishop + offset]; bb; reset_lsb(bb)) {
 			from = lsb(bb);
 			addMoves(Bishop + offset, from, board->bishopAttacks(from) & to_squares);
 		}
-		for (bb = piece[Knight + offset]; bb; resetLsb(bb)) {
+		for (bb = piece[Knight + offset]; bb; reset_lsb(bb)) {
 			from = lsb(bb);
 			addMoves(Knight + offset, from, board->knightAttacks(from) & to_squares);
 		}
-		for (bb = piece[King + offset]; bb; resetLsb(bb)) {
+		for (bb = piece[King + offset]; bb; reset_lsb(bb)) {
 			from = lsb(bb);
 			addMoves(King + offset, from, board->kingAttacks(from) & to_squares);
 		}
 	}
 
 	__forceinline void addMoves(const Piece piece, const Square from, const BB& attacks) {
-		for (BB bb = attacks; bb; resetLsb(bb)) {
+		for (BB bb = attacks; bb; reset_lsb(bb)) {
 			Square to = lsb(bb);
 			addMove(piece | (side_to_move << 3), from, to, board->getPiece(to) == NoPiece ? QUIET : CAPTURE);
 		}
 	}
 
 	__forceinline void addPawnMoves(const BB& to_squares, const int* dist, const Move type) {
-		for (BB bb = to_squares; bb; resetLsb(bb)) {
+		for (BB bb = to_squares; bb; reset_lsb(bb)) {
 			Square to = lsb(bb);
 			Square from = to - dist[side_to_move];
 			if (rank(to) == 0 || rank(to) == 7) {
@@ -279,7 +279,7 @@ private:
 	}
 
 	__forceinline bool isLegal(const Move m, const Piece piece, const Square from, Move type) {
-		if ((pinned & bbSquare(from)) || in_check || (piece & 7) == King || (type & EPCAPTURE)) {
+		if ((pinned & bb_square(from)) || in_check || (piece & 7) == King || (type & EPCAPTURE)) {
 			board->makeMove(m);
 			if (board->isAttacked(board->king_square[side_to_move], side_to_move ^ 1)) {
 				board->unmakeMove(m);

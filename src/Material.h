@@ -53,11 +53,11 @@ public:
 
 	__forceinline void makeMove(const Move m) {
 		if (isCapture(m)) {
-			remove(moveCaptured(m));
+			remove(CAPTURED(m));
 		}
-		if (moveType(m) & PROMOTION) {
-			remove(movePiece(m));
-			add(movePromoted(m));
+		if (TYPE(m) & PROMOTION) {
+			remove(PIECE(m));
+			add(PROMOTED(m));
 		}
 	}
 

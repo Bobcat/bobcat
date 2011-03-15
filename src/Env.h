@@ -24,6 +24,7 @@
 #endif
 
 #include <windows.h>
+#include <intrin.h>
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4706)

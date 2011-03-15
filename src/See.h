@@ -29,7 +29,7 @@ public:
 		
 		int score;
 		if (!board->isAttacked(board->king_square[side(move)], side(move) ^ 1)) {
-			score = seeRec(materialChange(move), nextToCapture(move), TO(move), side(move) ^ 1);
+			score = seeRec(materialChange(move), nextToCapture(move), moveTo(move), side(move) ^ 1);
 		}
 		else {
 			score = SEE_INVALID_SCORE;
@@ -40,17 +40,17 @@ public:
 
 	int seeLastMove(const Move move) {
 		initialiseSeeMove();
-		return seeRec(materialChange(move), nextToCapture(move), TO(move), side(move) ^ 1);
+		return seeRec(materialChange(move), nextToCapture(move), moveTo(move), side(move) ^ 1);
 	}
 
 private:
 	__forceinline int materialChange(const Move move) {
-		return  (isCapture(move) ? piece_value(CAPTURED(move)) : 0) + (isPromotion(move) ? 
-			(piece_value(PROMOTED(move)) - piece_value(Pawn)) : 0);
+		return  (isCapture(move) ? piece_value(moveCaptured(move)) : 0) + (isPromotion(move) ? 
+			(piece_value(movePromoted(move)) - piece_value(Pawn)) : 0);
 	}
 
 	__forceinline int nextToCapture(const Move move) {
-		return isPromotion(move) ? PROMOTED(move) : PIECE(move);
+		return isPromotion(move) ? movePromoted(move) : movePiece(move);
 	}
 
 	int seeRec(const int material_change, const Piece next_to_capture, const Square to, const Side side_to_move) {
@@ -77,7 +77,7 @@ private:
 		}
 		while (1);
 
-		int score = -seeRec(materialChange(move), nextToCapture(move), TO(move), side(move) ^ 1);
+		int score = -seeRec(materialChange(move), nextToCapture(move), moveTo(move), side(move) ^ 1);
 		
 		board->unmakeMove(move);
 
@@ -89,7 +89,7 @@ private:
 			case Pawn:
 				if (current_piece_bitboard[side] & pawn_captures[to | ((side ^ 1) << 6)]) {
 					from = lsb(current_piece_bitboard[side] & pawn_captures[to | ((side ^ 1) << 6)]);
-					current_piece_bitboard[side] &= ~bb_square(from);
+					current_piece_bitboard[side] &= ~bbSquare(from);
 					return true;
 				}
 				current_piece[side]++;
@@ -97,7 +97,7 @@ private:
 			case Knight:
 				if (current_piece_bitboard[side] & board->knightAttacks(to)) {
 					from = lsb(current_piece_bitboard[side] & board->knightAttacks(to));
-					current_piece_bitboard[side] &= ~bb_square(from);
+					current_piece_bitboard[side] &= ~bbSquare(from);
 					return true;
 				}
 				current_piece[side]++;
@@ -105,7 +105,7 @@ private:
 			case Bishop:
 				if (current_piece_bitboard[side] & board->bishopAttacks(to)) {
 					from = lsb(current_piece_bitboard[side] & board->bishopAttacks(to));
-					current_piece_bitboard[side] &= ~bb_square(from);
+					current_piece_bitboard[side] &= ~bbSquare(from);
 					return true;
 				}
 				current_piece[side]++;
@@ -113,7 +113,7 @@ private:
 			case Rook:
 				if (current_piece_bitboard[side] & board->rookAttacks(to)) {
 					from = lsb(current_piece_bitboard[side] & board->rookAttacks(to));
-					current_piece_bitboard[side] &= ~bb_square(from);
+					current_piece_bitboard[side] &= ~bbSquare(from);
 					return true;
 				}
 				current_piece[side]++;
@@ -121,7 +121,7 @@ private:
 			case Queen:
 				if (current_piece_bitboard[side] & board->queenAttacks(to)) {
 					from = lsb(current_piece_bitboard[side] & board->queenAttacks(to));
-					current_piece_bitboard[side] &= ~bb_square(from);
+					current_piece_bitboard[side] &= ~bbSquare(from);
 					return true;
 				}
 				current_piece[side]++;
@@ -129,7 +129,7 @@ private:
 			case King:
 				if (current_piece_bitboard[side] & board->kingAttacks(to)) {
 					from = lsb(current_piece_bitboard[side] & board->kingAttacks(to));
-					current_piece_bitboard[side] &= ~bb_square(from);
+					current_piece_bitboard[side] &= ~bbSquare(from);
 					return true;
 				}
 			default: 

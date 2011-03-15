@@ -47,9 +47,9 @@ public:
 		generateMoves();
 		while (const MoveData* move_data = nextMove()) {
 			const Move* move = &move_data->move;
-			if (FROM(*move) == from && TO(*move) == to) {
+			if (moveFrom(*move) == from && moveTo(*move) == to) {
 				if (isPromotion(*move)) {
-					if (tolower(m[strlen(m) - 1]) != piece_notation[PROMOTED(*move) & 7]) {
+					if (tolower(m[strlen(m) - 1]) != piece_notation[movePromoted(*move) & 7]) {
 						continue;
 					}
 				}

@@ -357,7 +357,7 @@ protected:
 			const Move m = move_data->move;
 
 			if (!pos->in_check && !isPromotion(m)) {
-				if (move_data->score < 0 || pos->eval_score + piece_value(CAPTURED(m)) + 150 < alpha) {
+				if (move_data->score < 0 || pos->eval_score + piece_value(moveCaptured(m)) + 150 < alpha) {
 					continue;
 				}
 			}
@@ -389,8 +389,8 @@ protected:
 	__forceinline Depth getNextDepth(const bool is_pv_node, const Depth depth, const int move_count, const int L, 
 		const Move m, const Score alpha, const int move_score) 
 	{
-		if (pos->in_check && (pos - 1)->eval_score > alpha - 100) {
-			return depth;
+		if (pos->in_check) {
+			return is_pv_node ? depth : depth - 1*2; 
 		}
 
 		if (!isPassedPawnMove(m) && !isQueenPromotion(m) && !isCapture(m) && move_count >= L) {
@@ -404,13 +404,13 @@ protected:
 			pos = game->pos;
 			Side us = pos->side_to_move, them = us ^ 1;	
 			pos->eval_score = eval->evaluate();
-			if (eval->attacks(us) & bb_square(board->king_square[them])) {
+			if (eval->attacks(us) & bbSquare(board->king_square[them])) {
 				game->unmakeMove();
 				pos = game->pos;
 				return false;
 			}
 			pos->in_check = (eval->attacks(them) & 
-				bb_square(board->king_square[us])) != 0;
+				bbSquare(board->king_square[us])) != 0;
 
 			ply++;
 			if (ply > max_ply) {
@@ -502,8 +502,8 @@ protected:
 	}
 
 	__forceinline void updateHistoryScores(const Move m, const Depth depth) {
-		history_scores[PIECE(m)][TO(m)] += (depth/2)*(depth/2);
-		if (history_scores[PIECE(m)][TO(m)] > 50000) {
+		history_scores[movePiece(m)][moveTo(m)] += (depth/2)*(depth/2);
+		if (history_scores[movePiece(m)][moveTo(m)] > 50000) {
 			for (int i = 0; i < 16; i++) for (int k = 0; k < 64; k++) {
 				history_scores[i][k] >>= 2; 
 			}
@@ -582,8 +582,8 @@ protected:
 			move_data.score = 890000;
 		}
 		else if (isCapture(m)) {
-			Score value_captured = piece_value(CAPTURED(m));
-			Score value_piece = piece_value(PIECE(m));
+			Score value_captured = piece_value(moveCaptured(m));
+			Score value_piece = piece_value(movePiece(m));
 			if (value_piece == 0) {
 				value_piece = 1800;
 			}
@@ -601,7 +601,7 @@ protected:
 			}
 		}
 		else if (isPromotion(m)) {
-			move_data.score = 70000 + piece_value(PROMOTED(m));
+			move_data.score = 70000 + piece_value(movePromoted(m));
 		}
 		else if (m == killer_moves[0][ply]) {
 			move_data.score = 125000;
@@ -613,7 +613,7 @@ protected:
 			move_data.score = 124998;
 		}
 		else {
-			move_data.score = history_scores[PIECE(m)][TO(m)];
+			move_data.score = history_scores[movePiece(m)][moveTo(m)];
 		}
 	}
 
@@ -683,11 +683,11 @@ protected:
 	}
 
 	__forceinline bool isPassedPawnMove(const Move& m) const {
-		return (PIECE(m) & 7) == Pawn && board->isPawnPassed(TO(m), side(m));
+		return (movePiece(m) & 7) == Pawn && board->isPawnPassed(moveTo(m), side(m));
 	}
 
 	__forceinline bool isPawnMove(const Move& m) const {
-		return (PIECE(m) & 7) == Pawn;
+		return (movePiece(m) & 7) == Pawn;
 	}
 
 	struct PVEntry {

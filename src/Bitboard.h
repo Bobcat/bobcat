@@ -16,7 +16,7 @@
   along with Bobcat.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-namespace bitboard { // because HFILE is already a typedef at this point
+namespace bitboard {
 
 typedef uint64 BB;
 
@@ -33,9 +33,9 @@ const BB RANK6 = 0x0000ff0000000000;
 const BB RANK7 = 0x00ff000000000000;
 const BB RANK8 = 0xff00000000000000;
 
-BB bb_square_array[64];
-BB bb_rank_array[64];
-BB bb_file_array[64];
+BB bb_square[64];
+BB bb_rank[64];
+BB bb_file[64];
 BB bb_between[64][64];
 BB passed_pawn_front_span[2][64];
 BB pawn_front_span[2][64];
@@ -46,9 +46,9 @@ BB knight_attacks[64];
 BB king_attacks[64];
 BB colored[2];
 
-#define bb_square(x) bb_square_array[x]
-#define bb_rank(x) bb_rank_array[x]
-#define bb_file(x) bb_file_array[x]
+__forceinline const BB& bbSquare(int sq) { return bb_square[sq]; }
+__forceinline const BB& bbRank(int rank) { return bb_rank[rank]; }
+__forceinline const BB& bbFile(int sq) { return bb_file[sq]; }
 
 __forceinline BB northOne(const BB& bb) { return bb << 8; }
 __forceinline BB southOne(const BB& bb) { return bb >> 8; }
@@ -80,7 +80,7 @@ void print_bb(const BB bb, const char* s = 0) {
 	for (int rank = 7; rank >=0; rank--) {
 		cout << rank + 1 << "  ";
 		for (int file = 0; file <= 7; file++) {
-			cout << (bb & bb_square((rank << 3) + file) ? "1 " : ". ");
+			cout << (bb & bbSquare((rank << 3) + file) ? "1 " : ". ");
 		}
 		cout << endl;
 	}
@@ -88,7 +88,7 @@ void print_bb(const BB bb, const char* s = 0) {
 }
 
 void initBetweenBitboards(const Square from, BB (*stepFunc)(const BB&), int step) {
-	BB bb = stepFunc(bb_square(from));
+	BB bb = stepFunc(bbSquare(from));
 	Square to = from + step;
 	BB between = 0;
 	while (bb) {
@@ -102,19 +102,19 @@ void initBetweenBitboards(const Square from, BB (*stepFunc)(const BB&), int step
 void Bitboard_h_initialise() {
 	colored[0] = colored[1] = 0;
 	for (Square sq = a1; sq <= h8; sq++) {
-		bb_square_array[sq] = (BB)1 << sq;
-		bb_rank_array[sq] = RANK1 << (sq & 56);
-		bb_file_array[sq] = AFILE << (sq & 7);
-		colored[((9 * sq) & 8) == 0 ? 1 : 0] |= bb_square(sq);
+		bb_square[sq] = (BB)1 << sq;
+		bb_rank[sq] = RANK1 << (sq & 56);
+		bb_file[sq] = AFILE << (sq & 7);
+		colored[((9 * sq) & 8) == 0 ? 1 : 0] |= bbSquare(sq);
 	}
 
 	for (Square sq = a1; sq <= h8; sq++) {
-		pawn_front_span[0][sq] = northFill(northOne(bb_square(sq)));
-		pawn_front_span[1][sq] = southFill(southOne(bb_square(sq)));
-		pawn_east_attack_span[0][sq] = northFill(northEastOne(bb_square(sq)));
-		pawn_east_attack_span[1][sq] = southFill(southEastOne(bb_square(sq)));
-		pawn_west_attack_span[0][sq] = northFill(northWestOne(bb_square(sq)));
-		pawn_west_attack_span[1][sq] = southFill(southWestOne(bb_square(sq)));
+		pawn_front_span[0][sq] = northFill(northOne(bbSquare(sq)));
+		pawn_front_span[1][sq] = southFill(southOne(bbSquare(sq)));
+		pawn_east_attack_span[0][sq] = northFill(northEastOne(bbSquare(sq)));
+		pawn_east_attack_span[1][sq] = southFill(southEastOne(bbSquare(sq)));
+		pawn_west_attack_span[0][sq] = northFill(northWestOne(bbSquare(sq)));
+		pawn_west_attack_span[1][sq] = southFill(southWestOne(bbSquare(sq)));
 		passed_pawn_front_span[0][sq] = pawn_east_attack_span[0][sq] | pawn_front_span[0][sq] | pawn_west_attack_span[0][sq];
 		passed_pawn_front_span[1][sq] = pawn_east_attack_span[1][sq] | pawn_front_span[1][sq] | pawn_west_attack_span[1][sq];
 
@@ -130,28 +130,28 @@ void Bitboard_h_initialise() {
 		initBetweenBitboards(sq, westOne, -1);
 		initBetweenBitboards(sq, northWestOne, 7);
 
-		pawn_captures[sq] = (bb_square(sq) & ~HFILE) << 9;
-		pawn_captures[sq] |= (bb_square(sq) & ~AFILE) << 7;
-		pawn_captures[sq + 64] = (bb_square(sq) & ~AFILE) >> 9;
-		pawn_captures[sq + 64] |= (bb_square(sq) & ~HFILE) >> 7;
+		pawn_captures[sq] = (bbSquare(sq) & ~HFILE) << 9;
+		pawn_captures[sq] |= (bbSquare(sq) & ~AFILE) << 7;
+		pawn_captures[sq + 64] = (bbSquare(sq) & ~AFILE) >> 9;
+		pawn_captures[sq + 64] |= (bbSquare(sq) & ~HFILE) >> 7;
 	
-		knight_attacks[sq] = (bb_square(sq) & ~(AFILE | BFILE)) << 6; 
-		knight_attacks[sq] |= (bb_square(sq) & ~AFILE) << 15;
-		knight_attacks[sq] |= (bb_square(sq) & ~HFILE) << 17; 
-		knight_attacks[sq] |= (bb_square(sq) & ~(GFILE | HFILE)) << 10;
-		knight_attacks[sq] |= (bb_square(sq) & ~(GFILE | HFILE)) >> 6;
-		knight_attacks[sq] |= (bb_square(sq) & ~HFILE) >> 15;
-		knight_attacks[sq] |= (bb_square(sq) & ~AFILE) >> 17;
-		knight_attacks[sq] |= (bb_square(sq) & ~(AFILE | BFILE)) >> 10;
+		knight_attacks[sq] = (bbSquare(sq) & ~(AFILE | BFILE)) << 6; 
+		knight_attacks[sq] |= (bbSquare(sq) & ~AFILE) << 15;
+		knight_attacks[sq] |= (bbSquare(sq) & ~HFILE) << 17; 
+		knight_attacks[sq] |= (bbSquare(sq) & ~(GFILE | HFILE)) << 10;
+		knight_attacks[sq] |= (bbSquare(sq) & ~(GFILE | HFILE)) >> 6;
+		knight_attacks[sq] |= (bbSquare(sq) & ~HFILE) >> 15;
+		knight_attacks[sq] |= (bbSquare(sq) & ~AFILE) >> 17;
+		knight_attacks[sq] |= (bbSquare(sq) & ~(AFILE | BFILE)) >> 10;
 
-		king_attacks[sq] = (bb_square(sq) & ~AFILE) >> 1;
-		king_attacks[sq] |= (bb_square(sq) & ~AFILE) << 7;
-		king_attacks[sq] |= bb_square(sq) << 8;
-		king_attacks[sq] |= (bb_square(sq) & ~HFILE) << 9;
-		king_attacks[sq] |= (bb_square(sq) & ~HFILE) << 1;
-		king_attacks[sq] |= (bb_square(sq) & ~HFILE) >> 7;
-		king_attacks[sq] |= bb_square(sq) >> 8;
-		king_attacks[sq] |= (bb_square(sq) & ~AFILE) >> 9;
+		king_attacks[sq] = (bbSquare(sq) & ~AFILE) >> 1;
+		king_attacks[sq] |= (bbSquare(sq) & ~AFILE) << 7;
+		king_attacks[sq] |= bbSquare(sq) << 8;
+		king_attacks[sq] |= (bbSquare(sq) & ~HFILE) << 9;
+		king_attacks[sq] |= (bbSquare(sq) & ~HFILE) << 1;
+		king_attacks[sq] |= (bbSquare(sq) & ~HFILE) >> 7;
+		king_attacks[sq] |= bbSquare(sq) >> 8;
+		king_attacks[sq] |= (bbSquare(sq) & ~AFILE) >> 9;
 	}
 }
 

@@ -69,6 +69,7 @@ public:
 	Move last_move; 
 	int eval_score;
 	int transp_score;
+	int transp_depth;
 	bool transp_score_valid;
 	bool transp_depth_valid;
 	Move transp_move;

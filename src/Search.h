@@ -116,7 +116,7 @@ protected:
 				const Move m = move_data->move;
 
 				if (makeMove(m)) {
-					Depth next_depth = getNextDepth(true, depth, ++move_count, 5, m, alpha, move_data->score);
+					Depth next_depth = getNextDepth(true, depth, ++move_count, L(), m, alpha, move_data->score);
 
 					if (search_depth > 10*2 && search_time > 5000) {
 						postInfo(m, move_count, search_depth/2, max_ply, node_count, nodesPerSecond(), timeUsed(), 
@@ -125,16 +125,16 @@ protected:
 
 					Score score;
 					if (move_count == 1) {
-						score = searchNextDepth(next_depth, -beta, -alpha, true);
+						score = searchNextDepth(next_depth, -beta, -alpha);
 					}
 					else {
-						score = searchNextDepth(next_depth, -alpha - 1, -alpha, false);
+						score = searchNextDepth(next_depth, -alpha - 1, -alpha);
 						if (score > alpha && score < beta) {
-							score = searchNextDepth(next_depth, -beta, -alpha, true);
+							score = searchNextDepth(next_depth, -beta, -alpha);
 						}
 					}
 					if (score > alpha && next_depth < depth - 1*2) {
-						score = searchNextDepth(depth - 1*2, -beta, -alpha, true);
+						score = searchNextDepth(depth - 1*2, -beta, -alpha);
 					}
 
 					unmakeMove();
@@ -184,18 +184,18 @@ protected:
 		pos->gotoMove(0);
 	}
 
-	__forceinline Score searchNextDepth(const Depth depth, const Score alpha, const Score beta, bool is_pv_node) {
-		return depth <= 0 ? -searchQuiesce(alpha, beta) : -searchAll(depth, alpha, beta, is_pv_node);
+	__forceinline Score searchNextDepth(const Depth depth, const Score alpha, const Score beta) {
+		return depth <= 0 ? -searchQuiesce(alpha, beta, 0) : -searchAll(depth, alpha, beta);
 	}
 
- 	Score searchAll(const Depth depth, Score alpha, const Score beta, const bool is_pv_node) {
+ 	Score searchAll(const Depth depth, Score alpha, const Score beta) {
 		if (game->isRepetition()) {
 			return searchNodeScore(0);
 		}
 		
 		findTranspositionRefineEval(depth, alpha, beta);
 
-		if (!is_pv_node && pos->transp_score_valid && pos->transp_depth_valid) { 
+		if (pos->transp_score_valid && pos->transp_depth_valid) { 
 			return searchNodeScore(pos->transp_score);
 		} 
 		
@@ -204,24 +204,24 @@ protected:
 		}
 
 		Score score;
-		if (okToTryNullMove(depth, beta, is_pv_node)) {
+		if (okToTryNullMove(depth, beta)) {
 			makeMove(0);
-			score = searchNextDepth(depth - 4*2 - (depth/16)*2, -beta, -beta + 1, false);
+			score = searchNextDepth(depth - R(depth), -beta, -beta + 1);
 			unmakeMove();
 			if (score >= beta) {
 				return searchNodeScore(score);
 			}
 		}
 
-		if (!is_pv_node && !pos->in_check && depth <= 3*2) {
+		if (beta - alpha == 1 && !pos->in_check && depth <= 3*2) {
 			if (pos->eval_score + 125 < alpha) {
 				if (depth <= 1*2) {
-					score = searchQuiesce(alpha, beta);
+					score = searchQuiesce(alpha, beta, 0);
 					return max(score, pos->eval_score + 125);
 				}
 				else {
 					if (pos->eval_score + 400 < alpha) {
-						if ((score = searchQuiesce(alpha, beta)) < alpha) {
+						if ((score = searchQuiesce(alpha, beta, 0)) < alpha) {
 							return max(score, pos->eval_score + 400);
 						}
 					}
@@ -230,12 +230,14 @@ protected:
 		}
 
 		if (!pos->transp_move && pos->eval_score >= beta - 100) {
-			if (is_pv_node && depth >= 4*2) {
-				score = searchAll(depth - 2*2, alpha, beta, true);
-				findTranspositionRefineEval(depth, alpha, beta);
+			if (beta - alpha > 1) {
+				if (depth >= 4*2) {
+					score = searchAll(depth - 2*2, alpha, beta);
+					findTranspositionRefineEval(depth, alpha, beta);
+				}
 			}
-			else if (!is_pv_node && depth >= 8*2) {
-				score = searchAll(depth/2, alpha, beta, false);
+			else if (depth >= 8*2) {
+				score = searchAll(depth/2, alpha, beta);
 				findTranspositionRefineEval(depth, alpha, beta);
 			}
 		}
@@ -255,24 +257,24 @@ protected:
 			const Move m = move_data->move;
 
 			if (makeMove(m)) {
-				Depth next_depth = getNextDepth(is_pv_node, depth, ++move_count, 5, m, alpha, move_data->score);
+				Depth next_depth = getNextDepth(beta - alpha > 1, depth, ++move_count, L(), m, alpha, move_data->score);
 
-				if (okToPruneLastMove(best_score, next_depth, depth, alpha, is_pv_node)) {
+				if (okToPruneLastMove(best_score, next_depth, depth, alpha)) {
 					unmakeMove();
 					continue;
 				}
 
 				if (move_count == 1) {
-					score = searchNextDepth(next_depth, -beta, -alpha, is_pv_node);
+					score = searchNextDepth(next_depth, -beta, -alpha);
 				}
 				else {
-					score = searchNextDepth(next_depth, -alpha - 1, -alpha, false);
+					score = searchNextDepth(next_depth, -alpha - 1, -alpha);
 					if (score > alpha && score < beta) {
-						score = searchNextDepth(next_depth, -beta, -alpha, true);
+						score = searchNextDepth(next_depth, -beta, -alpha);
 					}
 				}
 				if (score > alpha && next_depth < depth - 1*2) {
-					score = searchNextDepth(depth - 1*2, -beta, -alpha, is_pv_node);
+					score = searchNextDepth(depth - 1*2, -beta, -alpha);
 				}
 
 				unmakeMove();
@@ -305,34 +307,39 @@ protected:
 		return storeSearchNodeScore(best_score, depth, nodeType(best_score, orig_alpha, beta), best_move);
 	}
 
-	__forceinline bool okToTryNullMove(const Depth depth, const Score beta, const bool is_pv_node/*unused*/) const {
+	__forceinline bool okToTryNullMove(const Depth depth, const Score beta) const {
 		return !pos->in_check 
-			&& pos->null_moves_in_row < 1 // not really necessary
+			&& pos->null_moves_in_row < 1 
 			&& depth > 1*2 
 			&& !pos->material.hasPawnsOnly(pos->side_to_move) 
 			&& pos->eval_score >= beta; 
 	}
 
-	__forceinline bool okToPruneLastMove(const Score best_score, const Depth next_depth, const Depth depth, const Score alpha, 
-		const bool is_pv_node/*unused*/) const 
+	__forceinline bool okToPruneLastMove(const Score best_score, const Depth next_depth, const Depth depth, 
+		const Score alpha) const 
 	{
 		return next_depth <= 3*2  
-			&& next_depth < depth - 1*2 // only prune when move is already reduced
 			&& -pos->eval_score + fp_margin[max(0, next_depth)] < alpha 
 			&& best_score > -MAXSCORE;
 	}
 
-	Score searchQuiesce(Score alpha, const Score beta, int qs_depth = 0) {
+	__forceinline int R(const Depth depth) const {
+		return 4*2 + (depth/16)*2;
+	}
+
+	__forceinline int L() const {
+		return 5;
+	}
+
+	Score searchQuiesce(Score alpha, const Score beta, int qs_depth) {
 		findTransposition(0, alpha, beta);
 
-		bool is_pv_node = beta - alpha > 1;
-		if (!is_pv_node && pos->transp_score_valid && pos->transp_depth_valid) { 
+		if (pos->transp_score_valid && pos->transp_depth_valid) { 
 			return searchNodeScore(pos->transp_score);
 		} 
 
-		if (pos->eval_score >= beta) {
-			storeTransposition(0, pos->eval_score, BETA, 0);
-			return searchNodeScore(pos->eval_score);
+		if (pos->eval_score >= beta && !pos->in_check) {
+			return storeSearchNodeScore(pos->eval_score, 0, BETA, 0);
 		}
 		
 		if (ply >= max_plies - 1) {
@@ -351,7 +358,12 @@ protected:
 			alpha = best_score; 
 		}
 
-		pos->generateCapturesAndPromotions(this);
+		if (pos->in_check) {
+			pos->generateMoves(this, 0, LegalMoves);
+		}
+		else {
+			pos->generateCapturesAndPromotions(this);
+		}
 
 		while (const MoveData* move_data = pos->nextMove()) {
 			const Move m = move_data->move;
@@ -381,7 +393,7 @@ protected:
 			}
 		}
 		if (!move_count) { 
-			return best_score;
+			return searchNodeScore(pos->in_check ? -MAXSCORE + ply : best_score);
 		}
 		return storeSearchNodeScore(best_score, 0, nodeType(best_score, orig_alpha, beta), best_move);
 	}
@@ -642,6 +654,7 @@ protected:
 		}
 		pos->transp_depth_valid = pos->transposition->depth >= depth;
 		pos->transp_score = codecTTableScore(pos->transposition->score, -ply);
+		pos->transp_depth = pos->transposition->depth;
 
 		switch (pos->transposition->flags & 7) {
 		case EXACT:

@@ -101,72 +101,52 @@ public:
 			score = -eval;
 			flip = true;
 		}
-		/*
-		kq kbb /4
-		*/
 		this->board = board;
-		switch (key1) {
- 			case krn:
-				score = KRNKx(score, key2);
-				break;
-			case krb:
-				score = KRBKx(score, key2);
-				break;
-			case kr:
-				score = KRKx(score, key2);
-				break;
-			case kbb:
-				score = KBBKx(score, key2);
-				break;
-			case kb:
-				score = KBKx(score, key2);
-				break;
-			case kbn:
-				score = KBNKx(score, key2, flip ? side ^ 1 : side);
-				break;
-			case knn:
-				score = KNNKx(score, key2);
-				break;
-			case k:
-			case kn:
-				score = min(0, score);
-				break;
-			default:
-				break;
+
+		if ((key1 & ~all_pawns) == key1) {
+			switch (key1) {
+				case krb:
+					score = KRBKX(score, key2);
+					break;
+ 				case krn:
+					score = KRNKX(score, key2);
+					break;
+				case kr:
+					score = KRKX(score, key2);
+					break;
+				case kbb:
+					score = KBBKX(score, key2);
+					break;
+				case kbn:
+					score = KBNKX(score, key2, flip ? side ^ 1 : side);
+					break;
+				case kb:
+					score = KBKX(score, key2);
+					break;
+				case knn:
+					score = KNNKX(score, key2);
+					break;
+				case kn:
+				case k:
+					score = min(0, score);
+					break;
+				default:
+					break;
+			}
 		}
-		if ((key1 & ~all_pawns) == kb && (key2 & ~all_pawns) == kb) {
-			score = KBxKBy(eval, key1, key2);
+		else {
+			switch (key1 & ~all_pawns) {
+				case kb:
+					score = KBxKX(score, key1, key2);
+					break;
+				default:
+					break;
+			}
 		}
 		return flip ? -score : score;
 	}
 
-	__forceinline int KBxKBy(int eval, uint32 key1, uint32 key2) {
-		if (sameColor(lsb(board->bishops(0)), lsb(board->bishops(1)))) {
-			return eval;
-		}
-		if (abs(pawnCount(0) - pawnCount(1)) <= 2) {
-			return eval/2;
-		}
-		return eval;
-	}
-
-	__forceinline int KRNKx(int eval, uint32 key2) {
-		switch (key2 & ~all_pawns) {
-			case kr:
-				if (key2 & all_pawns) return min(eval/16, eval); 
-				else return eval/16;
-			case kbb:
-			case kbn:
-			case knn:
-				if (key2 & all_pawns) return min(eval/8, eval); 
-				else return eval/8;
-			default:
-				break;
-		}
-		return eval;
-	}
-
-	__forceinline int KRBKx(int eval, uint32 key2) {
+	__forceinline int KRBKX(int eval, uint32 key2) {
 		switch (key2 & ~all_pawns) {
 			case kr:
 				if (key2 & all_pawns) return min(eval/8, eval); 
@@ -182,7 +162,40 @@ public:
 		return eval;
 	}
 
-	__forceinline int KBBKx(int eval, uint32 key2) {
+	__forceinline int KRNKX(int eval, uint32 key2) {
+		switch (key2 & ~all_pawns) {
+			case kr:
+				if (key2 & all_pawns) return min(eval/16, eval); 
+				else return eval/16;
+			case kbb:
+			case kbn:
+			case knn:
+				if (key2 & all_pawns) return min(eval/8, eval); 
+				else return eval/8;
+			default:
+				break;
+		}
+		return eval;
+	}
+
+	__forceinline int KRKX(int eval, uint32 key2) {
+		switch (key2 & ~all_pawns) {
+			case kbb:
+			case kbn:
+			case knn:
+				if ((key2 & all_pawns) == 0) return eval/8; 
+				break;
+			case kb:
+			case kn:
+				if (key2 & all_pawns) return min(eval/4, eval); 
+				return eval/4;
+			default:
+				break;
+		}
+		return eval;
+	}
+
+	__forceinline int KBBKX(int eval, uint32 key2) {
 		switch (key2 & ~all_pawns) {
 			case kb:
 				if (key2 & all_pawns) return min(eval/8, eval); 
@@ -195,7 +208,7 @@ public:
 		return eval;
 	}
 
-	__forceinline int KBNKx(int eval, uint32 key2, int side1) {
+	__forceinline int KBNKX(int eval, uint32 key2, int side1) {
 		switch (key2 & ~all_pawns) {
 			case k:
 				if ((key2 & all_pawns) == 0) return KBNK(eval, side1);
@@ -223,7 +236,18 @@ public:
 			25*chebyshev_distance[winning_corner2][loosing_king_square]);
 	}
 
-	__forceinline int KNNKx(int eval, uint32 key2) {
+	__forceinline int KBKX(int eval, uint32 key2) {
+		switch (key2 & ~all_pawns) {
+			case knn:
+				if ((key2 & all_pawns) == 0) return eval/8; 
+				break;
+			default:
+				break;
+		}
+		return min(0, eval);
+	}
+
+	__forceinline int KNNKX(int eval, uint32 key2) {
 		switch (key2 & ~all_pawns) {
 			case k:
 			case kn:
@@ -235,28 +259,14 @@ public:
 		return eval;
 	}
 
-
-	__forceinline int KBKx(int eval, uint32 key2) {
-		switch (key2 & ~all_pawns) {
-			case knn:
-				if ((key2 & all_pawns) == 0) return eval/8; 
-				break;
-			default:
-				break;
-		}
-		return min(0, eval);
-	}
-
-	__forceinline int KRKx(int eval, uint32 key2) {
+	__forceinline int KBxKX(int eval, uint32 key1, uint32 key2) {
 		switch (key2 & ~all_pawns) {
 			case kb:
-			case kn:
-				if (key2 & all_pawns) return min(eval/4, eval); 
-				return eval/4;
-			case kbb:
-			case kbn:
-			case knn:
-				if ((key2 & all_pawns) == 0) return eval/8; 
+				if (!sameColor(lsb(board->bishops(0)), lsb(board->bishops(1))) && 
+					abs(pawnCount(0) - pawnCount(1)) <= 2) 
+				{
+					return eval/2;
+				}
 				break;
 			default:
 				break;
@@ -289,3 +299,11 @@ int Material::bit_shift[7] = {0, 4, 8, 12, 16, 20};
 int Material::piece_value[6] = { 100, 400, 400, 600, 1200, 0 };
 
 #define piece_value(p) (Material::piece_value[p & 7])
+//KRBKR,KRBKBB,KRBKBN,KRBKNN
+//KRNKR,KRNKBB,KRNKBN,KRNKNN
+//KRKBB,KRKBN,KRKB,KRKNN,KRKN
+//KBBKB,KBBKN
+//KBNK,KBNKB,KBNKN
+//KBKNN
+//KNNK,KNNKN
+//

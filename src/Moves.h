@@ -230,37 +230,37 @@ private:
 		BB bb;
 		int offset = side_to_move << 3;
 		Square from;
-		for (bb = piece[Queen + offset]; bb; resetLsb(bb)) {
+		for (bb = piece[Queen + offset]; bb; resetLSB(bb)) {
 			from = lsb(bb);
 			addMoves(Queen + offset, from, board->queenAttacks(from) & to_squares);
 		}
-		for (bb = piece[Rook + offset]; bb; resetLsb(bb)) {
+		for (bb = piece[Rook + offset]; bb; resetLSB(bb)) {
 			from = lsb(bb);
 			addMoves(Rook + offset, from, board->rookAttacks(from) & to_squares);
 		}
-		for (bb = piece[Bishop + offset]; bb; resetLsb(bb)) {
+		for (bb = piece[Bishop + offset]; bb; resetLSB(bb)) {
 			from = lsb(bb);
 			addMoves(Bishop + offset, from, board->bishopAttacks(from) & to_squares);
 		}
-		for (bb = piece[Knight + offset]; bb; resetLsb(bb)) {
+		for (bb = piece[Knight + offset]; bb; resetLSB(bb)) {
 			from = lsb(bb);
 			addMoves(Knight + offset, from, board->knightAttacks(from) & to_squares);
 		}
-		for (bb = piece[King + offset]; bb; resetLsb(bb)) {
+		for (bb = piece[King + offset]; bb; resetLSB(bb)) {
 			from = lsb(bb);
 			addMoves(King + offset, from, board->kingAttacks(from) & to_squares);
 		}
 	}
 
 	__forceinline void addMoves(const Piece piece, const Square from, const BB& attacks) {
-		for (BB bb = attacks; bb; resetLsb(bb)) {
+		for (BB bb = attacks; bb; resetLSB(bb)) {
 			Square to = lsb(bb);
 			addMove(piece | (side_to_move << 3), from, to, board->getPiece(to) == NoPiece ? QUIET : CAPTURE);
 		}
 	}
 
 	__forceinline void addPawnMoves(const BB& to_squares, const int* dist, const Move type) {
-		for (BB bb = to_squares; bb; resetLsb(bb)) {
+		for (BB bb = to_squares; bb; resetLSB(bb)) {
 			Square to = lsb(bb);
 			Square from = to - dist[side_to_move];
 			if (rank(to) == 0 || rank(to) == 7) {

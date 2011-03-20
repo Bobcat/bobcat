@@ -125,7 +125,7 @@ protected:
 				pawn_eval_mg[c] += open_file ? -20 : -8;
 				pawn_eval_eg[c] += -8;
 			}
-			resetLsb(bb);
+			resetLSB(bb);
 			if (bbFile(sq) & bb) {
 				pawn_eval_mg[c] += -15; 
 				pawn_eval_eg[c] += -15;
@@ -134,7 +134,7 @@ protected:
 	}
 
 	__forceinline void evalKnightsOneSide(const int c) {
-		for (BB knights = board->knights(c); knights; resetLsb(knights)) {
+		for (BB knights = board->knights(c); knights; resetLSB(knights)) {
 			Square sq = lsb(knights);
 			poseval[c] += knight_pcsq[flip[c][sq]];
 			const BB& attacks = knight_attacks[sq];
@@ -156,7 +156,7 @@ protected:
 	}
 
 	__forceinline void evalBishopsOneSide(const int c) {
-		for (BB bishops = board->bishops(c); bishops; resetLsb(bishops)) {
+		for (BB bishops = board->bishops(c); bishops; resetLSB(bishops)) {
 			Square sq = lsb(bishops);
 			const BB& bbsq = bbSquare(sq);
 
@@ -187,7 +187,7 @@ protected:
 	}
 
 	__forceinline void evalRooksOneSide(const int c) {
-		for (BB rooks = board->rooks(c); rooks; resetLsb(rooks)) {
+		for (BB rooks = board->rooks(c); rooks; resetLSB(rooks)) {
 			Square sq = lsb(rooks);
 			if (!board->isPieceOnFile(Pawn, sq, c)) { 
 				int bonus;
@@ -221,7 +221,7 @@ protected:
 	}
 
 	__forceinline void evalQueensOneSide(const int c) {
-		for (BB queens = board->queens(c); queens; resetLsb(queens)) {
+		for (BB queens = board->queens(c); queens; resetLSB(queens)) {
 			Square sq = lsb(queens);
 			const BB& bbsq = bbSquare(sq);
 			poseval_mg[c] += queen_mg_pcsq[flip[c][sq]];
@@ -280,8 +280,8 @@ protected:
 	}
 
 	__forceinline void evalPassedPawnsOneSide(int c) {
-		for (BB files = pawnp ? pawnp->passed_pawn_files[c] : 0; files; resetLsb(files)) {
-			for (BB bb = bbFile(lsb(files)) & pawns(c); bb; resetLsb(bb)) {
+		for (BB files = pawnp ? pawnp->passed_pawn_files[c] : 0; files; resetLSB(files)) {
+			for (BB bb = bbFile(lsb(files)) & pawns(c); bb; resetLSB(bb)) {
 				int sq = lsb(bb);
 
 				const BB& front_span = pawn_front_span[c][sq];

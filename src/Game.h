@@ -86,7 +86,7 @@ public:
 		uint64 key = 0;
 		for (int piece = Pawn; piece <= King; piece++) {
 			for (int side = 0; side <= 1; side++) {
-				for (BB bb = board.piece[piece | (side << 3)]; bb != 0; resetLsb(bb)) {
+				for (BB bb = board.piece[piece | (side << 3)]; bb != 0; resetLSB(bb)) {
 					key ^= zobrist_pcsq[piece | (side << 3)][lsb(bb)];
 				}
 			}

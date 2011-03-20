@@ -16,7 +16,7 @@
   along with Bobcat.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-__forceinline void resetLsb(uint64& x) {
+__forceinline void resetLSB(uint64& x) {
 	x &= (x - 1);
 }
 
@@ -24,7 +24,7 @@ __forceinline int popCount(uint64 x) {
 	int count = 0;
 	while (x) {
 		count++;
-		resetLsb(x);
+		resetLSB(x);
 	}
 	return count;
 }

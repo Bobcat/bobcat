@@ -124,14 +124,14 @@ public:
 
 		while (pinners) {
 			pinned_pieces |= bb_between[lsb(pinners)][sq] & occupied_by_side[side];
-			resetLsb(pinners);
+			resetLSB(pinners);
 		}
 		pinners = xrayRookAttacks(occupied, occupied_by_side[side], sq) & 
 			(piece[Rook + (opp << 3)] | piece[Queen | (opp << 3)]);
 
 		while (pinners) {
 			pinned_pieces |= bb_between[lsb(pinners)][sq] & occupied_by_side[side];
-			resetLsb(pinners);
+			resetLSB(pinners);
 		}
 		return pinned_pieces;
 	}

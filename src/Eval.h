@@ -259,9 +259,14 @@ protected:
 		Square sq = lsb(board->king(c));
 		const BB& bbsq = bbSquare(sq);
 
-		poseval_mg[c] += king_mg_pcsq[flip[c][sq]];
-		poseval_eg[c] += king_eg_pcsq[flip[c][sq]];
-		
+		if (board->queens(c ^ 1) || popCount(board->rooks(c ^ 1)) > 1) {
+			poseval_mg[c] += king_mg_pcsq[flip[c][sq]];
+			poseval_eg[c] += king_eg_pcsq[flip[c][sq]];
+		}
+		else {
+			poseval[c] += king_eg_pcsq[flip[c][sq]];
+		}
+
 		int pawn_shield = -90 + 30*popCount((pawnPush[c](bbsq) | pawnWestAttacks[c](bbsq) | 
 			pawnEastAttacks[c](bbsq)) & pawns(c));
 

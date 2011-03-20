@@ -759,7 +759,7 @@ protected:
 	__forceinline Move getSingularMove(const Depth depth, const Score alpha, const Score beta) {		
 		if (pos->transp_move && !pos->in_check) {
 			if (beta - alpha > 1) {
-				if (depth >= 7*2 
+				if (depth >= 5*2 
 					&& (pos->transp_flags & ALPHA) == 0 
 					&& pos->transp_depth >= depth/2
 					&& pos->transp_score > alpha)

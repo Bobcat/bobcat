@@ -760,14 +760,21 @@ protected:
 		if (pos->transp_move && !pos->in_check) {
 			if (beta - alpha > 1) {
 				if (depth >= 5*2 
-					&& (pos->transp_flags & ALPHA) == 0 && pos->transp_depth >= depth/2) {
+					&& (pos->transp_flags & ALPHA) == 0 
+					&& pos->transp_depth >= depth/2
+					&& pos->transp_score > alpha)
+				{
 					if (searchFailLow(depth/2, max(pos->transp_score - 50, -MAXSCORE), pos->transp_move)) {
 						return pos->transp_move;
 					}
 				}
 			}
 			else {
-				if (depth >= 7*2 && (pos->transp_flags & ALPHA) == 0 && pos->transp_depth >= depth/2) {
+				if (depth >= 7*2 
+					&& (pos->transp_flags & ALPHA) == 0
+					&& pos->transp_depth >= depth/2
+					&& pos->transp_score > alpha)
+				{
 					if (searchFailLow(depth/2, max(pos->transp_score - 50, -MAXSCORE), pos->transp_move)) {
 						return pos->transp_move;
 					}

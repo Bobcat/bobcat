@@ -764,8 +764,7 @@ protected:
 					&& pos->transp_depth >= depth/2
 					&& pos->transp_score > alpha)
 				{
-					int extend_score = pos->transp_score - 50; 
-					if (searchFailLow(depth/2, extend_score, pos->transp_move)) {
+					if (searchFailLow(depth/2, max(pos->transp_score - 50, -MAXSCORE), pos->transp_move)) {
 						return pos->transp_move;
 					}
 				}
@@ -776,8 +775,7 @@ protected:
 					&& pos->transp_depth >= depth/2
 					&& pos->transp_score > alpha)
 				{
-					int extend_score = pos->transp_score - 50; 
-					if (searchFailLow(depth/2, extend_score, pos->transp_move)) {
+					if (searchFailLow(depth/2, max(pos->transp_score - 50, -MAXSCORE), pos->transp_move)) {
 						return pos->transp_move;
 					}
 				}
@@ -786,24 +784,23 @@ protected:
 		return 0;
 	}
 
-	bool searchFailLow(const Depth depth, const Score alpha, const Move exclude_move) {
-		if (ply >= max_plies - 1) {
-			return false;
-		}
-		pos->generateMoves(this);
+	bool searchFailLow(const Depth depth, const Score alpha, const Move alpha_move) {
+		pos->generateMoves(this, pos->transp_move, Stages);
 
 		int move_count = 0;
 
 		while (const MoveData* move_data = pos->nextMove()) {
 			const Move m = move_data->move;
-			if (m == exclude_move) {
+			
+			if (m == alpha_move) {
 				continue;
 			}
+
 			if (makeMove(m)) {
 				Depth next_depth = getNextDepth(false, depth, ++move_count, 5, m, alpha, move_data->score, 0);
 
 				Score score = searchNextDepth(next_depth, -alpha - 1, -alpha);
-				
+
 				if (score > alpha && next_depth < depth - 1*2) {
 					score = searchNextDepth(depth - 1*2, -alpha - 1, -alpha);
 				}
@@ -814,7 +811,7 @@ protected:
 				}
 			}
 		}
-		return move_count > 0;
+		return move_count > 4;
 	}
 };
 

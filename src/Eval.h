@@ -113,6 +113,8 @@ protected:
 			pawn_eval_mg[c] += pawn_pcsq[flip[c][sq]];
 			pawn_eval_eg[c] += pawn_pcsq[flip[c][sq]];
 
+			pawn_eval_eg[c] += 2*((c == 0) ? rank(sq) : 7 - rank(sq));
+
 			if (board->isPawnPassed(sq, c)) {
 				passed_pawn_files[c] |= 1 << file(sq);
 			}
@@ -190,22 +192,16 @@ protected:
 		for (BB rooks = board->rooks(c); rooks; resetLSB(rooks)) {
 			Square sq = lsb(rooks);
 			if (!board->isPieceOnFile(Pawn, sq, c)) { 
-				int bonus;
-				if (!board->isPieceOnFile(Pawn, sq, c ^ 1)) {
-					bonus = 20;
-				}
-				else {
-					bonus = 10;
-				}
+				int bonus = !board->isPieceOnFile(Pawn, sq, c ^ 1) ? 15 : 7;
 				if ((bbFile(sq) | neighbourFiles(bbSquare(sq))) & board->king(c ^ 1)) {
 					bonus *= 2;
 				}
 				poseval[c] += bonus;
 			}
 			if (bbSquare(sq) & rank_7[c]) {
-				poseval[c] += 20;
+				poseval[c] += 10;
 				if (rank_7_and_8[c] & (pawns(c ^  1) | board->king(c ^ 1))) {
-					poseval[c] += 20;
+					poseval[c] += 15;
 				}
 			}
 			const BB& attacks = Rmagic(sq, occupied);
@@ -226,9 +222,9 @@ protected:
 			const BB& bbsq = bbSquare(sq);
 			poseval_mg[c] += queen_mg_pcsq[flip[c][sq]];
 			if (bbsq & rank_7[c]) {
-				poseval[c] += 20;
+				poseval[c] += 10;
 				if (rank_7_and_8[c] & (pawns(c ^  1) | board->king(c ^ 1))) {
-					poseval[c] += 20;
+					poseval[c] += 15;
 				}
 			}
 			const BB& attacks = Qmagic(sq, occupied);
@@ -262,15 +258,16 @@ protected:
 		if (board->queens(c ^ 1) || popCount(board->rooks(c ^ 1)) > 1) {
 			poseval_mg[c] += king_mg_pcsq[flip[c][sq]];
 			poseval_eg[c] += king_eg_pcsq[flip[c][sq]];
+
+			int pawn_shield = -45 + 15*popCount((pawnPush[c](bbsq) | pawnWestAttacks[c](bbsq) | 
+				pawnEastAttacks[c](bbsq)) & pawns(c));
+
+			poseval_mg[c] += pawn_shield; 
 		}
 		else {
 			poseval[c] += king_eg_pcsq[flip[c][sq]];
 		}
 
-		int pawn_shield = -90 + 30*popCount((pawnPush[c](bbsq) | pawnWestAttacks[c](bbsq) | 
-			pawnEastAttacks[c](bbsq)) & pawns(c));
-
-		poseval_mg[c] += board->queens(c ^ 1) ?  pawn_shield : pawn_shield/2; 
 		
 		if (((c == 0) && 
 				(((sq == f1 || sq == g1) && (bbSquare(h1) & board->rooks(0))) || 
@@ -279,7 +276,7 @@ protected:
 				(((sq == f8 || sq == g8) && (bbSquare(h8) & board->rooks(1))) || 
 				((sq == c8 || sq == b8) && (bbSquare(a8) & board->rooks(1))))))
 		{
-			poseval_mg[c] += -180;
+			poseval_mg[c] += -110;
 		}
 		all_attacks[c] |= king_attacks[kingSq(c)];
 	}

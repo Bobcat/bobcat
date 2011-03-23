@@ -196,7 +196,7 @@ protected:
 		
 		findTranspositionRefineEval(depth, alpha, beta);
 
-		if (pos->transp_score_valid && pos->transp_depth_valid) { 
+		if (beta - alpha == 1 && pos->transp_score_valid && pos->transp_depth_valid) { 
 			return searchNodeScore(pos->transp_score);
 		} 
 		
@@ -210,7 +210,7 @@ protected:
 			score = searchNextDepth(depth - R(depth), -beta, -beta + 1);
 			unmakeMove();
 			if (score >= beta) {
-				return storeSearchNodeScore(score, depth, BETA, 0);
+				return searchNodeScore(score);
 			}
 		}
 
@@ -323,7 +323,7 @@ protected:
 		const Score alpha) const 
 	{
 		return next_depth <= 3*2  
-			&& next_depth <= depth - 1*2
+			&& next_depth < depth - 1*2
 			&& -pos->eval_score + fp_margin[max(0, next_depth)] < alpha 
 			&& best_score > -MAXSCORE;
 	}
@@ -343,7 +343,7 @@ protected:
 			return searchNodeScore(pos->transp_score);
 		} 
 
-		if (pos->eval_score >= beta && !pos->in_check) {
+		if (beta - alpha == 1 && pos->eval_score >= beta && !pos->in_check) {
 			return storeSearchNodeScore(pos->eval_score, 0, BETA, 0);
 		}
 		
@@ -363,12 +363,12 @@ protected:
 			alpha = best_score; 
 		}
 
-		if (pos->in_check) {
-			pos->generateMoves(this, 0, LegalMoves);
-		}
-		else {
+//		if (pos->in_check) {
+//			pos->generateMoves(this, 0, LegalMoves);
+//		}
+//		else {
 			pos->generateCapturesAndPromotions(this);
-		}
+//		}
 
 		while (const MoveData* move_data = pos->nextMove()) {
 			const Move m = move_data->move;
@@ -398,7 +398,7 @@ protected:
 			}
 		}
 		if (!move_count) { 
-			return searchNodeScore(pos->in_check ? -MAXSCORE + ply : best_score);
+			return searchNodeScore(best_score);//pos->in_check ? -MAXSCORE + ply : best_score);
 		}
 		return storeSearchNodeScore(best_score, 0, nodeType(best_score, orig_alpha, beta), best_move);
 	}
@@ -814,7 +814,7 @@ protected:
 				}
 			}
 		}
-		return true;
+		return move_count > 0;
 	}
 };
 

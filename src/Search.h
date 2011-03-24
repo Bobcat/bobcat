@@ -339,11 +339,11 @@ protected:
 	Score searchQuiesce(Score alpha, const Score beta, int qs_depth) {
 		findTransposition(0, alpha, beta);
 
-		if (pos->transp_score_valid && pos->transp_depth_valid) { 
+		if (beta - alpha == 1 && pos->transp_score_valid && pos->transp_depth_valid) { 
 			return searchNodeScore(pos->transp_score);
 		} 
 
-		if (beta - alpha == 1 && pos->eval_score >= beta && !pos->in_check) {
+		if (pos->eval_score >= beta && !pos->in_check) {
 			return storeSearchNodeScore(pos->eval_score, 0, BETA, 0);
 		}
 		

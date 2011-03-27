@@ -18,24 +18,24 @@
 
 typedef int Move;
 
-__forceinline int movePiece(const Move& move) { return (move >> 26) & 15; }
+__forceinline int movePiece(const Move move) { return (move >> 26) & 15; }
 __forceinline void moveSetPiece(Move& move, const int piece) { move |= (piece << 26); }
-__forceinline int moveCaptured(const Move& move) { return (move >> 22) & 15; }
+__forceinline int moveCaptured(const Move move) { return (move >> 22) & 15; }
 __forceinline void moveSetCaptured(Move& move, const int piece) { move |= (piece << 22); }
-__forceinline int movePromoted(const Move& move) { return (move >> 18) & 15; }
+__forceinline int movePromoted(const Move move) { return (move >> 18) & 15; }
 __forceinline void moveSetPromoted(Move& move, const int piece) { move |= (piece << 18); }
-__forceinline int moveType(const Move& move) { return (move >> 12) & 63; }
+__forceinline int moveType(const Move move) { return (move >> 12) & 63; }
 __forceinline void moveSetType(Move& move, const int type) { move |= (type << 12); }
-__forceinline int moveFrom(const Move& move) { return (move >> 6) & 63; }
+__forceinline int moveFrom(const Move move) { return (move >> 6) & 63; }
 __forceinline void moveSetFrom(Move& move, const int sq) { move |= (sq << 6); }
-__forceinline int moveTo(const Move& move) { return move & 63; }
+__forceinline int moveTo(const Move move) { return move & 63; }
 __forceinline void moveSetTo(Move& move, const int sq) { move |= sq; }
 
-__forceinline Side side(const Move& m) {
+__forceinline Side side(const Move m) {
 	return (m >> 29) & 1;
 }
 
-__forceinline int sideMask(const Move& m) {
+__forceinline int sideMask(const Move m) {
 	return side(m) << 3;
 }
 
@@ -45,25 +45,24 @@ const int CASTLE = 4;
 const int EPCAPTURE = 8;
 const int PROMOTION = 16;
 const int CAPTURE = 32;
-const int ALLMOVES = 63;
 
-__forceinline int isCapture(const Move& m) { 
+__forceinline int isCapture(const Move m) { 
 	return moveType(m) & (CAPTURE | EPCAPTURE); 
 }
 
-__forceinline int isEpCapture(const Move& m) { 
+__forceinline int isEpCapture(const Move m) { 
 	return moveType(m) & EPCAPTURE; 
 }
 
-__forceinline int isCastleMove(const Move& m) { 
+__forceinline int isCastleMove(const Move m) { 
 	return moveType(m) & CASTLE; 
 }
 
-__forceinline int isPromotion(const Move& m) { 
+__forceinline int isPromotion(const Move m) { 
 	return moveType(m) & PROMOTION; 
 }
 
-__forceinline int isQueenPromotion(const Move& m) { 
+__forceinline int isQueenPromotion(const Move m) { 
 	return isPromotion(m) && (movePromoted(m) & 7) == Queen; 
 }
 

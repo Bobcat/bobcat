@@ -29,7 +29,7 @@ public:
 		material_value[0] = material_value[1] = 0;
 	}
 
-	void remove(const Piece p) {
+	__forceinline void remove(const Piece p) {
 		updateKey(p >> 3, p & 7, -1);
 		material_value[p >> 3] -= Material::piece_value[p & 7];
 	}

@@ -257,7 +257,7 @@ protected:
 		poseval_mg[c] += pawn_shield; 
 
 		if (board->queens(c ^ 1) || popCount(board->rooks(c ^ 1)) > 1) {
-			BB eastwest = westOne(bbsq) | eastOne(bbsq);
+			BB eastwest = bbsq | westOne(bbsq) | eastOne(bbsq);
 			poseval_mg[c] += -15*popCount(open_files & eastwest);
 			poseval_mg[c] += -10*popCount(half_open_files[c] & eastwest);
 		}

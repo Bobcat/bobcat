@@ -98,14 +98,13 @@ public:
 		iteration = pos;
 	}
 
-	void print_moves(ostream& os) {
+	void print_moves() {
 		int i = 0;
 		char buf[12];
 		while (const MoveData* m = nextMove()) {
-			os << i++ + 1 << "." << " ";
-			os << moveToString(m->move, buf);
-			os << "   " << m->score;
-			os << endl;
+			printf("%d. ", i++ + 1);
+			printf("%s", moveToString(m->move, buf));
+			printf("   %d\n", m->score);
 		}
 	}
 

@@ -44,7 +44,7 @@ public:
 			perft_(i, result);
 			t2 = clock();
 			float diff = ((float)t2-(float)t1)/CLOCKS_PER_SEC;
-			cout << setw(5) << i << setw(14) << result.nodes << "  " << diff << endl;
+			printf("%5d%14d  %f\n", i, result.nodes, diff);
 		}
 	}
 

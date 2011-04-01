@@ -149,11 +149,11 @@ public:
 			output->writeLine(buf);
 		}
 		else if (stricmp(params[0], "isready") == 0) {
-			cout << "readyok" << endl;
+			printf("readyok\n");
 		}
 		else if (stricmp(params[0], "ucinewgame") == 0) {
 			callback->newGame();
-			cout << "readyok" << endl;
+			printf("readyok\n");
 		}
 		else if (stricmp(params[0], "position") == 0) {
 			handlePosition(params, num_params);

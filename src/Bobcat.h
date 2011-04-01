@@ -172,14 +172,14 @@ public:
 		newGame();
 
 		bool console_mode = true;
-		game->pos->board->print_board(cout);
+		game->pos->board->print_board();
 		int exit = 0;
 
 		while (exit == 0) {
 			game->pos->generateMoves();
 
 			if (console_mode) {
-				cout << ("> ");
+				printf("> ");
 			}
 
 			char line[16384];
@@ -199,14 +199,14 @@ public:
 				exit = 1;
 			}
 			else if (stricmp(tokens[0], "d") == 0) {
-				game->pos->board->print_board(cout);
-				cout << endl;
-				cout << "board key calculated  : " << game->calculateKey() << endl;
-				cout << "board key incremental : " << game->pos->key << endl;
-				cout << "pawn structure key    : " << game->pos->pawn_structure_key << endl;
+				game->pos->board->print_board();
+				printf("\n");
+				printf("board key calculated  : %llu\n", game->calculateKey());
+				printf("board key incremental : %llu\n", game->pos->key);
+				printf("pawn structure key    : %llu\n", game->pos->pawn_structure_key);
 			}
 			else if (stricmp(tokens[0], "m") == 0) {
-				game->pos->print_moves(cout);
+				game->pos->print_moves();
 			}
 			else if (stricmp(tokens[0], "perft") == 0) {
 				Test(game).perft(6);
@@ -232,7 +232,7 @@ public:
 				if (num_tokens == 1) {
 					char fen[128];
 					game->getFen(fen);
-					cout <<  fen << endl;
+					printf("%s\n", fen);
 				}
 				else {
 					int token = 0;
@@ -248,10 +248,10 @@ public:
 				BB key = book->hash(fen);
 				char move[6];
 				if (book->find(key, move) == 0) {
-					cout <<  move << endl;
+					printf("%s\n", move);
 				}
 				else {
-					cout <<  "no book move" << endl;
+					printf("no book move\n");
 				}
 			}
 			else if (stricmp(tokens[0], "see") == 0 && num_tokens > 0) {

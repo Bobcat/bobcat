@@ -46,7 +46,6 @@ typedef unsigned int uint;
 
 #include <stdio.h>
 #include <iomanip>
-#include <iostream>
 #include <time.h>
 #include <string.h>
 #include <conio.h>

@@ -251,18 +251,18 @@ public:
 		return (piece[King | (side << 3)] & king_attacks[sq]) != 0;
 	}
 
-	void print_board(ostream& os) const {
+	void print_board() const {
 		static char piece_letter[] = "PNBRQK. pnbrqk. "; 
-		os << endl;
+		printf("\n");
 		for (int rank = 7; rank >= 0; rank--) {
-			os << rank + 1 << "  ";
+			printf("%d  ", rank + 1);
 			for (int file = 0; file <= 7; file++) {
 				Piece p_and_c = getPiece(rank * 8 + file);
-				os << piece_letter[p_and_c] << " ";
+				printf("%c ", piece_letter[p_and_c]);
 			}
-			os << endl;
+			printf("\n");
 		}
-		os << endl << "   a b c d e f g h" << endl;
+		printf("   a b c d e f g h\n");
 	}
 
 	__forceinline const BB& pawns(int side) const { return piece[Pawn | (side << 3)]; }

@@ -32,7 +32,7 @@ class TranspositionTable {
 public:
 	TranspositionTable(int size_mb) : table(NULL), size_mb(-1) {
 		if (sizeof(Transposition) != 16) {
-			cout << "error sizeof(Transposition) == " << sizeof(Transposition) << endl;
+			printf("error sizeof(Transposition) == %d\n", sizeof(Transposition));
 			exit(0);
 		}
 		initialise(size_mb);
@@ -143,7 +143,7 @@ class PawnStructureTable {
 public:
 	PawnStructureTable(int size_mb) : table(NULL) {
 		if (sizeof(PawnEntry) != 16) {
-			cout << "error sizeof(PawnEntry) == " << sizeof(PawnEntry) << endl;
+			printf("error sizeof(PawnEntry) == %d\n", sizeof(PawnEntry));
 			exit(0);
 		}
 		initialise(size_mb);

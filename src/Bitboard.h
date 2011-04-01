@@ -76,15 +76,15 @@ __forceinline BB southFill(const BB& bb) {
 }
 
 void print_bb(const BB bb, const char* s = 0) {
-	cout << endl << (s ? s : "") << endl;
+	printf("\n%s\n", (s ? s : ""));
 	for (int rank = 7; rank >=0; rank--) {
-		cout << rank + 1 << "  ";
+		printf("%d ", rank + 1);
 		for (int file = 0; file <= 7; file++) {
-			cout << (bb & bbSquare((rank << 3) + file) ? "1 " : ". ");
+			printf("%s", (bb & bbSquare((rank << 3) + file) ? "1 " : ". "));
 		}
-		cout << endl;
+		printf("\n");
 	}
-	cout << endl << "   a b c d e f g h" << endl;
+	printf("\n   a b c d e f g h\n");
 }
 
 void initBetweenBitboards(const Square from, BB (*stepFunc)(const BB&), int step) {

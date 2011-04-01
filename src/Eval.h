@@ -258,8 +258,8 @@ protected:
 
 		if (board->queens(c ^ 1) || popCount(board->rooks(c ^ 1)) > 1) {
 			BB eastwest = bbsq | westOne(bbsq) | eastOne(bbsq);
-			poseval_mg[c] += -15*popCount(open_files & eastwest);
-			poseval_mg[c] += -10*popCount(half_open_files[c] & eastwest);
+			poseval_mg[c] += -25*popCount(open_files & eastwest);
+			poseval_mg[c] += -20*popCount(half_open_files[c] & eastwest);
 		}
 
 		if (((c == 0) && 
@@ -343,9 +343,11 @@ protected:
 	}
 
 	void print_pcsq_tables(const char* table, int* values) {
-		cout << table;
+		printf("%s", table);
 		for (int i = 0; i <= 63; i++) {
-			if (i % 8 == 0) cout << endl;
+			if (i % 8 == 0) {
+				printf("\n");
+			}
 			printf("%4d  ",  values[i]);
 		}
 	}

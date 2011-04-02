@@ -69,9 +69,9 @@ public:
 
 		double stage = (pos->material.value()-pos->material.pawnValue())/(double)pos->material.max_value;
 
-		int pos_eval = ((int)((poseval_mg[0]-poseval_mg[1])*stage))
-						+ ((int)((poseval_eg[0]-poseval_eg[1])*(1-stage)))
-						+ (poseval[0]-poseval[1]);
+		int pos_eval = (int)(((poseval_mg[0]-poseval_mg[1])*stage)
+						+ ((poseval_eg[0]-poseval_eg[1])*(1-stage))
+						+ (poseval[0]-poseval[1]));
 
 		int mat_eval = mateval[0] - mateval[1];
 
@@ -141,7 +141,6 @@ protected:
 			poseval[c] += knight_pcsq[flip[c][sq]];
 			const BB& attacks = knight_attacks[sq];
 			int x = popCount(attacks & not_occupied & ~pawn_attacks[c ^ 1]);
-
 			poseval[c] += knight_mobility_mg[x];
 			all_attacks[c] |= attacks;
 			bool outpost = (passed_pawn_front_span[c][sq] & (pawns(c ^  1) & ~pawn_front_span[c][sq])) == 0;
@@ -382,7 +381,7 @@ BB Eval::pawns_trap_bishop_a7h7[2][2] = {
 	{ bbSquare(g6) | bbSquare(f7), bbSquare(g3) | bbSquare(f2) } 
 };
 int Eval::bishop_mobility_mg[14] = { 
-	-15, -5, 0, 6, 12, 16, 20, 22, 22, 24, 24, 24, 26, 26 
+	-15,  -6, 0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23, 23
 };
 int Eval::rook_mobility_mg[15] = { 
 	-15, -7, -5, 0, 5, 7, 10, 14, 15, 19, 20, 21, 25, 26, 27 

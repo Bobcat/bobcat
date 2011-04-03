@@ -117,7 +117,7 @@ protected:
 				const Move m = move_data->move;
 
 				if (makeMove(m)) {
-					Depth next_depth = getNextDepth(true, depth, ++move_count, m, alpha, move_data->score, 0);
+					Depth next_depth = getNextDepth(true, depth, ++move_count, m, alpha, move_data->score);
 
 					if (search_depth > 10*2 && search_time > 5000) {
 						postInfo(m, move_count, search_depth/2, max_ply, node_count, nodesPerSecond(), timeUsed(), 
@@ -173,16 +173,35 @@ protected:
 	}
 
 	void sortRootMoves(bool use_root_move_scores) {
+		if (!use_root_move_scores) {
+			sortRootMovesByShallowSearch();
+		}
 		int move_count = 0;
 		while (MoveData* move_data = pos->nextMove()) {
-			if (use_root_move_scores) {
-				move_data->score = root_move_score[move_count++];
-			}
-			else {
-				sortMove(*move_data);
-			}
+			move_data->score = root_move_score[move_count++];
 		}
 		pos->gotoMove(0);
+	}
+
+	void sortRootMovesByShallowSearch() {
+		int move_count = 0;
+		store_trans = false;
+		while (MoveData* move_data = pos->nextMove()) {
+			sortMove(*move_data);
+			if (move_data->move != pos->transp_move) {
+				makeMove(move_data->move);
+				
+				root_move_score[move_count++] = false/*?*/ && isCapture(move_data->move) 
+					? searchNextDepth(0, -MAXSCORE, MAXSCORE) + move_data->score 
+					: searchNextDepth(0, -MAXSCORE, MAXSCORE);
+
+				unmakeMove();
+			}
+			else {
+				root_move_score[move_count++] = move_data->score;
+			}
+		}
+		store_trans = true;
 	}
 
 	__forceinline Score searchNextDepth(const Depth depth, const Score alpha, const Score beta) {
@@ -230,8 +249,6 @@ protected:
 			}
 		}
 
-		Move singular_move = getSingularMove(depth, alpha, beta);
-
 		if (!pos->transp_move && pos->eval_score >= beta - 100) {
 			if (beta - alpha > 1) {
 				if (depth >= 4*2) {
@@ -261,7 +278,7 @@ protected:
 
 			if (makeMove(m)) {
 				Depth next_depth = getNextDepth(beta - alpha > 1, depth, ++move_count, m, alpha, 
-					move_data->score, singular_move);
+					move_data->score);
 
 				if (okToPruneLastMove(best_score, next_depth, depth, alpha)) {
 					unmakeMove();
@@ -395,11 +412,8 @@ protected:
 	}
 
 	__forceinline Depth getNextDepth(const bool is_pv_node, const Depth depth, const int move_count, const Move m, 
-		const Score alpha, const int move_score, const Move singular_move) 
+		const Score alpha, const int move_score) 
 	{
-		if (m == singular_move) {
-			return depth;
-		}
 		if (pos->in_check) {
 			return is_pv_node ? depth : depth - 1*2; 
 		}
@@ -583,6 +597,7 @@ protected:
 		memset(root_move_score, 0, sizeof(root_move_score));
 		memset(history_scores, 0, sizeof(history_scores)); 
 		memset(killer_moves, 0, sizeof(killer_moves));
+		store_trans = true;
 	}
 
 	virtual void sortMove(MoveData& move_data) {
@@ -641,13 +656,16 @@ protected:
 	}
 
 	__forceinline void storeTransposition(const Depth depth, const Score score, const int node_type, const Move move) {
-		pos->transposition = transt->insert(pos->key, depth, codecTTableScore(score, ply), node_type, move);
+		if (store_trans) {
+			pos->transposition = transt->insert(pos->key, depth, codecTTableScore(score, ply), node_type, move);
+		}
 	}
 
 	__forceinline void findTranspositionRefineEval(const Depth depth, const Score alpha, const Score beta) {
 		if (!pos->transposition || pos->transposition->key != transt->key32(pos->key)) {
 			if ((pos->transposition = transt->find(pos->key)) == 0) {
-				pos->transp_score_valid = pos->transp_depth_valid = false;
+				pos->transp_score_valid = false;
+				pos->transp_depth_valid = false;
 				pos->transp_move = 0;
 				return;
 			}
@@ -700,10 +718,6 @@ protected:
 		return (movePiece(m) & 7) == Pawn && board->isPawnPassed(moveTo(m), side(m));
 	}
 
-	__forceinline bool isPawnMove(const Move m) const {
-		return (movePiece(m) & 7) == Pawn;
-	}
-
 	struct PVEntry {
 		uint64 key;
 		Depth depth;
@@ -737,6 +751,7 @@ protected:
 	SEE* see;
 	Position* pos;
 	TTable* transt;
+	bool store_trans;
 
 	static uint64 node_count;
 	static int fp_margin[9];
@@ -745,67 +760,6 @@ protected:
 	static const int BETA = 2;
 	static const int ALPHA = 4;
 	static const int MAXSCORE = 0x7fff;
-
-
-	////////////////////////////////////////////////////////////////////////////////////
-
-	__forceinline Move getSingularMove(const Depth depth, const Score alpha, const Score beta) {		
-		//if (pos->transp_move && !pos->in_check) {
-		//	if (beta - alpha > 1) {
-		//		if (depth >= 5*2 
-		//			&& (pos->transp_flags & ALPHA) == 0 
-		//			&& pos->transp_depth > depth/2
-		//			&& pos->transp_score > alpha)
-		//		{
-		//			if (searchFailLow(depth - 2*2, max(pos->transp_score - 50, -MAXSCORE), pos->transp_move)) {
-		//				return pos->transp_move;
-		//			}
-		//		}
-		//	}
-		//	else {
-		//		if (depth >= 7*2 
-		//			&& (pos->transp_flags & ALPHA) == 0
-		//			&& pos->transp_depth > depth/2
-		//			&& pos->transp_score > alpha)
-		//		{
-		//			if (searchFailLow(depth/2, max(pos->transp_score - 50, -MAXSCORE), pos->transp_move)) {
-		//				return pos->transp_move;
-		//			}
-		//		}
-		//	}
-		//}
-		return 0;
-	}
-
-	bool searchFailLow(const Depth depth, const Score alpha, const Move alpha_move) {
-		pos->generateMoves(this, pos->transp_move, Stages);
-
-		int move_count = 0;
-
-		while (const MoveData* move_data = pos->nextMove()) {
-			const Move m = move_data->move;
-			
-			if (m == alpha_move) {
-				continue;
-			}
-
-			if (makeMove(m)) {
-				Depth next_depth = getNextDepth(false, depth, ++move_count, m, alpha, move_data->score, 0);
-
-				Score score = searchNextDepth(next_depth, -alpha - 1, -alpha);
-
-				if (score > alpha && next_depth < depth - 1*2) {
-					score = searchNextDepth(depth - 1*2, -alpha - 1, -alpha);
-				}
-				unmakeMove();
-
-				if (score > alpha) { 
-					return false;
-				}
-			}
-		}
-		return true;
-	}
 };
 
 int Search::fp_margin[9] = { 150, 150, 150, 150, 400, 400, 400, 600, 600 };

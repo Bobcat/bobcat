@@ -64,7 +64,7 @@ public:
 			if (pawn_attacks[side] & kingmoves[side ^ 1]) {
 				attack_count[side]++;
 			}
-			poseval_mg[side] += 2*attack_points[side]*max(0, attack_count[side] - 1);
+			poseval_mg[side] += attack_points[side]*max(0, attack_count[side] - 1);
 		}
 
 		double stage = (pos->material.value()-pos->material.pawnValue())/(double)pos->material.max_value;
@@ -139,18 +139,19 @@ protected:
 		for (BB knights = board->knights(c); knights; resetLSB(knights)) {
 			Square sq = lsb(knights);
 			poseval[c] += knight_pcsq[flip[c][sq]];
+
 			const BB& attacks = knight_attacks[sq];
 			int x = popCount(attacks & not_occupied & ~pawn_attacks[c ^ 1]);
 			poseval[c] += knight_mobility_mg[x];
 			all_attacks[c] |= attacks;
-			bool outpost = (passed_pawn_front_span[c][sq] & (pawns(c ^  1) & ~pawn_front_span[c][sq])) == 0;
 
+			bool outpost = (passed_pawn_front_span[c][sq] & (pawns(c ^  1) & ~pawn_front_span[c][sq])) == 0;
 			if (outpost && (pawn_attacks[c] & bbSquare(sq))) {
 				int d = chebyshev_distance[sq][kingSq(c ^ 1)];
 				poseval[c] += 5*(7-d);
 				poseval_eg[c] += 2*(7-d);
 			}
-			int y = popCount(attacks & kingmoves[c ^ 1])*4;
+			int y = popCount(attacks & kingmoves[c ^ 1])*8;
 			attack_points[c] += y;
 			attack_count[c] += y ? 1 : 0;
 		}
@@ -160,12 +161,13 @@ protected:
 		for (BB bishops = board->bishops(c); bishops; resetLSB(bishops)) {
 			Square sq = lsb(bishops);
 			const BB& bbsq = bbSquare(sq);
-
 			poseval[c] += bishop_pcsq[flip[c][sq]];
+
 			const BB attacks = Bmagic(sq, occupied);
 			int x = popCount(attacks & not_occupied);
 			poseval[c] += bishop_mobility_mg[x];
 			all_attacks[c] |= attacks;
+			
 			if (bishop_trapped_a7h7[c] & bbsq) {
 				int x = file(sq)/7;
 				if ((pawns(c ^  1) & pawns_trap_bishop_a7h7[x][c]) == pawns_trap_bishop_a7h7[x][c]) {
@@ -181,7 +183,7 @@ protected:
 			const BB attacks2 = Bmagic(sq, occupied & ~board->queens(c) & ~board->rooks(c ^ 1) & 
 				~board->queens(c ^ 1));
 
-			int y = popCount(attacks2 & kingmoves[c ^ 1])*4;
+			int y = popCount(attacks2 & kingmoves[c ^ 1])*8;
 			attack_points[c] += y;
 			attack_count[c] += y ? 1 : 0;
 		}
@@ -206,7 +208,7 @@ protected:
 			all_attacks[c] |= attacks;
 
 			const BB attacks2 = Rmagic(sq, occupied & ~board->rooks(c) & ~board->queens(c) & ~board->queens(c ^ 1));
-			int y = popCount(attacks2 & kingmoves[c ^ 1])*6;
+			int y = popCount(attacks2 & kingmoves[c ^ 1])*12;
 			attack_points[c] += y;
 			attack_count[c] += y ? 1 : 0;
 		}
@@ -230,7 +232,7 @@ protected:
 			const BB attacks2 = Bmagic(sq, occupied & ~board->bishops(c) & ~board->queens(c)) | 
 				Rmagic(sq, occupied & ~board->rooks(c) & ~board->queens(c));
 
-			int y = popCount(attacks2 & kingmoves[c ^ 1])*12;
+			int y = popCount(attacks2 & kingmoves[c ^ 1])*24;
 			attack_points[c] += y;
 			attack_count[c] += y ? 1 : 0;
 		}
@@ -384,10 +386,10 @@ int Eval::bishop_mobility_mg[14] = {
 	-15,  -6, 0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23, 23
 };
 int Eval::rook_mobility_mg[15] = { 
-	-15, -7, -5, 0, 5, 7, 10, 14, 15, 19, 20, 21, 25, 26, 27 
+	-15, -7,  0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23, 23, 24  // 48/42
 };
 int Eval::knight_mobility_mg[9] = { 
-	-15, -8, -4, 0, 3, 6, 9, 12, 15 
+	-15, -8, -4, 0, 3, 6, 9, 12, 15 // 48/42
 };
 int Eval::minor_file_value[8] = { 
 	-15, -5, 0, 10, 10, 0, -5, -15 

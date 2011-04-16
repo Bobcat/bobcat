@@ -241,7 +241,7 @@ public:
 			const char* book_name = config->getString("Bobcat", "book-name", "TDDBII");
 			snprintf(buf, sizeof(buf), "Book name is %s.", book_name);
 			logger->log(buf);
-			const char* book_filename = config->getString(book_name, "book-file", "c:/Projects/aaa/TDDBII.bin");
+			const char* book_filename = config->getString(book_name, "book-file", "c:/Projects/books/TDDBII.bin");
 			snprintf(buf, sizeof(buf), "Book file name is %s.", book_filename);
 			logger->log(buf);
 			file = fopen(book_filename, "rb");

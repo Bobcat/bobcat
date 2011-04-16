@@ -46,7 +46,7 @@ public:
 	virtual void postInfo(const Move curr_move, int curr_move_number, int depth, int selective_depth, uint64 node_count, 
 		uint64 nodes_per_sec, uint64 time, int hash_full) = 0;
 	
-	virtual void postPv(int depth, int max_ply, uint64 node_count, uint64 nodes_per_second, uint64 time, int hash_full, 
+	virtual void postPV(int depth, int max_ply, uint64 node_count, uint64 nodes_per_second, uint64 time, int hash_full, 
 		int score, const char* pv) = 0; 
 
 	__forceinline int isAnalysing() {
@@ -122,7 +122,7 @@ public:
 		output->writeLine(buf);
 	}
 
-	virtual void postPv(int depth, int max_ply, uint64 node_count, uint64 nodes_per_second, uint64 time, int hash_full, 
+	virtual void postPV(int depth, int max_ply, uint64 node_count, uint64 nodes_per_second, uint64 time, int hash_full, 
 				int score, const char* pv) 
 	{
 		char buf[1024];
@@ -139,7 +139,7 @@ public:
 		if (stricmp(params[0], "uci") == 0) {
 			char buf[2048];
 			snprintf(buf, sizeof(buf),  
-				"id name Bobcat 20110327\n" \
+				"id name Bobcat 20110414\n" \
 				"id author Gunnar Harms\n" \
 				"option name Hash type spin default 256 min 8 max 1024\n" \
 				"option name Ponder type check default true\n" \

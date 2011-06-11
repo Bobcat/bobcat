@@ -17,38 +17,18 @@
 */
 
 class Eval {
-public:
+public: 
 	Eval(Game* game, PawnStructureTable* pawnt) {
-		this->game = game;
-		board = game->pos->board;
-		this->pawnt = pawnt;
-		pawns_array[0] = &board->pawns(0);
-		pawns_array[1] = &board->pawns(1);
-		king_square[0] = &board->king_square[0];
-		king_square[1] = &board->king_square[1];
-		buildPcSqTables();
+		initialise(game, pawnt);
 	}
 
 	void newGame() {
 	}
 
 	int evaluate() {
-		poseval_mg[0] = poseval_eg[0] = poseval[0] = mateval[0] = 0;
-		poseval_mg[1] = poseval_eg[1] = poseval[1] = mateval[1] = 0;
-		
-		attack_points[0] = attack_points[1] = attack_count[0] = attack_count[1] = 0;
+		initialiseEvaluate();
 
-		kingmoves[0] = king_attacks[kingSq(0)] | board->king(0);
-		kingmoves[1] = king_attacks[kingSq(1)] | board->king(1);
-		occupied = board->occupied;
-		not_occupied = ~occupied;
-
-		open_files = ~(northFill(southFill(pawns(0))) | northFill(southFill(pawns(1))));
-		half_open_files[0] = ~northFill(southFill(pawns(0))) & ~open_files;
-		half_open_files[1] = ~northFill(southFill(pawns(1))) & ~open_files;
-
-		// pass 1
-		pos = game->pos;
+		// Pass 1.
 		evalPawnsBothSides();
 		for (Side side = 0; side < 2; side++) {
 			evalMaterialOneSide(side);
@@ -58,13 +38,14 @@ public:
 			evalBishopsOneSide(side);
 			evalQueensOneSide(side);
 		}
-		// pass 2 
+		// Pass 2.
 		for (Side side = 0; side < 2; side++) {
 			evalPassedPawnsOneSide(side);
 			if (pawn_attacks[side] & kingmoves[side ^ 1]) {
 				attack_count[side]++;
 			}
-			poseval_mg[side] += attack_points[side]*max(0, attack_count[side] - 1);
+			int score_mg = attack_points[side]*max(0, attack_count[side] - 1);
+			poseval_mg[side] += score_mg;
 		}
 
 		double stage = (pos->material.value()-pos->material.pawnValue())/(double)pos->material.max_value;
@@ -86,15 +67,13 @@ public:
 
 protected:
 	__forceinline void evalPawnsBothSides() {
-		all_attacks[0] = pawn_attacks[0] = pawnEastAttacks[0](pawns(0)) | pawnWestAttacks[0](pawns(0));
-		all_attacks[1] = pawn_attacks[1] = pawnEastAttacks[1](pawns(1)) | pawnWestAttacks[1](pawns(1));
-
 		pawnp = 0;
 		if (pos->material.pawnCount()) {
 			pawnp = pawnt->find(pos->pawn_structure_key);
 			if (!pawnp) {
 				pawn_eval_mg[0] = pawn_eval_mg[1] = 0;
 				pawn_eval_eg[0] = pawn_eval_eg[1] = 0;
+
 				passed_pawn_files[0] = passed_pawn_files[1] = 0;
 
 				evalPawnsOneSide(0);
@@ -112,8 +91,8 @@ protected:
 		for (BB bb = pawns(c); bb; ) {
 			Square sq = lsb(bb);
 
-			pawn_eval_mg[c] += pawn_pcsq[flip[c][sq]];
-			pawn_eval_eg[c] += pawn_pcsq[flip[c][sq]];
+			pawn_eval_mg[c] += pawn_pcsq_mg[flip[c][sq]];
+			pawn_eval_eg[c] += pawn_pcsq_mg[flip[c][sq]];
 
 			if (board->isPawnPassed(sq, c)) {
 				passed_pawn_files[c] |= 1 << file(sq);
@@ -138,7 +117,7 @@ protected:
 	__forceinline void evalKnightsOneSide(const int c) {
 		for (BB knights = board->knights(c); knights; resetLSB(knights)) {
 			Square sq = lsb(knights);
-			poseval[c] += knight_pcsq[flip[c][sq]];
+			poseval[c] += knight_pcsq_mg[flip[c][sq]];
 
 			const BB& attacks = knight_attacks[sq];
 			int x = popCount(attacks & not_occupied & ~pawn_attacks[c ^ 1]);
@@ -147,9 +126,8 @@ protected:
 
 			bool outpost = (passed_pawn_front_span[c][sq] & (pawns(c ^  1) & ~pawn_front_span[c][sq])) == 0;
 			if (outpost && (pawn_attacks[c] & bbSquare(sq))) {
-				int d = chebyshev_distance[sq][kingSq(c ^ 1)];
-				poseval[c] += 5*(7-d);
-				poseval_eg[c] += 2*(7-d);
+				poseval[c] += 5*(7-chebyshev_distance[sq][kingSq(c ^ 1)]);
+				poseval_eg[c] += 2*(7-chebyshev_distance[sq][kingSq(c ^ 1)]);
 			}
 			int y = popCount(attacks & kingmoves[c ^ 1])*8;
 			attack_points[c] += y;
@@ -161,7 +139,7 @@ protected:
 		for (BB bishops = board->bishops(c); bishops; resetLSB(bishops)) {
 			Square sq = lsb(bishops);
 			const BB& bbsq = bbSquare(sq);
-			poseval[c] += bishop_pcsq[flip[c][sq]];
+			poseval[c] += bishop_pcsq_mg[flip[c][sq]];
 
 			const BB attacks = Bmagic(sq, occupied);
 			int x = popCount(attacks & not_occupied);
@@ -176,9 +154,8 @@ protected:
 			}
 			bool outpost = (passed_pawn_front_span[c][sq] & (pawns(c ^  1) & ~pawn_front_span[c][sq])) == 0;
 			if (outpost && (pawn_attacks[c] & bbsq)) {
-				int d = chebyshev_distance[sq][kingSq(c ^ 1)];
-				poseval[c] += 5*(7-d);
-				poseval_eg[c] += 2*(7-d);
+				poseval[c] += 5*(7-chebyshev_distance[sq][kingSq(c ^ 1)]);
+				poseval_eg[c] += 2*(7-chebyshev_distance[sq][kingSq(c ^ 1)]);
 			}
 			const BB attacks2 = Bmagic(sq, occupied & ~board->queens(c) & ~board->rooks(c ^ 1) & 
 				~board->queens(c ^ 1));
@@ -194,7 +171,7 @@ protected:
 			Square sq = lsb(rooks);
 			const BB& bbsq = bbSquare(sq); 
 			if (bbsq & open_files) { 
-				poseval[c] += 20;
+				poseval[c] += 30;
 			}
 			else if (bbsq & half_open_files[c]) { 
 				poseval[c] += 10;
@@ -218,16 +195,17 @@ protected:
 		for (BB queens = board->queens(c); queens; resetLSB(queens)) {
 			Square sq = lsb(queens);
 			const BB& bbsq = bbSquare(sq);
-			poseval_mg[c] += queen_mg_pcsq[flip[c][sq]];
+
+			poseval_mg[c] += queen_pcsq_mg[flip[c][sq]];
+
 			if ((bbsq & rank_7[c]) && (rank_7_and_8[c] & (pawns(c ^  1) | board->king(c ^ 1)))) {
 				poseval[c] += 20;
 			}
 			const BB attacks = Qmagic(sq, occupied);
 			all_attacks[c] |= attacks;
 
-			int d = chebyshev_distance[sq][kingSq(c ^ 1)];
-			poseval[c] += 5*(7-d);
-			poseval_eg[c] += 2*(7-d);
+			poseval[c] += 5*(7-chebyshev_distance[sq][kingSq(c ^ 1)]);
+			poseval_eg[c] += 2*(7-chebyshev_distance[sq][kingSq(c ^ 1)]);
 
 			const BB attacks2 = Bmagic(sq, occupied & ~board->bishops(c) & ~board->queens(c)) | 
 				Rmagic(sq, occupied & ~board->rooks(c) & ~board->queens(c));
@@ -249,8 +227,8 @@ protected:
 		Square sq = lsb(board->king(c));
 		const BB& bbsq = bbSquare(sq);
 
-		poseval_mg[c] += king_mg_pcsq[flip[c][sq]];
-		poseval_eg[c] += king_eg_pcsq[flip[c][sq]];
+		poseval_mg[c] += king_pcsq_mg[flip[c][sq]];
+		poseval_eg[c] += king_pcsq_eg[flip[c][sq]];
 
 		int pawn_shield = -45 + 15*popCount((pawnPush[c](bbsq) | pawnWestAttacks[c](bbsq) | 
 			pawnEastAttacks[c](bbsq)) & pawns(c));
@@ -279,22 +257,23 @@ protected:
 		for (BB files = pawnp ? pawnp->passed_pawn_files[c] : 0; files; resetLSB(files)) {
 			for (BB bb = bbFile(lsb(files)) & pawns(c); bb; resetLSB(bb)) {
 				int sq = lsb(bb);
-
 				const BB& front_span = pawn_front_span[c][sq];
 				int r = c == 0 ? rank(sq) : 7 - rank(sq);
 
-				int score = r*20; 
-				poseval_mg[c] += score;
+				int score_mg = r*20; 
+				int score_eg = r*18; 
 
-				score = r*14; 
-				score += 3*r*(front_span & board->occupied_by_side[c] ? 0 : 1);
-				score += 2*r*(front_span & board->occupied_by_side[c ^ 1] ? 0 : 1);
-				score += 3*r*(front_span & all_attacks[c ^ 1] ? 0 : 1);
+				score_eg += -3*r*(front_span & board->occupied_by_side[c] ? 1 : 0);
+				score_eg += -2*r*(front_span & board->rooks(c) ? 1 : 0);
+				score_eg += -2*r*(front_span & board->occupied_by_side[c ^ 1] ? 1 : 0);
+				score_eg += -3*r*(front_span & all_attacks[c ^ 1] ? 1 : 0);
 
 				int d_us = 7 - chebyshev_distance[sq][kingSq(c)];
 				int d_them = 7 - chebyshev_distance[sq][kingSq(c ^ 1)];
-				score += r*(d_us*2-d_them*2);
-				poseval_eg[c] += score;
+				score_eg += r*(d_us*2-d_them*2);
+
+				poseval_mg[c] += score_mg;
+				poseval_eg[c] += score_eg;
 			}
 		}
 	}
@@ -307,40 +286,50 @@ protected:
 		return *king_square[side];
 	}
 
-	void buildPcSqTables() {
-		for (int sq = a1; sq <= h8; sq++) {
-			int r = rank(sq); 
-			int f = file(sq);
-			knight_pcsq[flip[0][sq]] = min(minor_file_value[f], minor_rank_value[r]); 
-			bishop_pcsq[flip[0][sq]] = min(minor_file_value[f], minor_rank_value[r]); 
-			pawn_pcsq[flip[0][sq]] = (r > 1 && r < 7) ? pawn_file_value[f] + pawn_file_value_inc[f]*(r-2) : 0; 
-			king_mg_pcsq[flip[0][sq]] = (r > 0 || f == 3 || f == 5) ? -40 : 0;
-			king_eg_pcsq[flip[0][sq]] = king_file_value_eg[f] + king_rank_value_eg[r]; 
-			queen_mg_pcsq[flip[0][sq]] = (r == 0 ? -10 : -20) + queen_file_value_mg[f];
-		}
-		pawn_pcsq[flip[0][d2]] = -40; 
-		pawn_pcsq[flip[0][e2]] = -40; 
-		pawn_pcsq[flip[0][d3]] = -10; 
-		pawn_pcsq[flip[0][e3]] = -10; 
-		king_mg_pcsq[flip[0][b1]] = 20;
-		king_mg_pcsq[flip[0][c1]] = 40;
-		king_mg_pcsq[flip[0][g1]] = 40;
-		king_mg_pcsq[flip[0][h1]] = 20;
-		knight_pcsq[flip[0][a8]] = -25; 
-		knight_pcsq[flip[0][h8]] = -25; 
-		knight_pcsq[flip[0][b8]] = -20; 
-		knight_pcsq[flip[0][g8]] = -20; 
-		queen_mg_pcsq[flip[0][d1]] = 0;
-		//print_tables();
+	__forceinline int rrank(const Side side, const Square sq) {
+		return side == 0 ? rank(sq) : 7 - rank(sq);
+	}
+
+	__forceinline void initialiseEvaluate() {
+		pos = game->pos;
+
+		poseval_mg[0] = poseval_eg[0] = poseval[0] = mateval[0] = 0;
+		poseval_mg[1] = poseval_eg[1] = poseval[1] = mateval[1] = 0;
+
+		attack_points[0] = attack_points[1] = attack_count[0] = attack_count[1] = 0;
+
+		kingmoves[0] = king_attacks[kingSq(0)] | board->king(0);
+		kingmoves[1] = king_attacks[kingSq(1)] | board->king(1);
+
+		occupied = board->occupied;
+		not_occupied = ~occupied;
+
+		open_files = ~(northFill(southFill(pawns(0))) | northFill(southFill(pawns(1))));
+		half_open_files[0] = ~northFill(southFill(pawns(0))) & ~open_files;
+		half_open_files[1] = ~northFill(southFill(pawns(1))) & ~open_files;
+		all_attacks[0] = pawn_attacks[0] = pawnEastAttacks[0](pawns(0)) | pawnWestAttacks[0](pawns(0));
+		all_attacks[1] = pawn_attacks[1] = pawnEastAttacks[1](pawns(1)) | pawnWestAttacks[1](pawns(1));
+	}
+
+	void initialise(Game* game, PawnStructureTable* pawnt) {
+		this->game = game;
+		board = game->pos->board;
+		this->pawnt = pawnt;
+		pawns_array[0] = &board->pawns(0);
+		pawns_array[1] = &board->pawns(1);
+		king_square[0] = &board->king_square[0];
+		king_square[1] = &board->king_square[1];
+
+		print_tables();
 	}
 
 	void print_tables() {
-		print_pcsq_tables("pawn:\n\n", pawn_pcsq);
-		print_pcsq_tables("\n\nknight:\n\n", knight_pcsq);
-		print_pcsq_tables("\n\nbishop:\n\n", bishop_pcsq);
-		print_pcsq_tables("\n\nqueen mg:\n\n", queen_mg_pcsq);
-		print_pcsq_tables("\n\nking mg:\n\n", king_mg_pcsq);
-		print_pcsq_tables("\n\nking eg:\n\n", king_eg_pcsq);
+		print_pcsq_tables("pawn_pcsq_mg\n\n", pawn_pcsq_mg);
+		print_pcsq_tables("\n\nknight_pcsq_mg\n\n", knight_pcsq_mg);
+		print_pcsq_tables("\n\nbishop_pcsq_mg\n\n", bishop_pcsq_mg);
+		print_pcsq_tables("\n\nqueen_pcsq_mg\n\n", queen_pcsq_mg);
+		print_pcsq_tables("\n\nking_pcsq_mg\n\n", king_pcsq_mg);
+		print_pcsq_tables("\n\nking_pcsq_eg\n\n", king_pcsq_eg);
 	}
 
 	void print_pcsq_tables(const char* table, int* values) {
@@ -359,57 +348,111 @@ protected:
 	PawnStructureTable* pawnt;
 	PawnEntry* pawnp;
 
+	int poseval_mg[2], poseval_eg[2], poseval[2], mateval[2], pawn_eval_mg[2], pawn_eval_eg[2];
+	int	passed_pawn_files[2], attack_points[2], attack_count[2];
+
+	BB pawn_attacks[2], all_attacks[2], kingmoves[2], occupied, not_occupied, 
+		open_files, half_open_files[2];
+
 	const BB* pawns_array[2];
 	const Square* king_square[2];
 
-	BB open_files, half_open_files[2];
-	int passed_pawn_files[2], attack_points[2], attack_count[2];
-	BB pawn_attacks[2], all_attacks[2], kingmoves[2], occupied, not_occupied;
+	static int pawn_pcsq_mg[64];
+	static int king_pcsq_mg[64], king_pcsq_eg[64];
+	static int knight_pcsq_mg[64]; 
+	static int bishop_pcsq_mg[64];
+	static int queen_pcsq_mg[64];
 
-	int pawn_pcsq[64], knight_pcsq[64], bishop_pcsq[64], queen_mg_pcsq[64], king_mg_pcsq[64], king_eg_pcsq[64];
-	int poseval_mg[2], poseval_eg[2], poseval[2], mateval[2], pawn_eval_mg[2], pawn_eval_eg[2];
+	static int bishop_mobility_mg[14], rook_mobility_mg[15], knight_mobility_mg[9];
 
-	static int minor_file_value[8], minor_rank_value[8], pawn_file_value[8], pawn_file_value_inc[8], king_file_value_eg[8], 
-		king_rank_value_eg[8], bishop_mobility_mg[14], rook_mobility_mg[15], knight_mobility_mg[9], queen_file_value_mg[8];
-
-	static BB bishop_trapped_a7h7[2], pawns_trap_bishop_a7h7[2][2];
+	static BB bishop_trapped_a7h7[2];
+	static BB pawns_trap_bishop_a7h7[2][2];
 };
 
 BB Eval::bishop_trapped_a7h7[2] = { 
 	bbSquare(a7) | bbSquare(h7), bbSquare(a2) | bbSquare(h2) 
 };
+
 BB Eval::pawns_trap_bishop_a7h7[2][2] = { 
 	{ bbSquare(b6) | bbSquare(c7), bbSquare(b3) | bbSquare(c2) }, 
 	{ bbSquare(g6) | bbSquare(f7), bbSquare(g3) | bbSquare(f2) } 
 };
+
 int Eval::bishop_mobility_mg[14] = { 
-	-15,  -6, 0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23, 23
+	-18, -12, -6, 0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23
 };
+
 int Eval::rook_mobility_mg[15] = { 
-	-15, -7,  0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23, 23, 24 
+	-18, -12, -6, 0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23, 23
 };
+
 int Eval::knight_mobility_mg[9] = { 
 	-15, -8, -4, 0, 3, 6, 9, 12, 15
 };
-int Eval::minor_file_value[8] = { 
-	-15, -5, 0, 10, 10, 0, -5, -15 
+
+int Eval::pawn_pcsq_mg[64] = {
+	0,    0,    0,    0,    0,    0,    0,    0,
+	7,   12,   17,   22,   22,   17,   12,    7,
+	6,   10,   14,   18,   18,   14,   10,    6,
+	5,    8,   11,   14,   14,   11,    8,    5,
+	4,    6,    8,   10,   10,    8,    6,    4,
+	3,    4,    5,  -10,  -10,    5,    4,    3,
+	0,    0,    0,  -40,  -40,    0,    0,    0,
+	0,    0,    0,    0,    0,    0,    0,    0
 };
-int Eval::minor_rank_value[8] = { 
-	-20, -5, 0, 10, 10, 0, -5, -15 
+
+int Eval::knight_pcsq_mg[64] = {
+	-25,  -15,  -15,  -15,  -15,  -15,  -15,  -25,
+	-15,   -5,   -5,   -5,   -5,   -5,   -5,  -15,
+	-15,   -5,    0,    0,    0,    0,   -5,  -15,
+	-15,   -5,    0,   10,   10,    0,   -5,  -15,
+	-15,   -5,    0,   10,   10,    0,   -5,  -15,
+	-15,   -5,    0,    0,    0,    0,   -5,  -15,
+	-15,   -5,   -5,   -5,   -5,   -5,   -5,  -15,
+	-20,  -20,  -20,  -20,  -20,  -20,  -20,  -20
 };
-int Eval::pawn_file_value[8] = { 
-	3, 4, 5, 6, 6, 5, 4, 3 
+
+int Eval::bishop_pcsq_mg[64] = {
+	-15,  -15,  -15,  -15,  -15,  -15,  -15,  -15,
+	-15,   -5,   -5,   -5,   -5,   -5,   -5,  -15,
+	-15,   -5,    0,    0,    0,    0,   -5,  -15,
+	-15,   -5,    0,   10,   10,    0,   -5,  -15,
+	-15,   -5,    0,   10,   10,    0,   -5,  -15,
+	-15,   -5,    0,    0,    0,    0,   -5,  -15,
+	-15,   -5,   -5,   -5,   -5,   -5,   -5,  -15,
+	-20,  -20,  -20,  -20,  -20,  -20,  -20,  -20
 };
-int Eval::pawn_file_value_inc[8] = { 
-	1, 2, 3, 4, 4, 3, 2, 1 
+
+int Eval::queen_pcsq_mg[64] = {
+	-40,  -30,  -20,  -20,  -20,  -20,  -30,  -40,
+	-40,  -30,  -20,  -20,  -20,  -20,  -30,  -40,
+	-40,  -30,  -20,  -20,  -20,  -20,  -30,  -40,
+	-40,  -30,  -20,  -20,  -20,  -20,  -30,  -40,
+	-40,  -30,  -20,  -20,  -20,  -20,  -30,  -40,
+	-40,  -30,  -20,  -20,  -20,  -20,  -30,  -40,
+	-40,  -30,  -20,  -20,  -20,  -20,  -30,  -40,
+	-30,  -20,  -10,    0,  -10,  -10,  -20,  -30
 };
-int Eval::king_file_value_eg[8] = { 
-	0, 8, 16, 24, 24, 16, 8, 0 
+
+int Eval::king_pcsq_mg[64] = {
+	-40,  -40,  -40,  -40,  -40,  -40,  -40,  -40,
+	-40,  -40,  -40,  -40,  -40,  -40,  -40,  -40,
+	-40,  -40,  -40,  -40,  -40,  -40,  -40,  -40,
+	-40,  -40,  -40,  -40,  -40,  -40,  -40,  -40,
+	-40,  -40,  -40,  -40,  -40,  -40,  -40,  -40,
+	-40,  -40,  -40,  -40,  -40,  -40,  -40,  -40,
+	-40,  -40,  -40,  -40,  -40,  -40,  -40,  -40,
+	  0,   20,   40,  -40,    0,  -40,   40,   20
 };
-int Eval::king_rank_value_eg[8] = { 
-	0, 8, 16, 24, 24, 16, 8, 0 
-};
-int Eval::queen_file_value_mg[8] = { 
-	-20, -10, 0, 0, 0, 0, -10, -20 
+
+int Eval::king_pcsq_eg[64] = {
+	 0,    8,   16,   24,   24,   16,    8,    0,
+	 8,   16,   24,   32,   32,   24,   16,    8,
+	16,   24,   32,   40,   40,   32,   24,   16,
+	24,   32,   40,   48,   48,   40,   32,   24,
+	24,   32,   40,   48,   48,   40,   32,   24,
+	16,   24,   32,   40,   40,   32,   24,   16,
+	 8,   16,   24,   32,   32,   24,   16,    8,
+	 0,    8,   16,   24,   24,   16,    8,    0
 };
 

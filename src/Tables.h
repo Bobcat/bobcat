@@ -77,7 +77,7 @@ public:
 		if (transp->flags == 0) {
 			occupied++;
 		}
-		transp->move = transp->key != key32(key) || move != 0 ? move : transp->move;
+		transp->move = move;
 		transp->key = key32(key);
 		transp->score = (int16)score;
 		transp->depth = (uint8)depth;

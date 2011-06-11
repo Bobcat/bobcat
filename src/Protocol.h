@@ -143,7 +143,7 @@ public:
 				"id author Gunnar Harms\n" \
 				"option name Hash type spin default 256 min 8 max 1024\n" \
 				"option name Ponder type check default true\n" \
-				"option name Threads type spin default 2 min 1 max 4\n" \
+				"option name Threads type spin default 1 min 1 max 4\n" \
 				"uciok\n");
 
 			output->writeLine(buf);

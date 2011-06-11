@@ -18,7 +18,7 @@
 
 class Bobcat : public ProtocolListener {
 public:
-	Bobcat() : num_threads(2) {
+	Bobcat() : num_threads(1) {
 	}
 
 	virtual ~Bobcat() {
@@ -172,15 +172,15 @@ public:
 		newGame();
 
 		bool console_mode = true;
-		game->pos->board->print_board();
+		//game->pos->board->print_board();
 		int exit = 0;
 
 		while (exit == 0) {
 			game->pos->generateMoves();
 
-			if (console_mode) {
-				printf("> ");
-			}
+			//if (console_mode) {
+			//	printf("> ");
+			//}
 
 			char line[16384];
 			input->getLine(true, line);

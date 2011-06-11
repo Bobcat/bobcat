@@ -41,7 +41,7 @@ public:
 protected:
 	void write(const char* text) {
 		if (file <= 0) {
-			printf(text);
+			//printf(text);
 			return;
 		}
 		fwrite(text, 1, strlen(text), file);

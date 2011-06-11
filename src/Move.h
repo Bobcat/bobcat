@@ -62,6 +62,10 @@ __forceinline int isPromotion(const Move m) {
 	return moveType(m) & PROMOTION; 
 }
 
+__forceinline int isTactical(const Move m) { 
+	return moveType(m) & (CAPTURE | EPCAPTURE | PROMOTION); 
+}
+
 __forceinline int isQueenPromotion(const Move m) { 
 	return isPromotion(m) && (movePromoted(m) & 7) == Queen; 
 }

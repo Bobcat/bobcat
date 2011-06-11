@@ -148,28 +148,9 @@ public:
 		return attacks ^ Bmagic(sq, occupied ^ blockers);
 	}
 
-	__forceinline bool isPawnPassed(const Square sq, const Side side) {
-		return (passed_pawn_front_span[side][sq] & piece[Pawn + ((side ^ 1) << 3)]) == 0;
+	__forceinline BB isOccupied(Square sq) {
+		return bbSquare(sq) & occupied;
 	}
-
-	__forceinline bool isPieceOnSquare(const Piece p, const Square sq, const Side side) {
-		return ((bbSquare(sq) & piece[p + (side << 3)]) != 0);
-	}
-
-	__forceinline bool isPieceOnFile(const Piece p, const Square sq, const Side side) {
-		return ((bbFile(sq) & piece[p + (side << 3)]) != 0);
-	}
-
-	__forceinline bool isPawnIsolated(const Square sq, const Side side) {
-		return (piece[Pawn + (side << 3)] & neighbourFiles(bbSquare(sq))) == 0;
-	}
-
-	__forceinline bool isPawnBehind(const Square sq, const Side side) { 
-		BB bb = bbSquare(sq);
-		return (piece[Pawn + (side << 3)] & (pawnFill[side ^ 1](westOne(bb) | eastOne(bb)))) == 0;
-	}
-
-	#define isOccupied(x) (bbSquare(x) & occupied)
 
 	__forceinline bool isCastleAllowed(Square to) {
 		switch (to) {
@@ -271,4 +252,25 @@ public:
 	__forceinline const BB& rooks(int side) const { return piece[Rook | (side << 3)]; }
 	__forceinline const BB& queens(int side) const { return piece[Queen | (side << 3)]; }
 	__forceinline const BB& king(int side) const { return piece[King | (side << 3)]; }
+
+	__forceinline bool isPawnPassed(const Square sq, const Side side) {
+		return (passed_pawn_front_span[side][sq] & pawns(side ^ 1)) == 0;
+	}
+
+	__forceinline bool isPieceOnSquare(const Piece p, const Square sq, const Side side) {
+		return ((bbSquare(sq) & piece[p + (side << 3)]) != 0);
+	}
+
+	__forceinline bool isPieceOnFile(const Piece p, const Square sq, const Side side) {
+		return ((bbFile(sq) & piece[p + (side << 3)]) != 0);
+	}
+
+	__forceinline bool isPawnIsolated(const Square sq, const Side side) {
+		return (pawns(side) & neighbourFiles(bbSquare(sq))) == 0;
+	}
+
+	__forceinline bool isPawnBehind(const Square sq, const Side side) { 
+		const BB& bbsq = bbSquare(sq);
+		return (pawns(side) & (pawnFill[side ^ 1](westOne(bbsq) | eastOne(bbsq)))) == 0;
+	}
 };

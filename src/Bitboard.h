@@ -44,7 +44,6 @@ BB pawn_west_attack_span[2][64];
 BB pawn_captures[128];
 BB knight_attacks[64];
 BB king_attacks[64];
-BB colored[2];
 
 __forceinline const BB& bbSquare(int sq) { return bb_square[sq]; }
 __forceinline const BB& bbRank(int rank) { return bb_rank[rank]; }
@@ -100,12 +99,10 @@ void initBetweenBitboards(const Square from, BB (*stepFunc)(const BB&), int step
 }
 
 void Bitboard_h_initialise() {
-	colored[0] = colored[1] = 0;
 	for (Square sq = a1; sq <= h8; sq++) {
 		bb_square[sq] = (BB)1 << sq;
 		bb_rank[sq] = RANK1 << (sq & 56);
 		bb_file[sq] = AFILE << (sq & 7);
-		colored[((9 * sq) & 8) == 0 ? 1 : 0] |= bbSquare(sq);
 	}
 
 	for (Square sq = a1; sq <= h8; sq++) {
@@ -164,6 +161,7 @@ BB (*pawnEastAttacks[2])(const BB&) = { northWestOne, southWestOne };
 BB (*pawnWestAttacks[2])(const BB&) = { northEastOne, southEastOne };
 BB (*pawnFill[2])(const BB&) = { northFill, southFill };
 
+const BB rank_1[2] = { RANK1, RANK8 };
 const BB rank_3[2] = { RANK3, RANK6 };
 const BB rank_7[2] = { RANK7, RANK2 };
 const BB rank_6_and_7[2] = { RANK6|RANK7, RANK2|RANK3 };

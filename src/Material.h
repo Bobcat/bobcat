@@ -85,7 +85,7 @@ public:
 		return key[side] & 15;
 	}
 
-	__forceinline int evaluate(int eval, int side, const Board* board) {
+	__forceinline int evaluate(bool& recognized_score, int eval, int side, const Board* board) {
 		uint32 key1, key2;
 		bool flip;
 		int score;
@@ -102,7 +102,7 @@ public:
 			flip = true;
 		}
 		this->board = board;
-
+		recognized_draw = false;
 		if ((key1 & ~all_pawns) == key1) {
 			switch (key1) {
 				case krb:
@@ -128,7 +128,7 @@ public:
 					break;
 				case kn:
 				case k:
-					score = min(0, score);
+					score = key2 == k ? 0 : min(0, score);
 					break;
 				default:
 					break;
@@ -137,12 +137,16 @@ public:
 		else {
 			switch (key1 & ~all_pawns) {
 				case kb:
-					score = KBxKX(score, key1, key2);
+					score = KBxKX(score, key1, key2, flip ? side ^ 1 : side);
+					break;
+				case k:
+					score = KxKx(score, key1, key2, flip ? side ^ 1 : side);
 					break;
 				default:
 					break;
 			}
 		}
+		recognized_score = recognized_draw;
 		return flip ? -score : score;
 	}
 
@@ -252,14 +256,14 @@ public:
 			case k:
 			case kn:
 				if (key2 & all_pawns) return min(0, eval); 
-				else return 0;
+				else return recognizedDraw();
 			default:
 				break;
 		}
 		return eval;
 	}
 
-	__forceinline int KBxKX(int eval, uint32 key1, uint32 key2) {
+	__forceinline int KBxKX(int eval, uint32 key1, uint32 key2, int side1) {
 		switch (key2 & ~all_pawns) {
 			case kb:
 				if (!sameColor(lsb(board->bishops(0)), lsb(board->bishops(1))) && 
@@ -268,12 +272,70 @@ public:
 					return eval/2;
 				}
 				break;
+			case k:
+				return KBxKx(eval, key1, key2, side1);
 			default:
 				break;
 		}
 		return eval;
 	}
 
+	__forceinline int KBxKx(int eval, uint32 key1, uint32 key2, int side1) {
+		if ((key1 & all_pawns) == 1 && (key2 & all_pawns) == 0) {
+			return KBpK(eval, side1);
+		}
+		return eval;
+	}
+	// fen 7k/8/8/8/4B3/2K4P/8/8 w - - 5 4 
+	// fen 7k/7P/8/8/4B3/2K5/8/8 w - - 0 1
+	// fen 7Q/6k1/8/8/4B3/2K5/8/8 b - - 0 1
+	__forceinline int KBpK(int eval, int side1) {
+		Square pawnsq1 = lsb(board->pawns(side1));
+		Square promosq1 = side1 == 1 ? file(pawnsq1) : file(pawnsq1) + 56;
+		if (!sameColor(promosq1, lsb(board->bishops(side1)))) {
+			int side2 = side1 ^ 1;
+			Square ksq2 = board->king_square[side2];
+			if (
+				(promosq1 == h8 && (ksq2 == h8 || ksq2 == h7 || ksq2 == g8 || ksq2 == g7)) ||
+				(promosq1 == a8 && (ksq2 == a8 || ksq2 == a7 || ksq2 == b8 || ksq2 == b7)) ||
+				(promosq1 == h1 && (ksq2 == h1 || ksq2 == h2 || ksq2 == g1 || ksq2 == g2)) ||
+				(promosq1 == a1 && (ksq2 == a1 || ksq2 == a2 || ksq2 == b1 || ksq2 == b2)))
+			{
+				return recognizedDraw();
+			}
+		}
+		return eval;
+	}
+
+	__forceinline int KxKx(int eval, uint32 key1, uint32 key2, int side1) {
+		if ((key1 & all_pawns) == 1 && (key2 & all_pawns) == 0) {
+			return KpK(eval, side1);
+		}
+		return eval;
+	}
+
+	__forceinline int KpK(int eval, int side1) {
+		Square pawnsq1 = lsb(board->pawns(side1));
+		Square promosq1 = side1 == 1 ? file(pawnsq1) : file(pawnsq1) + 56;
+		int side2 = side1 ^ 1;
+		Square ksq2 = board->king_square[side2];
+		if (
+			(promosq1 == h8 && (ksq2 == h8 || ksq2 == h7 || ksq2 == g8 || ksq2 == g7)) ||
+			(promosq1 == a8 && (ksq2 == a8 || ksq2 == a7 || ksq2 == b8 || ksq2 == b7)) ||
+			(promosq1 == h1 && (ksq2 == h1 || ksq2 == h2 || ksq2 == g1 || ksq2 == g2)) ||
+			(promosq1 == a1 && (ksq2 == a1 || ksq2 == a2 || ksq2 == b1 || ksq2 == b2)))
+		{
+			return recognizedDraw();
+		}
+		return eval;
+	}
+
+	__forceinline int recognizedDraw() {
+		recognized_draw = true;
+		return 0;
+	}
+
+	bool recognized_draw;
 	uint32 key[2];
 	int material_value[2];
 	const Board* board;

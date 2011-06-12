@@ -58,7 +58,8 @@ public:
 
 		int eval = pos_eval + mat_eval;
 
-		return pos->material.evaluate(pos->side_to_move == 1 ? -eval : eval, pos->side_to_move, board);
+		return pos->material.evaluate(pos->recognized_eval_score, pos->side_to_move == 1 ? -eval : eval, 
+			pos->side_to_move, board);
 	}
 
 	__forceinline const BB& attacks(Side side) {

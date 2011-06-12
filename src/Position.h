@@ -69,10 +69,12 @@ public:
 	Move last_move; 
 	int eval_score;
 	int transp_score;
+	int transp_beta;
 	int transp_depth;
 	int transp_flags;
 	bool transp_score_valid;
 	bool transp_depth_valid;
 	Move transp_move;
+	bool recognized_eval_score;
 	Transposition* transposition;
 };

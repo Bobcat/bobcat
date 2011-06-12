@@ -119,7 +119,7 @@ protected:
 					}
 					else {
 						score = searchNextDepth(next_depth, -alpha - 1, -alpha);
-						if (score > alpha && score < beta) { // PV node and not a fail high
+						if (score > alpha && score < beta) { 
 							score = searchNextDepth(next_depth, -beta, -alpha);
 						}
 					}
@@ -175,6 +175,9 @@ protected:
 	}
 
 	__forceinline Score searchNextDepth(const Depth depth, const Score alpha, const Score beta) {
+		if (pos->recognized_eval_score) {
+			return pos->eval_score;
+		}
 		return depth <= 0 ? -searchQuiesce(alpha, beta, 0) : -searchAll(depth, alpha, beta);
 	}
 
@@ -329,13 +332,19 @@ protected:
 		return depth - 1*2;
 	}
 
-	__forceinline bool okToPruneLastMove(const bool is_pv_node, const Score best_score, const Depth next_depth, 
+	__forceinline bool okToPruneLastMove(const bool is_pv_node, Score& best_score, const Depth next_depth, 
 		const Depth depth, const Score alpha) const 
 	{
-		return next_depth <= 3*2  
+		if (next_depth <= 3*2  
 			&& next_depth < depth - 1*2
-			&& -pos->eval_score + fp_margin[max(0, next_depth)] < alpha 
-			&& best_score > -MAXSCORE;
+			&& -pos->eval_score + fp_margin[max(0, next_depth)] < alpha
+			//&& best_score > -MAXSCORE //not necessary but helps to keep ub low in case current fails low? try in qs too?
+			) 
+		{
+			best_score = max(best_score, -pos->eval_score + fp_margin[max(0, next_depth)]);
+			return true;
+		}
+		return false;
 	}
 
 	__forceinline int nullMoveReduction(const bool is_pv_node, const Depth depth, const Score beta) const {
@@ -371,14 +380,24 @@ protected:
 			const Move m = move_data->move;
 
 			if (!pos->in_check && !isPromotion(m)) {
-				if (move_data->score < 0 || pos->eval_score + piece_value(moveCaptured(m)) + 150 < alpha) {
+				if (move_data->score < 0) { 
+					continue;
+				}
+				else if (pos->eval_score + piece_value(moveCaptured(m)) + 150 < alpha) {
+					best_score = max(best_score, pos->eval_score + piece_value(moveCaptured(m)) + 150);
 					continue;
 				}
 			}
 			if (makeMove(m)) {
 				++move_count;
 
-				Score score = -searchQuiesce(-beta, -alpha, qs_ply + 1);
+				Score score;
+				if (pos->recognized_eval_score) {
+					score = pos->eval_score;
+				}
+				else {
+					score = -searchQuiesce(-beta, -alpha, qs_ply + 1);
+				}
 
 				unmakeMove();
 				
@@ -415,7 +434,7 @@ protected:
 				pos = game->pos;
 				return false;
 			}
-			pos->in_check = (eval->attacks(them) & 	bbSquare(board->king_square[us])) != 0;
+			pos->in_check = (eval->attacks(them) & bbSquare(board->king_square[us])) != 0;
 
 			ply++;
 			if (ply > max_ply_reached) {
@@ -588,11 +607,8 @@ protected:
 			if (value_piece == 0) {
 				value_piece = 1800;
 			}
-			if (value_piece < value_captured || value_piece == value_captured) {
+			if (value_piece <= value_captured) {
 				move_data.score = 300000 + value_captured*20 - value_piece;
-			}
-			else if (value_piece == value_captured) {
-				move_data.score = 240000 + value_captured;
 			}
 			else if (see->seeMove(m) >= 0) {
 				move_data.score = 160000 + value_captured*20 - value_piece;
@@ -628,9 +644,6 @@ protected:
 	}
 
 	__forceinline void storeTransposition(const Depth depth, const Score score, const int node_type, Move move) {
-//		if (pos->transposition && pos->transposition->key == transt->key32(pos->key)) {	
-//
-//		}
 		if (move == 0 && pos->transp_move != 0/* && pos->transp_score_valid*/) {
 			move = pos->transp_move;
 		}
@@ -661,7 +674,7 @@ protected:
 			break;
 		case BETA:
 			if ((pos->transp_score_valid = pos->transp_score >= beta) && pos->transp_depth) {
-				pos->eval_score = max(pos->eval_score, pos->transp_score);
+				pos->eval_score = max(pos->eval_score, pos->transp_beta);
 			}
 			break;
 		case ALPHA:
@@ -669,7 +682,7 @@ protected:
 				pos->eval_score = min(pos->eval_score, pos->transp_score);
 			}
 			break;
-		default:
+		default://error
 			pos->transp_score_valid = false;
 			break;
 		}

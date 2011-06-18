@@ -18,10 +18,6 @@
 
 class Board {
 public:
-	BB piece[2 << 3], occupied_by_side[2], occupied;
-	int board[64];
-	Square king_square[2];
-
 	void clear() {
 		memset(piece, 0, sizeof(piece));
 		memset(occupied_by_side, 0, sizeof(occupied_by_side));
@@ -54,7 +50,6 @@ public:
 		board[sq] = p;
 	}
 
-	//__forceinline 
 	void makeMove(const Move m) {
 		removePiece(movePiece(m), moveFrom(m));
 		if (isEpCapture(m)) {
@@ -83,7 +78,6 @@ public:
 		}
 	}
 
-	//__forceinline
 	void unmakeMove(const Move m) {
 		if (moveType(m) & PROMOTION) {
 			removePiece(movePromoted(m), moveTo(m));
@@ -185,32 +179,33 @@ public:
 			|| isAttackedByKing(sq, side);
 	}
 
-	__forceinline BB knightAttacks(const Square sq) { 
+	__forceinline const BB& knightAttacks(const Square sq) { 
 		return knight_attacks[sq]; 
 	}
 
-	__forceinline BB bishopAttacks(const Square sq) { 
+	__forceinline const BB& bishopAttacks(const Square sq) { 
 		return Bmagic(sq, occupied);
 	}
 
-	__forceinline BB rookAttacks(const Square sq) { 
+	__forceinline const BB& rookAttacks(const Square sq) { 
 		return Rmagic(sq, occupied);
 	}
 
-	__forceinline BB queenAttacks(const Square sq) { 
-		return Qmagic(sq, occupied);
+	__forceinline const BB& queenAttacks(const Square sq) { 
+		queen_attacks = Qmagic(sq, occupied);
+		return queen_attacks;
 	}
 
-	__forceinline BB kingAttacks(const Square sq) { 
+	__forceinline const BB& kingAttacks(const Square sq) { 
 		return king_attacks[sq]; 
 	}
 
 	__forceinline bool isAttackedBySlider(const Square sq, const Side side) {
-		BB r_attacks = rookAttacks(sq);
+		const BB& r_attacks = rookAttacks(sq);
 		if (piece[Rook + (side << 3)] & r_attacks) {
 			return true;
 		}
-		BB b_attacks = bishopAttacks(sq);
+		const BB& b_attacks = bishopAttacks(sq);
 		if (piece[Bishop + (side << 3)] & b_attacks) {
 			return true;
 		}
@@ -232,7 +227,7 @@ public:
 		return (piece[King | (side << 3)] & king_attacks[sq]) != 0;
 	}
 
-	void print_board() const {
+	void print() const {
 		static char piece_letter[] = "PNBRQK. pnbrqk. "; 
 		printf("\n");
 		for (int rank = 7; rank >= 0; rank--) {
@@ -252,6 +247,11 @@ public:
 	__forceinline const BB& rooks(int side) const { return piece[Rook | (side << 3)]; }
 	__forceinline const BB& queens(int side) const { return piece[Queen | (side << 3)]; }
 	__forceinline const BB& king(int side) const { return piece[King | (side << 3)]; }
+
+	BB piece[2 << 3], occupied_by_side[2], occupied;
+	int board[64];
+	Square king_square[2];
+	BB queen_attacks;
 
 	__forceinline bool isPawnPassed(const Square sq, const Side side) {
 		return (passed_pawn_front_span[side][sq] & pawns(side ^ 1)) == 0;

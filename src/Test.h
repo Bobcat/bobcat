@@ -29,7 +29,7 @@ struct perft_result {
 
 class Test {
 public:
-	Test(Game* game, int flags = LegalMoves) {
+	Test(Game* game, int flags = LEGALMOVES) {
 		this->game = game;
 		this->flags = flags;
 	}
@@ -43,8 +43,8 @@ public:
 			perft_result result;
 			perft_(i, result);
 			t2 = clock();
-			float diff = ((float)t2-(float)t1)/CLOCKS_PER_SEC;
-			printf("%5d%14d  %f\n", i, result.nodes, diff);
+			double diff = (t2-t1)/(double)CLOCKS_PER_SEC;
+			printf("%5d%14llu  %f\n", i, result.nodes, diff);
 		}
 	}
 
@@ -65,7 +65,7 @@ public:
 			uint64 nodes_start = result.nodes;
 			perft_(depth - 1, result);
 			game->unmakeMove();
-			printf("%7s %11ld\n", moveToString(*m, buf), result.nodes - nodes_start);
+			printf("%7s %11llu\n", moveToString(*m, buf), result.nodes - nodes_start);
 		}
 		printf("total positions is %llu\n", result.nodes);
 	}
@@ -79,13 +79,13 @@ private:
 		Position* pos = game->pos;
 		pos->generateMoves(0, 0, flags);
 
-		if ((flags & Stages) == 0 && depth == 1) { 
+		if ((flags & STAGES) == 0 && depth == 1) { 
 			result.nodes += pos->moveCount(); 
 		}
 		else {
 			while (const MoveData* move_data = pos->nextMove()) {
 				const Move* m = &move_data->move;
-				if (!game->makeMove(*m, (flags & LegalMoves) ? false : true, true)) {
+				if (!game->makeMove(*m, (flags & LEGALMOVES) ? false : true, true)) {
 					continue;
 				}
 				Test(game).perft_(depth - 1, result);

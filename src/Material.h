@@ -16,6 +16,8 @@
   along with Bobcat.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+static const int RECOGNIZEDDRAW = 1;
+
 class Material {
 public:
 	int max_value;
@@ -85,7 +87,7 @@ public:
 		return key[side] & 15;
 	}
 
-	__forceinline int evaluate(bool& recognized_score, int eval, int side, const Board* board) {
+	__forceinline int evaluate(int& flags, int eval, int side, const Board* board) {
 		uint32 key1, key2;
 		bool flip;
 		int score;
@@ -146,7 +148,10 @@ public:
 					break;
 			}
 		}
-		recognized_score = recognized_draw;
+		//is_endgame = (count(0, Knight) + count(0, Bishop) + count(0, Rook) + count(0, Queen) +
+		//	count(1, Knight) + count(1, Bishop) + count(1, Rook) + count(1, Queen)) <= 3;
+
+		flags |= recognized_draw ? RECOGNIZEDDRAW : 0;
 		return flip ? -score : score;
 	}
 
@@ -286,20 +291,17 @@ public:
 		}
 		return eval;
 	}
-	// fen 7k/8/8/8/4B3/2K4P/8/8 w - - 5 4 
-	// fen 7k/7P/8/8/4B3/2K5/8/8 w - - 0 1
-	// fen 7Q/6k1/8/8/4B3/2K5/8/8 b - - 0 1
+
+	// fen 8/6k1/8/8/3K4/5B1P/8/8 w - - 0 1 
 	__forceinline int KBpK(int eval, int side1) {
 		Square pawnsq1 = lsb(board->pawns(side1));
 		Square promosq1 = side1 == 1 ? file(pawnsq1) : file(pawnsq1) + 56;
 		if (!sameColor(promosq1, lsb(board->bishops(side1)))) {
-			int side2 = side1 ^ 1;
-			Square ksq2 = board->king_square[side2];
-			if (
-				(promosq1 == h8 && (ksq2 == h8 || ksq2 == h7 || ksq2 == g8 || ksq2 == g7)) ||
-				(promosq1 == a8 && (ksq2 == a8 || ksq2 == a7 || ksq2 == b8 || ksq2 == b7)) ||
-				(promosq1 == h1 && (ksq2 == h1 || ksq2 == h2 || ksq2 == g1 || ksq2 == g2)) ||
-				(promosq1 == a1 && (ksq2 == a1 || ksq2 == a2 || ksq2 == b1 || ksq2 == b2)))
+			const BB& bbk2 = board->king(side1 ^ 1);
+			if ((promosq1 == h8 && (bbk2 & corner_h8)!=0) ||
+				(promosq1 == a8 && (bbk2 & corner_a8)) ||
+				(promosq1 == h1 && (bbk2 & corner_h1)) ||
+				(promosq1 == a1 && (bbk2 & corner_a1)))
 			{
 				return recognizedDraw();
 			}
@@ -317,13 +319,11 @@ public:
 	__forceinline int KpK(int eval, int side1) {
 		Square pawnsq1 = lsb(board->pawns(side1));
 		Square promosq1 = side1 == 1 ? file(pawnsq1) : file(pawnsq1) + 56;
-		int side2 = side1 ^ 1;
-		Square ksq2 = board->king_square[side2];
-		if (
-			(promosq1 == h8 && (ksq2 == h8 || ksq2 == h7 || ksq2 == g8 || ksq2 == g7)) ||
-			(promosq1 == a8 && (ksq2 == a8 || ksq2 == a7 || ksq2 == b8 || ksq2 == b7)) ||
-			(promosq1 == h1 && (ksq2 == h1 || ksq2 == h2 || ksq2 == g1 || ksq2 == g2)) ||
-			(promosq1 == a1 && (ksq2 == a1 || ksq2 == a2 || ksq2 == b1 || ksq2 == b2)))
+		const BB& bbk2 = board->king(side1 ^ 1);
+		if ((promosq1 == h8 && (bbk2 & corner_h8)) ||
+			(promosq1 == a8 && (bbk2 & corner_a8)) ||
+			(promosq1 == h1 && (bbk2 & corner_h1)) ||
+			(promosq1 == a1 && (bbk2 & corner_a1)))
 		{
 			return recognizedDraw();
 		}
@@ -335,14 +335,19 @@ public:
 		return 0;
 	}
 
+	//__forceinline bool isEndgame() {
+	//	return is_endgame;
+	//}
+
 	bool recognized_draw;
+//	bool is_endgame;
 	uint32 key[2];
 	int material_value[2];
 	const Board* board;
 
 	static int bit_shift[7];
 	static int piece_value[6];
-	
+
 	static const uint32 k   = 0x00000;
 	static const uint32 kn  = 0x00010;
 	static const uint32 kb  = 0x00100;

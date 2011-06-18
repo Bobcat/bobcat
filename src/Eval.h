@@ -58,8 +58,8 @@ public:
 
 		int eval = pos_eval + mat_eval;
 
-		return pos->material.evaluate(pos->recognized_eval_score, pos->side_to_move == 1 ? -eval : eval, 
-			pos->side_to_move, board);
+		return pos->material.evaluate(pos->flags, pos->side_to_move == 1 ? -eval : eval, pos->side_to_move, 
+			board);
 	}
 
 	__forceinline const BB& attacks(Side side) {
@@ -172,7 +172,7 @@ protected:
 			Square sq = lsb(rooks);
 			const BB& bbsq = bbSquare(sq); 
 			if (bbsq & open_files) { 
-				poseval[c] += 30;
+				poseval[c] += 20;
 			}
 			else if (bbsq & half_open_files[c]) { 
 				poseval[c] += 10;
@@ -239,7 +239,7 @@ protected:
 		if (board->queens(c ^ 1) || popCount(board->rooks(c ^ 1)) > 1) {
 			BB eastwest = bbsq | westOne(bbsq) | eastOne(bbsq);
 			poseval_mg[c] += -25*popCount(open_files & eastwest);
-			poseval_mg[c] += -20*popCount(half_open_files[c] & eastwest);
+			poseval_mg[c] += -15*popCount(half_open_files[c] & eastwest);
 		}
 
 		if (((c == 0) && 
@@ -262,12 +262,11 @@ protected:
 				int r = c == 0 ? rank(sq) : 7 - rank(sq);
 
 				int score_mg = r*20; 
-				int score_eg = r*18; 
+				int score_eg = r*14; 
 
-				score_eg += -3*r*(front_span & board->occupied_by_side[c] ? 1 : 0);
-				score_eg += -2*r*(front_span & board->rooks(c) ? 1 : 0);
-				score_eg += -2*r*(front_span & board->occupied_by_side[c ^ 1] ? 1 : 0);
-				score_eg += -3*r*(front_span & all_attacks[c ^ 1] ? 1 : 0);
+				score_eg += 3*r*(front_span & board->occupied_by_side[c] ? 0 : 1);
+				score_eg += 2*r*(front_span & board->occupied_by_side[c ^ 1] ? 0 : 1);
+				score_eg += 3*r*(front_span & all_attacks[c ^ 1] ? 0 : 1);
 
 				int d_us = 7 - chebyshev_distance[sq][kingSq(c)];
 				int d_them = 7 - chebyshev_distance[sq][kingSq(c ^ 1)];
@@ -293,6 +292,7 @@ protected:
 
 	__forceinline void initialiseEvaluate() {
 		pos = game->pos;
+		pos->flags = 0;
 
 		poseval_mg[0] = poseval_eg[0] = poseval[0] = mateval[0] = 0;
 		poseval_mg[1] = poseval_eg[1] = poseval[1] = mateval[1] = 0;
@@ -371,20 +371,28 @@ protected:
 };
 
 BB Eval::bishop_trapped_a7h7[2] = { 
-	bbSquare(a7) | bbSquare(h7), bbSquare(a2) | bbSquare(h2) 
+	(BB)1 << a7 | (BB)1 << h7, (BB)1 << a2 | (BB)1 << h2 
 };
 
 BB Eval::pawns_trap_bishop_a7h7[2][2] = { 
-	{ bbSquare(b6) | bbSquare(c7), bbSquare(b3) | bbSquare(c2) }, 
-	{ bbSquare(g6) | bbSquare(f7), bbSquare(g3) | bbSquare(f2) } 
+	{ (BB)1 << b6 | (BB)1 << c7, (BB)1 << b3 | (BB)1 << c2 }, 
+	{ (BB)1 << g6 | (BB)1 << f7, (BB)1 << g3 | (BB)1 << f2 } 
 };
 
+//int Eval::bishop_mobility_mg[14] = { 
+//	-18, -12, -6, 0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23
+//};
+//
+//int Eval::rook_mobility_mg[15] = { 
+//	-18, -12, -6, 0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23, 23
+//};
+
 int Eval::bishop_mobility_mg[14] = { 
-	-18, -12, -6, 0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23
+	-15,  -6, 0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23, 23
 };
 
 int Eval::rook_mobility_mg[15] = { 
-	-18, -12, -6, 0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23, 23
+	-15, -7,  0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23, 23, 24 
 };
 
 int Eval::knight_mobility_mg[9] = { 
@@ -403,7 +411,7 @@ int Eval::pawn_pcsq_mg[64] = {
 };
 
 int Eval::knight_pcsq_mg[64] = {
-	-25,  -15,  -15,  -15,  -15,  -15,  -15,  -25,
+	-25,  -20,  -15,  -15,  -15,  -15,  -20,  -25,
 	-15,   -5,   -5,   -5,   -5,   -5,   -5,  -15,
 	-15,   -5,    0,    0,    0,    0,   -5,  -15,
 	-15,   -5,    0,   10,   10,    0,   -5,  -15,
@@ -456,4 +464,3 @@ int Eval::king_pcsq_eg[64] = {
 	 8,   16,   24,   32,   32,   24,   16,    8,
 	 0,    8,   16,   24,   24,   16,    8,    0
 };
-

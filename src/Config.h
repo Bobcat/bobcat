@@ -120,7 +120,7 @@ public:
 
 	bool getBool(const char* section, const char* key, const bool def = false) const {
 		const char* s = getSection(section)->getString(key);
-		return s ? stricmp(s, "true") == 0 : def;
+		return s ? stricmp(s, "true") == 0 : def;// 1
 	}
 
 	bool sectionNameFromLine(const char* line, char* section_name) {

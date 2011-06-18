@@ -26,16 +26,15 @@ public:
 	virtual void sortMove(MoveData& move_data) = 0;
 };
 
-enum MovesFlags {	
-	LegalMoves = 1, Stages = 2
-};
+static const int LEGALMOVES = 1;
+static const int STAGES = 2;
 
 class Moves {
 public:
 	__forceinline void generateMoves(MoveSorter* sorter = 0, const Move transposition_move = 0, const int flags = 0) {
 		reset(sorter, transposition_move, flags);
 		max_stage = 3;
-		if ((flags & Stages) == 0) {
+		if ((flags & STAGES) == 0) {
 			generateTranspositionMove();
 			generateCapturesAndPromotions();
 			generateQuietMoves();
@@ -45,7 +44,7 @@ public:
 	__forceinline void generateCapturesAndPromotions(MoveSorter* sorter, const Move transposition_move = 0, const int flags = 0) {
 		reset(sorter, transposition_move, flags);
 		max_stage = 2;
-		if ((flags & Stages) == 0) {
+		if ((flags & STAGES) == 0) {
 			generateTranspositionMove();
 			generateCapturesAndPromotions();
 		}
@@ -153,7 +152,7 @@ private:
 		iteration = 0;
 		number_moves = 0;
 		stage = 0;
-		if (flags & LegalMoves) {
+		if (flags & LEGALMOVES) {
 			pinned = board->getPinnedPieces(side_to_move, board->king_square[side_to_move]);
 		}
 		occupied = board->occupied;
@@ -216,7 +215,7 @@ private:
 			return;
 		}
 
-		if (((flags & LegalMoves) && !isLegal(move, piece, from, type))) {
+		if (((flags & LEGALMOVES) && !isLegal(move, piece, from, type))) {
 			return;
 		}
 		MoveData& move_data = move_list[number_moves++];

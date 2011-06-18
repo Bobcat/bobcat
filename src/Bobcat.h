@@ -199,7 +199,7 @@ public:
 				exit = 1;
 			}
 			else if (stricmp(tokens[0], "d") == 0) {
-				game->pos->board->print_board();
+				game->pos->board->print();
 				printf("\n");
 				printf("board key calculated  : %llu\n", game->calculateKey());
 				printf("board key incremental : %llu\n", game->pos->key);
@@ -209,7 +209,7 @@ public:
 				game->pos->print_moves();
 			}
 			else if (stricmp(tokens[0], "perft") == 0) {
-				Test(game).perft(6);
+				Test(game).perft(7);
 			}
 			else if (stricmp(tokens[0], "divide") == 0) {
 				Test(game).perft_divide(5);

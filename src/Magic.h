@@ -104,11 +104,11 @@ BB magicmoves_r_mask[64] = {
 	0x6E10101010101000ULL, 0x5E20202020202000ULL, 0x3E40404040404000ULL, 0x7E80808080808000ULL 
 }; 
 
-__forceinline BB Bmagic(const uint square, const BB occupied) {
+__forceinline const BB& Bmagic(const uint square, const BB occupied) {
 	return magic_bishop_db[square][(((occupied)&magicmoves_b_mask[square])*magicmoves_b_magics[square])>>55]; 
 } 
 
-__forceinline BB Rmagic(const uint square, const BB occupied) { 
+__forceinline const BB& Rmagic(const uint square, const BB occupied) { 
 	return magic_rook_db[square][(((occupied)&magicmoves_r_mask[square])*magicmoves_r_magics[square])>>52]; 
 }
 

@@ -33,14 +33,17 @@ public:
 
 		initialiseSearch(wtime, btime, movestogo, winc, binc, movetime);
 
-		Score alpha = -MAXSCORE, beta = MAXSCORE, score;
+		Score alpha = -MAXSCORE;
+		Score beta = MAXSCORE;
 
 		while (!stop_search && search_depth < MAXDEPTH) {
 			try {
-				max_plies = max(32, ++search_depth + 16);
-				score = searchRoot(search_depth, alpha, beta);
+				search_depth += 1;
+				max_plies = max(32, search_depth + 16);
+				
+				Score score = searchRoot(search_depth, alpha, beta);
+			
 				savePV();
-
 				if (isEasyMove()) {
 					break;
 				}
@@ -250,9 +253,10 @@ protected:
 			const Move m = move_data->move;
 
 			if (makeMove(m)) {
+
 				Depth next_depth = getNextDepth(is_pv_node, depth, ++move_count, move_data);
 
-				if (okToPruneLastMove(depth, alpha, best_score, m)) {
+				if (okToPruneLastMove(is_pv_node, depth, next_depth, alpha, best_score, move_data)) {
 					unmakeMove();
 					continue;
 				}
@@ -322,22 +326,45 @@ protected:
 			&& move_count >= 5)
 		{
 			return depth - 2 - depth/16 - max(0, (move_count-6)/12);
-			//return depth - 2 - depth/16 - (is_pv_node ? 0 : max(0, (move_count-6)/12));
+			//return depth - 2 - depth/16 - (is_pv_node ? 0 : maxint(0, (move_count-6)/12));
 		}
 		return depth - 1;
 	}
 
-	__forceinline bool okToPruneLastMove(const Depth depth, const Score alpha, Score& best_score, const Move m) const {
-		if (depth <= 3  
-			&& !isCapture(m) 
-			&& -pos->eval_score + futility_margin[depth] < alpha
-			&& !pos->in_check 
-			&& !isPassedPawnMove(m) 
-			&& !isQueenPromotion(m) 
-			//&& !pos->material.isEndgame()
+	__forceinline bool okToPruneLastMove(const bool is_pv_node, const Depth depth, const Depth next_depth, const Score alpha, 
+		Score& best_score, const MoveData* move_data) const 
+	{
+		if (-pos->eval_score >= alpha) {
+			return false;
+		}
+		int margin;
+		//const Side them = pos->side_to_move;
+		if (next_depth < 2) {
+			// an opponent pieces could be hanging
+			//margin = pos->material.highestAttackedPieceValue(eval->attacks(them ^ 1), board, them);
+			margin = 150;
+		}
+		else {
+			// with a move left for ourselves even more is possible 
+			//margin = max(400, pos->material.highestPieceValue(them) + 100);
+			margin = 400;
+		}
+		//const Move m = move_data->move;
+
+		if (next_depth < 4 // maximum of two moves per side  
+			&& next_depth > 0 // prefer qs search in case <= 0
+			&& -pos->eval_score + margin < alpha
+			&& next_depth < depth - 1 // already reduced
+			//&& next_depth < depth // not extended
+			//&& !isCapture(m)
+			//&& !isPassedPawnMove(m) 
+			//&& !is_pv_node
+			//&& !pos->in_check
+			//&& move_data->score < KILLERMOVESCORE 
+			//&& best_score > -MAXSCORE // move_count > 1
 			)
 		{
-			best_score = max(best_score, -pos->eval_score + futility_margin[depth]);
+			best_score = max(best_score, -pos->eval_score + margin);
 			return true;
 		}
 		return false;
@@ -519,7 +546,7 @@ protected:
 
 	__forceinline void updateHistoryScores(const Move m, const Depth depth, int move_count) {
 		history_scores[movePiece(m)][moveTo(m)] += depth*depth;
-		if (history_scores[movePiece(m)][moveTo(m)] > 50000) {
+		if (history_scores[movePiece(m)][moveTo(m)] > PROMOTIONMOVESCORE) {
 			for (int i = 0; i < 16; i++) for (int k = 0; k < 64; k++) {
 				history_scores[i][k] >>= 2; 
 			}
@@ -611,16 +638,16 @@ protected:
 			}
 		}
 		else if (isPromotion(m)) {
-			move_data.score = 70000 + piece_value(movePromoted(m));
+			move_data.score = PROMOTIONMOVESCORE + piece_value(movePromoted(m));
 		}
 		else if (m == killer_moves[0][ply]) {
-			move_data.score = 125000;
+			move_data.score = KILLERMOVESCORE + 2;
 		}
 		else if (m == killer_moves[1][ply]) {
-			move_data.score = 124999;
+			move_data.score = KILLERMOVESCORE + 1;
 		}
 		else if (m == killer_moves[2][ply]) {
-			move_data.score = 124998;
+			move_data.score = KILLERMOVESCORE;
 		}
 		else {
 			move_data.score = history_scores[movePiece(m)][moveTo(m)];
@@ -733,7 +760,6 @@ protected:
 	TTable* transt;
 
 	static uint64 node_count;
-	static int futility_margin[5];
 
 	static const int EXACT = 1;
 	static const int BETA = 2;
@@ -741,7 +767,9 @@ protected:
 
 	static const int MAXSCORE = 0x7fff;
 	static const int MAXDEPTH = 96;
+
+	static const int KILLERMOVESCORE = 124900;
+	static const int PROMOTIONMOVESCORE = 50000;
 };
 
-int Search::futility_margin[5] = { 0, 125, 400, 600, 1200 };
 uint64 Search::node_count;

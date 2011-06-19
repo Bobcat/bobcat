@@ -43,10 +43,10 @@ public:
 	virtual void checkInput() = 0;
 	virtual void postMoves(const char* bestmove, const char* pondermove) = 0;
 
-	virtual void postInfo(const Move curr_move, int curr_move_number, int depth, int selective_depth, uint64 node_count, 
+	virtual void postInfo(const Move curr_move, int curr_move_number, const int depth, int selective_depth, uint64 node_count, 
 		uint64 nodes_per_sec, uint64 time, int hash_full) = 0;
 	
-	virtual void postPV(int depth, int max_ply, uint64 node_count, uint64 nodes_per_second, uint64 time, int hash_full, 
+	virtual void postPV(const int depth, int max_ply, uint64 node_count, uint64 nodes_per_second, uint64 time, int hash_full, 
 		int score, const char* pv) = 0; 
 
 	__forceinline int isAnalysing() {
@@ -104,7 +104,7 @@ public:
 		output->writeLine("");
 	}
 
-	virtual void postInfo(const Move curr_move, int curr_move_number, int depth, int selective_depth, uint64 node_count, 
+	virtual void postInfo(const Move curr_move, int curr_move_number, const int depth, int selective_depth, uint64 node_count, 
 		uint64 nodes_per_sec, uint64 time, int hash_full) 
 	{
 		char buf[1024];
@@ -122,7 +122,7 @@ public:
 		output->writeLine(buf);
 	}
 
-	virtual void postPV(int depth, int max_ply, uint64 node_count, uint64 nodes_per_second, uint64 time, int hash_full, 
+	virtual void postPV(const int depth, int max_ply, uint64 node_count, uint64 nodes_per_second, uint64 time, int hash_full, 
 				int score, const char* pv) 
 	{
 		char buf[1024];

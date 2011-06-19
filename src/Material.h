@@ -148,7 +148,7 @@ public:
 					break;
 			}
 		}
-		//is_endgame = (count(0, Knight) + count(0, Bishop) + count(0, Rook) + count(0, Queen) +
+		//is_late_endgame = (count(0, Knight) + count(0, Bishop) + count(0, Rook) + count(0, Queen) +
 		//	count(1, Knight) + count(1, Bishop) + count(1, Rook) + count(1, Queen)) <= 3;
 
 		flags |= recognized_draw ? RECOGNIZEDDRAW : 0;
@@ -335,12 +335,30 @@ public:
 		return 0;
 	}
 
-	//__forceinline bool isEndgame() {
-	//	return is_endgame;
+	//__forceinline bool isLateEndgame() {
+	//	return is_late_endgame;
+	//}
+
+	//__forceinline int highestAttackedPieceValue(const BB& attacks, const Board* board, const Side side) {
+	//	for (Piece p = Queen; p >= Pawn; p--) {
+	//		if (count(side, p) > 0 && (board->piece[p | (side << 3)] & attacks)) {
+	//			return piece_value[p];
+	//		}
+	//	}
+	//	return 0;
+	//}
+
+	//__forceinline int highestPieceValue(const Side side) {
+	//	for (Piece p = Queen; p >= Pawn; p--) {
+	//		if (count(side, p) > 0) {
+	//			return piece_value[p];
+	//		}
+	//	}
+	//	return 0;
 	//}
 
 	bool recognized_draw;
-//	bool is_endgame;
+//	bool is_late_endgame;
 	uint32 key[2];
 	int material_value[2];
 	const Board* board;
@@ -366,11 +384,3 @@ int Material::bit_shift[7] = {0, 4, 8, 12, 16, 20};
 int Material::piece_value[6] = { 100, 400, 400, 600, 1200, 0 };
 
 #define piece_value(p) (Material::piece_value[p & 7])
-//KRBKR,KRBKBB,KRBKBN,KRBKNN
-//KRNKR,KRNKBB,KRNKBN,KRNKNN
-//KRKBB,KRKBN,KRKB,KRKNN,KRKN
-//KBBKB,KBBKN
-//KBNK,KBNKB,KBNKN
-//KBKNN
-//KNNK,KNNKN
-//

@@ -261,7 +261,7 @@ public:
 			case k:
 			case kn:
 				if (key2 & all_pawns) return min(0, eval); 
-				else return recognizedDraw();
+				else return 0;
 			default:
 				break;
 		}
@@ -339,23 +339,23 @@ public:
 	//	return is_late_endgame;
 	//}
 
-	//__forceinline int highestAttackedPieceValue(const BB& attacks, const Board* board, const Side side) {
-	//	for (Piece p = Queen; p >= Pawn; p--) {
-	//		if (count(side, p) > 0 && (board->piece[p | (side << 3)] & attacks)) {
-	//			return piece_value[p];
-	//		}
-	//	}
-	//	return 0;
-	//}
+	__forceinline int highestAttackedPieceValue(const BB& attacks, const Board* board, const Side side) {
+		for (Piece p = Queen; p >= Pawn; p--) {
+			if (count(side, p) > 0 && (board->piece[p | (side << 3)] & attacks)) {
+				return piece_value[p];
+			}
+		}
+		return 0;
+	}
 
-	//__forceinline int highestPieceValue(const Side side) {
-	//	for (Piece p = Queen; p >= Pawn; p--) {
-	//		if (count(side, p) > 0) {
-	//			return piece_value[p];
-	//		}
-	//	}
-	//	return 0;
-	//}
+	__forceinline int highestPieceValue(const Side side) {
+		for (Piece p = Queen; p >= Pawn; p--) {
+			if (count(side, p) > 0) {
+				return piece_value[p];
+			}
+		}
+		return 0;
+	}
 
 	bool recognized_draw;
 //	bool is_late_endgame;

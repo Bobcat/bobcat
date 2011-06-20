@@ -196,7 +196,7 @@ protected:
 
 		bool is_pv_node = beta - alpha > 1;
 
-		if (!is_pv_node && pos->transp_score_valid && pos->transp_depth_valid) { 
+		if (/*!is_pv_node && */pos->transp_score_valid && pos->transp_depth_valid) { 
 			return searchNodeScore(pos->transp_score);
 		} 
 		
@@ -325,8 +325,8 @@ protected:
 			&& !isCapture(m) 
 			&& move_count >= 5)
 		{
-			return depth - 2 - depth/16 - max(0, (move_count-6)/12);
-			//return depth - 2 - depth/16 - (is_pv_node ? 0 : maxint(0, (move_count-6)/12));
+			//return depth - 2;
+			return depth - 2 - depth/8;// - (is_pv_node ? 0 : max(0, (move_count-6)/12));
 		}
 		return depth - 1;
 	}
@@ -334,36 +334,27 @@ protected:
 	__forceinline bool okToPruneLastMove(const bool is_pv_node, const Depth depth, const Depth next_depth, const Score alpha, 
 		Score& best_score, const MoveData* move_data) const 
 	{
-		if (-pos->eval_score >= alpha) {
+		//const Move m = move_data->move;
+		if (!(-pos->eval_score >= alpha
+			&& next_depth < 4 // maximum of two moves per side (one was already played)
+			&& next_depth > 0 // prefer qs search in case next_depth <= 0
+			&& next_depth < depth - 1 // already reduced
+			&& !is_pv_node))
+		{
 			return false;
 		}
+
 		int margin;
-		//const Side them = pos->side_to_move;
+		const Side them = pos->side_to_move;
 		if (next_depth < 2) {
-			// an opponent pieces could be hanging
-			//margin = pos->material.highestAttackedPieceValue(eval->attacks(them ^ 1), board, them);
-			margin = 150;
+			// an opponent piece could be hanging
+			margin = pos->material.highestAttackedPieceValue(eval->attacks(them ^ 1), board, them);
 		}
 		else {
 			// with a move left for ourselves even more is possible 
-			//margin = max(400, pos->material.highestPieceValue(them) + 100);
-			margin = 400;
+			margin = max(400, pos->material.highestPieceValue(them) + 100);
 		}
-		//const Move m = move_data->move;
-
-		if (next_depth < 4 // maximum of two moves per side  
-			&& next_depth > 0 // prefer qs search in case <= 0
-			&& -pos->eval_score + margin < alpha
-			&& next_depth < depth - 1 // already reduced
-			//&& next_depth < depth // not extended
-			//&& !isCapture(m)
-			//&& !isPassedPawnMove(m) 
-			//&& !is_pv_node
-			//&& !pos->in_check
-			//&& move_data->score < KILLERMOVESCORE 
-			//&& best_score > -MAXSCORE // move_count > 1
-			)
-		{
+		if (-pos->eval_score + margin < alpha) {
 			best_score = max(best_score, -pos->eval_score + margin);
 			return true;
 		}
@@ -371,13 +362,13 @@ protected:
 	}
 
 	__forceinline int nullMoveReduction(const Depth depth) const {
-		return 4 + depth/16;
+		return 4;// + depth/8;
 	}
 
 	Score searchQuiesce(Score alpha, const Score beta, int qs_ply) {
 		findTransposition(0, alpha, beta);
 
-		if (beta - alpha == 1 && pos->transp_score_valid && pos->transp_depth_valid) { 
+		if (/*beta - alpha == 1 &&*/ pos->transp_score_valid && pos->transp_depth_valid) { 
 			return searchNodeScore(pos->transp_score);
 		} 
 

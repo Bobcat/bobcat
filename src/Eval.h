@@ -44,7 +44,9 @@ public:
 			if (pawn_attacks[side] & kingmoves[side ^ 1]) {
 				attack_count[side]++;
 			}
-			poseval_mg[side] += attack_points[side]*max(0, attack_count[side] - 1);
+			if (attack_count[side] > 1) {
+				poseval_mg[side] += attack_points[side]*(attack_count[side] - 1);
+			}
 		}
 
 		double stage = (pos->material.value()-pos->material.pawnValue())/(double)pos->material.max_value;
@@ -57,8 +59,8 @@ public:
 
 		int eval = pos_eval + mat_eval;
 
-		return pos->material.evaluate(pos->flags, pos->side_to_move == 1 ? -eval : eval, pos->side_to_move, 
-			board);
+		return pos->material.evaluate(pos->flags, pos->side_to_move == 1 ? -eval : eval, pos->side_to_move, board, 
+			all_attacks);
 	}
 
 	__forceinline const BB& attacks(Side side) {
@@ -126,9 +128,9 @@ protected:
 
 			bool outpost = (passed_pawn_front_span[c][sq] & (pawns(c ^  1) & ~pawn_front_span[c][sq])) == 0;
 			if (outpost && (pawn_attacks[c] & bbSquare(sq))) {
-				int d = chebyshev_distance[sq][kingSq(c ^ 1)];
-				poseval[c] += 5*(7-d);
-				poseval_eg[c] += 2*(7-d);
+				int d = 7 - chebyshev_distance[sq][kingSq(c ^ 1)];
+				poseval[c] += 5*d;
+				poseval_eg[c] += 2*d;
 			}
 			int y = popCount(attacks & kingmoves[c ^ 1])*8;
 			attack_points[c] += y;
@@ -155,9 +157,9 @@ protected:
 			}
 			bool outpost = (passed_pawn_front_span[c][sq] & (pawns(c ^  1) & ~pawn_front_span[c][sq])) == 0;
 			if (outpost && (pawn_attacks[c] & bbsq)) {
-				int d = chebyshev_distance[sq][kingSq(c ^ 1)];
-				poseval[c] += 5*(7-d);
-				poseval_eg[c] += 2*(7-d);
+				int d = 7 - chebyshev_distance[sq][kingSq(c ^ 1)];
+				poseval[c] += 5*d;
+				poseval_eg[c] += 2*d;
 			}
 			const BB attacks2 = Bmagic(sq, occupied & ~board->queens(c) & ~board->rooks(c ^ 1) & 
 				~board->queens(c ^ 1));
@@ -199,7 +201,6 @@ protected:
 			const BB& bbsq = bbSquare(sq);
 
 			poseval_mg[c] += queen_pcsq_mg[flip[c][sq]];
-			//poseval[c] += bishop_pcsq_mg[flip[c][sq]];
 
 			if ((bbsq & rank_7[c]) && (rank_7_and_8[c] & (pawns(c ^  1) | board->king(c ^ 1)))) {
 				poseval[c] += 20;
@@ -207,9 +208,9 @@ protected:
 			const BB attacks = Qmagic(sq, occupied);
 			all_attacks[c] |= attacks;
 
-			int d = chebyshev_distance[sq][kingSq(c ^ 1)];
-			poseval[c] += 5*(7-d);
-			poseval_eg[c] += 2*(7-d);
+			int d = 7 - chebyshev_distance[sq][kingSq(c ^ 1)];
+			poseval[c] += 5*d;
+			poseval_eg[c] += 2*d;
 
 			const BB attacks2 = Bmagic(sq, occupied & ~board->bishops(c) & ~board->queens(c)) | 
 				Rmagic(sq, occupied & ~board->rooks(c) & ~board->queens(c));
@@ -287,10 +288,6 @@ protected:
 
 	__forceinline Square kingSq(Side side) {
 		return *king_square[side];
-	}
-
-	__forceinline int rrank(const Side side, const Square sq) {
-		return side == 0 ? rank(sq) : 7 - rank(sq);
 	}
 
 	__forceinline void initialiseEvaluate() {

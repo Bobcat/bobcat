@@ -89,27 +89,28 @@ public:
 
 	// to do move rest to Eval class or to its own class.
 
-	__forceinline int evaluate(int& flags, int eval, int side, Board* board) {
+	__forceinline int evaluate(int& flags, int eval, int side_to_move, Board* board, const BB attacks[2]) {
 		uint32 key1, key2;
 		bool flip;
 		int score;
 		Side side1; 
-		if (key[side] >= key[side ^ 1]) {
-			key1 = key[side];
-			key2 = key[side ^ 1];
-			side1 = side; 
+		if (key[side_to_move] >= key[side_to_move ^ 1]) {
+			key1 = key[side_to_move];
+			key2 = key[side_to_move ^ 1];
+			side1 = side_to_move; 
 			score = eval;
 			flip = false;
 		}
 		else {
-			key2 = key[side];
-			side1 = side ^ 1; 
-			key1 = key[side1];
+			key1 = key[side_to_move ^ 1];
+			key2 = key[side_to_move];
+			side1 = side_to_move ^ 1; 
 			score = -eval;
-			flip = true;
 		}
 		const Side side2 = side1 ^ 1;
 		this->board = board;
+		attacks1 = attacks[side1];
+		attacks2 = attacks[side2];
 		recognized_draw = false;
 		if ((key1 & ~all_pawns) == key1) {
 			switch (key1) {
@@ -129,10 +130,10 @@ public:
 					score = KBNKX(score, key2, side1);
 					break;
 				case kb:
-					score = KBKX(score, key2, side1, side2);
+					score = KBKX(score, key2, side1, side2, side_to_move);
 					break;
 				case kn:
-					score = KNKX(score, key2, side1, side2);
+					score = KNKX(score, key2, side1, side2, side_to_move);
 					break;
 				case knn:
 					score = KNNKX(score, key2);
@@ -147,10 +148,10 @@ public:
 		else {
 			switch (key1 & ~all_pawns) {
 				case kb:
-					score = KBxKX(score, key1, key2, flip ? side ^ 1 : side);
+					score = KBxKX(score, key1, key2, side1);
 					break;
 				case k:
-					score = KxKx(score, key1, key2, flip ? side ^ 1 : side);
+					score = KxKx(score, key1, key2, side1);
 					break;
 				default:
 					break;
@@ -160,7 +161,7 @@ public:
 		//	count(1, Knight) + count(1, Bishop) + count(1, Rook) + count(1, Queen)) <= 3;
 
 		flags |= recognized_draw ? RECOGNIZEDDRAW : 0;
-		return flip ? -score : score;
+		return side1 != side_to_move ? -score : score;
 	}
 
 	__forceinline int KRBKX(int eval, uint32 key2) {
@@ -253,15 +254,17 @@ public:
 			25*chebyshev_distance[another_winning_cornersq][loosing_kingsq]);
 	}
 
-	__forceinline int KBKX(int eval, uint32 key2, const Side side1, const Side side2) {
+	__forceinline int KBKX(int eval, uint32 key2, const Side side1, const Side side2, int side_to_move) {
 		switch (key2 & ~all_pawns) {
 			case k: {
 				if (key2 == kp) {
-					const Square pawnsq = lsb(board->pawns(side2));
 					const BB& bishopbb = board->bishops(side1);
-					const Square bishopsq = lsb(bishopbb); 
-					if (pawn_front_span[side2][pawnsq] & (this->board->bishopAttacks(bishopsq) | bishopbb)) {
-						return recognizedDraw();
+					if (side1 == side_to_move || (bishopbb & attacks2) == 0) {
+						const Square bishopsq = lsb(bishopbb); 
+						const Square pawnsq = lsb(board->pawns(side2));
+						if (pawn_front_span[side2][pawnsq] & (this->board->bishopAttacks(bishopsq) | bishopbb)) {
+							return recognizedDraw();
+						}
 					}
 				}
 				break;
@@ -275,15 +278,17 @@ public:
 		return min(0, eval);
 	}
 
-	__forceinline int KNKX(int eval, uint32 key2, const Side side1, const Side side2) {
+	__forceinline int KNKX(int eval, uint32 key2, const Side side1, const Side side2, int side_to_move) {
 		switch (key2 & ~all_pawns) {
 			case k: {
 				if (key2 == kp) {
-					const Square pawnsq = lsb(board->pawns(side2));
 					const BB& knightbb = board->knights(side1);
-					const Square knightsq = lsb(knightbb); 
-					if (pawn_front_span[side2][pawnsq] & (board->knightAttacks(knightsq) | knightbb)) {
-						return recognizedDraw();
+					if (side1 == side_to_move || (knightbb & attacks2) == 0) {
+						const Square knightsq = lsb(knightbb);
+						const Square pawnsq = lsb(board->pawns(side2));
+						if (pawn_front_span[side2][pawnsq] & (board->knightAttacks(knightsq) | knightbb)) {
+							return recognizedDraw();
+						}
 					}
 				}
 				break;
@@ -400,6 +405,7 @@ public:
 	uint32 key[2];
 	int material_value[2];
 	Board* board;
+	BB attacks1, attacks2;
 
 	static int bit_shift[7];
 	static int piece_value[6];

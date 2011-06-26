@@ -44,8 +44,7 @@ public:
 			if (pawn_attacks[side] & kingmoves[side ^ 1]) {
 				attack_count[side]++;
 			}
-			int score_mg = attack_points[side]*max(0, attack_count[side] - 1);
-			poseval_mg[side] += score_mg;
+			poseval_mg[side] += attack_points[side]*max(0, attack_count[side] - 1);
 		}
 
 		double stage = (pos->material.value()-pos->material.pawnValue())/(double)pos->material.max_value;
@@ -127,9 +126,9 @@ protected:
 
 			bool outpost = (passed_pawn_front_span[c][sq] & (pawns(c ^  1) & ~pawn_front_span[c][sq])) == 0;
 			if (outpost && (pawn_attacks[c] & bbSquare(sq))) {
-				poseval[c] += outpost_bonus[flip[c][sq]];
-//				poseval[c] += 5*(7-chebyshev_distance[sq][kingSq(c ^ 1)]);
-//				poseval_eg[c] += 2*(7-chebyshev_distance[sq][kingSq(c ^ 1)]);
+				int d = chebyshev_distance[sq][kingSq(c ^ 1)];
+				poseval[c] += 5*(7-d);
+				poseval_eg[c] += 2*(7-d);
 			}
 			int y = popCount(attacks & kingmoves[c ^ 1])*8;
 			attack_points[c] += y;
@@ -154,11 +153,12 @@ protected:
 					poseval[c] -= 110;
 				}
 			}
-			//bool outpost = (passed_pawn_front_span[c][sq] & (pawns(c ^  1) & ~pawn_front_span[c][sq])) == 0;
-			//if (outpost && (pawn_attacks[c] & bbsq)) {
-			//	poseval[c] += 5*(7-chebyshev_distance[sq][kingSq(c ^ 1)]);
-			//	poseval_eg[c] += 2*(7-chebyshev_distance[sq][kingSq(c ^ 1)]);
-			//}
+			bool outpost = (passed_pawn_front_span[c][sq] & (pawns(c ^  1) & ~pawn_front_span[c][sq])) == 0;
+			if (outpost && (pawn_attacks[c] & bbsq)) {
+				int d = chebyshev_distance[sq][kingSq(c ^ 1)];
+				poseval[c] += 5*(7-d);
+				poseval_eg[c] += 2*(7-d);
+			}
 			const BB attacks2 = Bmagic(sq, occupied & ~board->queens(c) & ~board->rooks(c ^ 1) & 
 				~board->queens(c ^ 1));
 
@@ -198,8 +198,8 @@ protected:
 			Square sq = lsb(queens);
 			const BB& bbsq = bbSquare(sq);
 
-			//poseval_mg[c] += queen_pcsq_mg[flip[c][sq]];
-			poseval[c] += bishop_pcsq_mg[flip[c][sq]];
+			poseval_mg[c] += queen_pcsq_mg[flip[c][sq]];
+			//poseval[c] += bishop_pcsq_mg[flip[c][sq]];
 
 			if ((bbsq & rank_7[c]) && (rank_7_and_8[c] & (pawns(c ^  1) | board->king(c ^ 1)))) {
 				poseval[c] += 20;
@@ -207,8 +207,9 @@ protected:
 			const BB attacks = Qmagic(sq, occupied);
 			all_attacks[c] |= attacks;
 
-			//poseval[c] += 5*(7-chebyshev_distance[sq][kingSq(c ^ 1)]);
-			poseval[c] += 5*(7-chebyshev_distance[sq][kingSq(c ^ 1)]);
+			int d = chebyshev_distance[sq][kingSq(c ^ 1)];
+			poseval[c] += 5*(7-d);
+			poseval_eg[c] += 2*(7-d);
 
 			const BB attacks2 = Bmagic(sq, occupied & ~board->bishops(c) & ~board->queens(c)) | 
 				Rmagic(sq, occupied & ~board->rooks(c) & ~board->queens(c));
@@ -241,7 +242,7 @@ protected:
 		if (board->queens(c ^ 1) || popCount(board->rooks(c ^ 1)) > 1) {
 			BB eastwest = bbsq | westOne(bbsq) | eastOne(bbsq);
 			poseval_mg[c] += -25*popCount(open_files & eastwest);
-			poseval_mg[c] += -15*popCount(half_open_files[c] & eastwest);
+			poseval_mg[c] += -20*popCount(half_open_files[c] & eastwest);
 		}
 
 		if (((c == 0) && 
@@ -330,7 +331,7 @@ protected:
 		print_pcsq_tables("pawn_pcsq_mg\n\n", pawn_pcsq_mg);
 		print_pcsq_tables("\n\nknight_pcsq_mg\n\n", knight_pcsq_mg);
 		print_pcsq_tables("\n\nbishop_pcsq_mg\n\n", bishop_pcsq_mg);
-		//print_pcsq_tables("\n\nqueen_pcsq_mg\n\n", queen_pcsq_mg);
+		print_pcsq_tables("\n\nqueen_pcsq_mg\n\n", queen_pcsq_mg);
 		print_pcsq_tables("\n\nking_pcsq_mg\n\n", king_pcsq_mg);
 		print_pcsq_tables("\n\nking_pcsq_eg\n\n", king_pcsq_eg);
 	}
@@ -364,7 +365,7 @@ protected:
 	static int king_pcsq_mg[64], king_pcsq_eg[64];
 	static int knight_pcsq_mg[64]; 
 	static int bishop_pcsq_mg[64];
-	//static int queen_pcsq_mg[64];
+	static int queen_pcsq_mg[64];
 	static int outpost_bonus[64];
 
 	static int bishop_mobility_mg[14], rook_mobility_mg[15], knight_mobility_mg[9];
@@ -382,21 +383,21 @@ BB Eval::pawns_trap_bishop_a7h7[2][2] = {
 	{ (BB)1 << g6 | (BB)1 << f7, (BB)1 << g3 | (BB)1 << f2 } 
 };
 
-int Eval::bishop_mobility_mg[14] = { 
-	-18, -12, -6, 0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23
-};
-
-int Eval::rook_mobility_mg[15] = { 
-	-18, -12, -6, 0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23, 23
-};
-
 //int Eval::bishop_mobility_mg[14] = { 
-//	-15,  -6, 0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23, 23
+//	-18, -12, -6, 0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23
 //};
 //
 //int Eval::rook_mobility_mg[15] = { 
-//	-15, -7,  0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23, 23, 24 
+//	-18, -12, -6, 0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23, 23
 //};
+
+int Eval::bishop_mobility_mg[14] = { 
+	-15,  -6, 0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23, 23
+};
+
+int Eval::rook_mobility_mg[15] = { 
+	-15, -7,  0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23, 23, 24 
+};
 
 int Eval::knight_mobility_mg[9] = { 
 	-15, -8, -4, 0, 3, 6, 9, 12, 15
@@ -446,16 +447,16 @@ int Eval::bishop_pcsq_mg[64] = {
 	-20,  -20,  -20,  -20,  -20,  -20,  -20,  -20
 };
 
-//int Eval::queen_pcsq_mg[64] = {
-//	-40,  -30,  -20,  -20,  -20,  -20,  -30,  -40,
-//	-40,  -30,  -20,  -20,  -20,  -20,  -30,  -40,
-//	-40,  -30,  -20,  -20,  -20,  -20,  -30,  -40,
-//	-40,  -30,  -20,  -20,  -20,  -20,  -30,  -40,
-//	-40,  -30,  -20,  -20,  -20,  -20,  -30,  -40,
-//	-40,  -30,  -20,  -20,  -20,  -20,  -30,  -40,
-//	-40,  -30,  -20,  -20,  -20,  -20,  -30,  -40,
-//	-30,  -20,  -10,    0,  -10,  -10,  -20,  -30
-//};
+int Eval::queen_pcsq_mg[64] = {
+	-40,  -30,  -20,  -20,  -20,  -20,  -30,  -40,
+	-40,  -30,  -20,  -20,  -20,  -20,  -30,  -40,
+	-40,  -30,  -20,  -20,  -20,  -20,  -30,  -40,
+	-40,  -30,  -20,  -20,  -20,  -20,  -30,  -40,
+	-40,  -30,  -20,  -20,  -20,  -20,  -30,  -40,
+	-40,  -30,  -20,  -20,  -20,  -20,  -30,  -40,
+	-40,  -30,  -20,  -20,  -20,  -20,  -30,  -40,
+	-30,  -20,  -10,    0,  -10,  -10,  -20,  -30
+};
 
 int Eval::king_pcsq_mg[64] = {
 	-40,  -40,  -40,  -40,  -40,  -40,  -40,  -40,

@@ -153,7 +153,7 @@ protected:
 				return searchNodeScore(pos->in_check ? -MAXSCORE : 0);
 			}
 			else if (best_move) {
-				updateHistoryScores(best_move, depth, move_count);
+				updateHistoryScores(best_move, depth);
 				if (best_score >= beta) {
 					updateKillerMoves(best_move);
 				}
@@ -196,7 +196,7 @@ protected:
 
 		bool is_pv_node = beta - alpha > 1;
 
-		if (/*!is_pv_node && */pos->transp_score_valid && pos->transp_depth_valid) { 
+		if (!is_pv_node && pos->transp_score_valid && pos->transp_depth_valid) { 
 			return searchNodeScore(pos->transp_score);
 		} 
 		
@@ -214,7 +214,7 @@ protected:
 			}
 		}
 
-		if (!is_pv_node && !pos->in_check && depth <= 3) {// && !pos->material.isEndgame()) {
+		if (!is_pv_node && !pos->in_check && depth <= 3) {
 			if (pos->eval_score + 125 < alpha) {
 				if (depth <= 1) {
 					score = searchQuiesce(alpha, beta, 0);
@@ -243,7 +243,12 @@ protected:
 			}
 		}
 
-		pos->generateMoves(this, pos->transp_move, STAGES);
+		if (pos->in_check) {
+			pos->generateMoves(this, 0, LEGALMOVES);
+		}
+		else {
+			pos->generateMoves(this, pos->transp_move, STAGES);
+		}
 
 		Move best_move = 0;
 		Score best_score = -MAXSCORE;
@@ -256,7 +261,7 @@ protected:
 
 				Depth next_depth = getNextDepth(is_pv_node, depth, ++move_count, move_data);
 
-				if (okToPruneLastMove(is_pv_node, depth, next_depth, alpha, best_score, move_data)) {
+				if (okToPruneLastMove(is_pv_node, best_score, next_depth, depth, alpha)) {
 					unmakeMove();
 					continue;
 				}
@@ -296,7 +301,7 @@ protected:
 			return searchNodeScore(0);
 		}
 		else if (best_move) {
-			updateHistoryScores(best_move, depth, move_count);
+			updateHistoryScores(best_move, depth);
 			if (best_score >= beta) {
 				updateKillerMoves(best_move);
 			}
@@ -315,60 +320,46 @@ protected:
 	__forceinline Depth getNextDepth(bool is_pv_node, const Depth depth, const int move_count, 
 		const MoveData* move_data) const
 	{
-		if (is_pv_node && pos->in_check) {
-			return depth;
+		if (pos->in_check) {
+			return is_pv_node ? depth : depth - 1; 
 		}
 		const Move m = move_data->move;
-		if (!pos->in_check 
-			&& !isPassedPawnMove(m) 
+		if (!isPassedPawnMove(m) 
 			&& !isQueenPromotion(m) 
 			&& !isCapture(m) 
 			&& move_count >= 5)
 		{
-			//return depth - 2;
-			return depth - 2 - depth/8;// - (is_pv_node ? 0 : max(0, (move_count-6)/12));
+			//return depth - 2 - depth/16;
+			return depth - 2 - depth/16 - max(0, (move_count-6)/12);
 		}
 		return depth - 1;
 	}
 
-	__forceinline bool okToPruneLastMove(const bool is_pv_node, const Depth depth, const Depth next_depth, const Score alpha, 
-		Score& best_score, const MoveData* move_data) const 
+	__forceinline bool okToPruneLastMove(const bool is_pv_node, Score& best_score, const Depth next_depth, const Depth depth, 
+		const Score alpha) const 
 	{
-		//const Move m = move_data->move;
-		if (!(-pos->eval_score >= alpha
-			&& next_depth < 4 // maximum of two moves per side (one was already played)
-			&& next_depth > 0 // prefer qs search in case next_depth <= 0
-			&& next_depth < depth - 1 // already reduced
-			&& !is_pv_node))
+		static int margin[4] = { 150, 150, 400, 400 };
+		
+		if (next_depth <= 3  
+			&& next_depth < depth - 1
+			&& -pos->eval_score + margin[max(0, next_depth)] < alpha) 
 		{
-			return false;
-		}
-
-		int margin;
-		const Side them = pos->side_to_move;
-		if (next_depth < 2) {
-			// an opponent piece could be hanging
-			margin = pos->material.highestAttackedPieceValue(eval->attacks(them ^ 1), board, them);
-		}
-		else {
-			// with a move left for ourselves even more is possible 
-			margin = max(400, pos->material.highestPieceValue(them) + 100);
-		}
-		if (-pos->eval_score + margin < alpha) {
-			best_score = max(best_score, -pos->eval_score + margin);
+			best_score = max(best_score, -pos->eval_score + margin[max(0, next_depth)]);
 			return true;
 		}
 		return false;
 	}
 
 	__forceinline int nullMoveReduction(const Depth depth) const {
-		return 4;// + depth/8;
+		return 4 + depth/16;
 	}
 
 	Score searchQuiesce(Score alpha, const Score beta, int qs_ply) {
 		findTransposition(0, alpha, beta);
 
-		if (/*beta - alpha == 1 &&*/ pos->transp_score_valid && pos->transp_depth_valid) { 
+		bool is_pv_node = beta - alpha > 1;
+
+		if (!is_pv_node && pos->transp_score_valid && pos->transp_depth_valid) { 
 			return searchNodeScore(pos->transp_score);
 		} 
 
@@ -393,15 +384,17 @@ protected:
 		while (const MoveData* move_data = pos->nextMove()) {
 			const Move m = move_data->move;
 
-			if (!pos->in_check && !isPromotion(m)) {// && !pos->material.isEndgame()) {
-				if (move_data->score < 0) { 
-					continue;
+			//if (!is_pv_node) {
+				if (!pos->in_check && !isPromotion(m)) {
+					if (move_data->score < 0) { 
+						continue;
+					}
+					else if (pos->eval_score + piece_value(moveCaptured(m)) + 150 < alpha) {
+						best_score = max(best_score, pos->eval_score + piece_value(moveCaptured(m)) + 150);
+						continue;
+					}
 				}
-				else if (pos->eval_score + piece_value(moveCaptured(m)) + 150 < alpha) {
-					best_score = max(best_score, pos->eval_score + piece_value(moveCaptured(m)) + 150);
-					continue;
-				}
-			}
+			//}
 			if (makeMove(m)) {
 				++move_count;
 
@@ -535,7 +528,7 @@ protected:
 		return (uint64)(node_count*1000/max(1, (millis() - start_time)));
 	}
 
-	__forceinline void updateHistoryScores(const Move m, const Depth depth, int move_count) {
+	__forceinline void updateHistoryScores(const Move m, const Depth depth) {
 		history_scores[movePiece(m)][moveTo(m)] += depth*depth;
 		if (history_scores[movePiece(m)][moveTo(m)] > PROMOTIONMOVESCORE) {
 			for (int i = 0; i < 16; i++) for (int k = 0; k < 64; k++) {

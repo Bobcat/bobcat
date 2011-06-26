@@ -179,33 +179,32 @@ public:
 			|| isAttackedByKing(sq, side);
 	}
 
-	__forceinline const BB& knightAttacks(const Square sq) { 
+	__forceinline const BB knightAttacks(const Square sq) { 
 		return knight_attacks[sq]; 
 	}
 
-	__forceinline const BB& bishopAttacks(const Square sq) { 
+	__forceinline const BB bishopAttacks(const Square sq) { 
 		return Bmagic(sq, occupied);
 	}
 
-	__forceinline const BB& rookAttacks(const Square sq) { 
+	__forceinline const BB rookAttacks(const Square sq) { 
 		return Rmagic(sq, occupied);
 	}
 
-	__forceinline const BB& queenAttacks(const Square sq) { 
-		queen_attacks = Qmagic(sq, occupied);
-		return queen_attacks;
+	__forceinline const BB queenAttacks(const Square sq) { 
+		return Qmagic(sq, occupied);
 	}
 
-	__forceinline const BB& kingAttacks(const Square sq) { 
+	__forceinline const BB kingAttacks(const Square sq) { 
 		return king_attacks[sq]; 
 	}
 
 	__forceinline bool isAttackedBySlider(const Square sq, const Side side) {
-		const BB& r_attacks = rookAttacks(sq);
+		BB r_attacks = rookAttacks(sq);
 		if (piece[Rook + (side << 3)] & r_attacks) {
 			return true;
 		}
-		const BB& b_attacks = bishopAttacks(sq);
+		BB b_attacks = bishopAttacks(sq);
 		if (piece[Bishop + (side << 3)] & b_attacks) {
 			return true;
 		}

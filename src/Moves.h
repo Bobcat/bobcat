@@ -97,10 +97,6 @@ public:
 		iteration = pos;
 	}
 
-	__forceinline const Move getMoveAt(int pos) { 
-		return move_list[pos].move;
-	}
-
 	void print_moves() {
 		int i = 0;
 		char buf[12];

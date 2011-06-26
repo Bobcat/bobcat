@@ -87,22 +87,28 @@ public:
 		return key[side] & 15;
 	}
 
-	__forceinline int evaluate(int& flags, int eval, int side, const Board* board) {
+	// to do move rest to Eval class or to its own class.
+
+	__forceinline int evaluate(int& flags, int eval, int side, Board* board) {
 		uint32 key1, key2;
 		bool flip;
 		int score;
+		Side side1; 
 		if (key[side] >= key[side ^ 1]) {
 			key1 = key[side];
 			key2 = key[side ^ 1];
+			side1 = side; 
 			score = eval;
 			flip = false;
 		}
 		else {
 			key2 = key[side];
-			key1 = key[side ^ 1];
+			side1 = side ^ 1; 
+			key1 = key[side1];
 			score = -eval;
 			flip = true;
 		}
+		const Side side2 = side1 ^ 1;
 		this->board = board;
 		recognized_draw = false;
 		if ((key1 & ~all_pawns) == key1) {
@@ -120,15 +126,17 @@ public:
 					score = KBBKX(score, key2);
 					break;
 				case kbn:
-					score = KBNKX(score, key2, flip ? side ^ 1 : side);
+					score = KBNKX(score, key2, side1);
 					break;
 				case kb:
-					score = KBKX(score, key2);
+					score = KBKX(score, key2, side1, side2);
+					break;
+				case kn:
+					score = KNKX(score, key2, side1, side2);
 					break;
 				case knn:
 					score = KNNKX(score, key2);
 					break;
-				case kn:
 				case k:
 					score = key2 == k ? 0 : min(0, score);
 					break;
@@ -235,21 +243,51 @@ public:
 	}
 
 	__forceinline int KBNK(int eval, int side1) {
-		int loosing_king_square = board->king_square[side1 ^ 1];
-		int winning_corner1 = a8, winning_corner2 = h1;
+		int loosing_kingsq = board->king_square[side1 ^ 1];
+		int a_winning_cornersq = a8, another_winning_cornersq = h1;
 		if (isDark(lsb(board->bishops(side1)))) {
-			winning_corner1 = a1;
-			winning_corner2 = h8;
+			a_winning_cornersq = a1;
+			another_winning_cornersq = h8;
 		}
-		return eval + 175 - min(25*chebyshev_distance[winning_corner1][loosing_king_square], 
-			25*chebyshev_distance[winning_corner2][loosing_king_square]);
+		return eval + 175 - min(25*chebyshev_distance[a_winning_cornersq][loosing_kingsq], 
+			25*chebyshev_distance[another_winning_cornersq][loosing_kingsq]);
 	}
 
-	__forceinline int KBKX(int eval, uint32 key2) {
+	__forceinline int KBKX(int eval, uint32 key2, const Side side1, const Side side2) {
 		switch (key2 & ~all_pawns) {
+			case k: {
+				if (key2 == kp) {
+					const Square pawnsq = lsb(board->pawns(side2));
+					const BB& bishopbb = board->bishops(side1);
+					const Square bishopsq = lsb(bishopbb); 
+					if (pawn_front_span[side2][pawnsq] & (this->board->bishopAttacks(bishopsq) | bishopbb)) {
+						return recognizedDraw();
+					}
+				}
+				break;
+			}
 			case knn:
 				if ((key2 & all_pawns) == 0) return eval/8; 
 				break;
+			default:
+				break;
+		}
+		return min(0, eval);
+	}
+
+	__forceinline int KNKX(int eval, uint32 key2, const Side side1, const Side side2) {
+		switch (key2 & ~all_pawns) {
+			case k: {
+				if (key2 == kp) {
+					const Square pawnsq = lsb(board->pawns(side2));
+					const BB& knightbb = board->knights(side1);
+					const Square knightsq = lsb(knightbb); 
+					if (pawn_front_span[side2][pawnsq] & (board->knightAttacks(knightsq) | knightbb)) {
+						return recognizedDraw();
+					}
+				}
+				break;
+			}
 			default:
 				break;
 		}
@@ -361,12 +399,13 @@ public:
 //	bool is_late_endgame;
 	uint32 key[2];
 	int material_value[2];
-	const Board* board;
+	Board* board;
 
 	static int bit_shift[7];
 	static int piece_value[6];
 
 	static const uint32 k   = 0x00000;
+	static const uint32 kp  = 0x00001;
 	static const uint32 kn  = 0x00010;
 	static const uint32 kb  = 0x00100;
 	static const uint32 kr  = 0x01000;

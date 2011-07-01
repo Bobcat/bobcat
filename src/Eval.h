@@ -258,19 +258,20 @@ protected:
 		all_attacks[c] |= king_attacks[kingSq(c)];
 	}
 
-	__forceinline void evalPassedPawnsOneSide(int c) {
+	__forceinline void evalPassedPawnsOneSide(const Side c) {
 		for (BB files = pawnp ? pawnp->passed_pawn_files[c] : 0; files; resetLSB(files)) {
 			for (BB bb = bbFile(lsb(files)) & pawns(c); bb; resetLSB(bb)) {
 				int sq = lsb(bb);
 				const BB& front_span = pawn_front_span[c][sq];
 				int r = c == 0 ? rank(sq) : 7 - rank(sq);
+				int rr = r*r;
+				
+				int score_mg = rr*4; 
+				int score_eg = rr*3; 
 
-				int score_mg = r*20; 
-				int score_eg = r*14; 
-
-				score_eg += 3*r*(front_span & board->occupied_by_side[c] ? 0 : 1);
-				score_eg += 2*r*(front_span & board->occupied_by_side[c ^ 1] ? 0 : 1);
-				score_eg += 3*r*(front_span & all_attacks[c ^ 1] ? 0 : 1);
+				score_eg += rr*(front_span & board->occupied_by_side[c] ? 0 : 1);
+				score_eg += rr*(front_span & board->occupied_by_side[c ^ 1] ? 0 : 1);
+				score_eg += rr*(front_span & all_attacks[c ^ 1] ? 0 : 1);
 
 				int d_us = 7 - chebyshev_distance[sq][kingSq(c)];
 				int d_them = 7 - chebyshev_distance[sq][kingSq(c ^ 1)];
@@ -363,7 +364,6 @@ protected:
 	static int knight_pcsq_mg[64]; 
 	static int bishop_pcsq_mg[64];
 	static int queen_pcsq_mg[64];
-	static int outpost_bonus[64];
 
 	static int bishop_mobility_mg[14], rook_mobility_mg[15], knight_mobility_mg[9];
 
@@ -379,14 +379,6 @@ BB Eval::pawns_trap_bishop_a7h7[2][2] = {
 	{ (BB)1 << b6 | (BB)1 << c7, (BB)1 << b3 | (BB)1 << c2 }, 
 	{ (BB)1 << g6 | (BB)1 << f7, (BB)1 << g3 | (BB)1 << f2 } 
 };
-
-//int Eval::bishop_mobility_mg[14] = { 
-//	-18, -12, -6, 0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23
-//};
-//
-//int Eval::rook_mobility_mg[15] = { 
-//	-18, -12, -6, 0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23, 23
-//};
 
 int Eval::bishop_mobility_mg[14] = { 
 	-15,  -6, 0, 6, 12, 16, 19, 21, 22, 22, 22, 23, 23, 23
@@ -420,17 +412,6 @@ int Eval::knight_pcsq_mg[64] = {
 	-15,   -5,    0,    0,    0,    0,   -5,  -15,
 	-15,   -5,   -5,   -5,   -5,   -5,   -5,  -15,
 	-20,  -20,  -20,  -20,  -20,  -20,  -20,  -20
-};
-
-int Eval::outpost_bonus[64] = {
-	  0,    0,    0,    0,    0,    0,    0,    0,
-	  0,    0,    0,    0,    0,    0,    0,    0,
-	  0,    2,    4,    6,    6,    4,    2,    0,
-	  0,    2,    6,   12,   12,    6,    2,    0,
-	  0,    0,    4,   10,   10,    4,    0,    0,
-	  0,    0,    0,    0,    0,    0,    0,    0,
-	  0,    0,    0,    0,    0,    0,    0,    0,
-	  0,    0,    0,    0,    0,    0,    0,    0
 };
 
 int Eval::bishop_pcsq_mg[64] = {

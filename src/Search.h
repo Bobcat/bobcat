@@ -184,7 +184,7 @@ protected:
 
 	__forceinline Score searchNextDepth(const Depth depth, const Score alpha, const Score beta) {
 		if (pos->isDraw()) {
-			return pos->eval_score;
+			return drawScore();
 		}
 		return depth <= 0 ? -searchQuiesce(alpha, beta, 0) : -searchAll(depth, alpha, beta);
 	}
@@ -315,7 +315,7 @@ protected:
 		return !pos->in_check 
 			&& pos->null_moves_in_row < 1 
 			&& depth > one_ply 
-			&& !pos->material.hasPawnsOnly(pos->side_to_move) 
+			&& !pos->material.isKx(pos->side_to_move) 
 			&& pos->eval_score >= beta; 
 	}
 
@@ -339,7 +339,7 @@ protected:
 	__forceinline bool okToPruneLastMove(Score& best_score, const Depth next_depth, const Depth depth, 
 		const Score alpha) const 
 	{
-		static int margin[7] = { 150, 150 ,150, 150, 400, 400 ,400 };
+		static int margin[7] = { 0, 0, 0, 150, 150, 400 ,400 };
 		
 		if (next_depth <= 3*one_ply  
 			&& next_depth < depth - one_ply
@@ -397,7 +397,13 @@ protected:
 			if (makeMove(m)) {
 				++move_count;
 
-				Score score = -searchQuiesce(-beta, -alpha, qs_ply + 1);
+				Score score;
+				if (pos->isDraw()) {
+					score = drawScore();
+				}
+				else {
+					score = -searchQuiesce(-beta, -alpha, qs_ply + 1);
+				}
 
 				unmakeMove();
 				
@@ -637,6 +643,10 @@ protected:
 	__forceinline Score storeSearchNodeScore(const Score score, const Depth depth, const int node_type, const Move move) {
 		storeTransposition(depth, score, node_type, move);
 		return searchNodeScore(score);
+	}
+
+	__forceinline Score drawScore() const {
+		return 0;
 	}
 
 	__forceinline void storeTransposition(const Depth depth, const Score score, const int node_type, const Move move) {

@@ -63,7 +63,7 @@ public:
 		}
 	}
 
-	__forceinline bool hasPawnsOnly(const Side c) {
+	__forceinline bool isKx(const Side c) {
 		return key[c] == (key[c] & 15); 
 	}
 

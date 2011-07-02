@@ -28,7 +28,7 @@ const Piece NoPiece = 6;
 
 const static char piece_notation[] = " nbrqk"; 
 
-const char* piece_str(int piece, char* buf) {
+const char* pieceToString(int piece, char* buf) {
 	sprintf(buf, "%c", piece_notation[piece]);
 	return buf;
 }

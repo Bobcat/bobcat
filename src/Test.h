@@ -59,7 +59,7 @@ public:
 		pos->generateMoves(0, 0, flags);
 		while (const MoveData* move_data = pos->nextMove()) {
 			const Move* m = &move_data->move;
-			if (!game->makeMove(*m, flags == 0 ? true : false)) {
+			if (!game->makeMove(*m, flags == 0 ? true : false, true) ) {
 				continue;
 			}
 			uint64 nodes_start = result.nodes;

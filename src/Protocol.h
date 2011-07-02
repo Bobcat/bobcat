@@ -23,8 +23,8 @@ const int PONDER_SEARCH = 4;
 class ProtocolListener {
 public:
 	virtual int newGame() = 0; 
-	virtual int setFen(const char* fen) = 0;
-	virtual int go(int wtime = 0, int btime = 0, int movestogo = 0, int winc = 0, int binc = 0, int movetime = 5000) = 0;
+	virtual int setFEN(const char* fen) = 0;
+	virtual int go(int wtime, int btime, int movestogo, int winc, int binc, int movetime) = 0;
 	virtual int ponderHit() = 0;
 	virtual int stop() = 0;
 	virtual int setOption(const char* name, const char* value) = 0;
@@ -111,13 +111,38 @@ public:
 		char move_buf[32];
 
 		if (curr_move) {
-			snprintf(buf, sizeof(buf), "info currmove %s currmovenumber %d depth %d seldepth %d hashfull %d nodes %llu " \
-				"nps %llu time %llu", moveToString(curr_move, move_buf), curr_move_number, depth, selective_depth, hash_full, 
-				node_count, nodes_per_sec, time);
+			snprintf(buf, sizeof(buf), 
+				"info currmove %s " \
+				"currmovenumber %d " \
+				"depth %d " \
+				"seldepth %d " \
+				"hashfull %d " \
+				"nodes %llu " \
+				"nps %llu " \
+				"time %llu", 
+				moveToString(curr_move, move_buf), 
+				curr_move_number, 
+				depth, 
+				selective_depth, 
+				hash_full, 
+				node_count, 
+				nodes_per_sec, 
+				time);
 		} 
 		else {
-			snprintf(buf, sizeof(buf), "info depth %d seldepth %d hashfull %d nodes %d nps %d time %llu", depth, 
-				selective_depth, hash_full, node_count, nodes_per_sec, time);
+			snprintf(buf, sizeof(buf), 
+				"info depth %d " \
+				"seldepth %d " \
+				"hashfull %d " \
+				"nodes %d " \
+				"nps %d " \
+				"time %llu",
+				depth, 
+				selective_depth, 
+				hash_full, 
+				node_count, 
+				nodes_per_sec, 
+				time);
 		}		
 		output->writeLine(buf);
 	}
@@ -126,8 +151,23 @@ public:
 				int score, const char* pv) 
 	{
 		char buf[1024];
-		snprintf(buf, sizeof(buf), "info depth %d seldepth %d score cp %d hashfull %d nodes %llu nps %llu time %llu pv %s", 
-			depth, max_ply, score, hash_full, node_count, nodes_per_second, time, pv);
+		snprintf(buf, sizeof(buf), 
+			"info depth %d "
+			"seldepth %d "
+			"score cp %d "
+			"hashfull %d "
+			"nodes %llu "
+			"nps %llu "
+			"time %llu "
+			"pv %s", 
+			depth, 
+			max_ply, 
+			score, 
+			hash_full, 
+			node_count, 
+			nodes_per_second, 
+			time, 
+			pv);
 
 		output->writeLine(buf);
 	}
@@ -139,7 +179,7 @@ public:
 		if (stricmp(params[0], "uci") == 0) {
 			char buf[2048];
 			snprintf(buf, sizeof(buf),  
-				"id name Bobcat 20110414\n" \
+				"id name Bobcat 2.75\n" \
 				"id author Gunnar Harms\n" \
 				"option name Hash type spin default 256 min 8 max 1024\n" \
 				"option name Ponder type check default true\n" \
@@ -233,7 +273,7 @@ public:
 			param++;
 		}
 		else if (stricmp(params[param], "fen") == 0) {
-			if (!fenFromParams(params, num_params, param, fen)) {
+			if (!FENfromParams(params, num_params, param, fen)) {
 				return -1;
 			}
 			param++;
@@ -241,14 +281,14 @@ public:
 		else {
 			return -1;
 		}
-		callback->setFen(fen);
+		callback->setFEN(fen);
 		if ((num_params > param) && (stricmp(params[param++], "moves") == 0)) {
 			while (param < num_params) {
 				const Move* move = game->pos->stringToMove(params[param++]);
 				if (move == 0) {
 					return -1;
 				}
-				game->makeMove(*move);
+				game->makeMove(*move, true, true);
 			}
 		}
 		return 0;

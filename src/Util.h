@@ -61,7 +61,7 @@ static int pow2(int x) {
 	return (int)pow(2.0, x);
 }
 
-const char* fenFromParams(char* params[], int num_params, int& param, char* fen) {
+const char* FENfromParams(char* params[], int num_params, int& param, char* fen) {
 	if ((num_params - param - 1) < 6) {
 		return NULL;
 	}

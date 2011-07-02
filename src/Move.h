@@ -16,7 +16,7 @@
   along with Bobcat.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-typedef int Move;
+typedef uint Move;
 
 __forceinline int movePiece(const Move move) { return (move >> 26) & 15; }
 __forceinline void moveSetPiece(Move& move, const int piece) { move |= (piece << 26); }
@@ -26,9 +26,9 @@ __forceinline int movePromoted(const Move move) { return (move >> 18) & 15; }
 __forceinline void moveSetPromoted(Move& move, const int piece) { move |= (piece << 18); }
 __forceinline int moveType(const Move move) { return (move >> 12) & 63; }
 __forceinline void moveSetType(Move& move, const int type) { move |= (type << 12); }
-__forceinline int moveFrom(const Move move) { return (move >> 6) & 63; }
+__forceinline uint moveFrom(const Move move) { return (move >> 6) & 63; }
 __forceinline void moveSetFrom(Move& move, const int sq) { move |= (sq << 6); }
-__forceinline int moveTo(const Move move) { return move & 63; }
+__forceinline uint moveTo(const Move move) { return move & 63; }
 __forceinline void moveSetTo(Move& move, const int sq) { move |= sq; }
 
 __forceinline Side side(const Move m) {
@@ -83,7 +83,7 @@ const char* moveToString(const Move m, char* buf) {
 	char tmp1[12], tmp2[12], tmp3[12];
 	sprintf(buf, "%s%s", squareToString(moveFrom(m), tmp1), squareToString(moveTo(m), tmp2));
 	if (isPromotion(m)) {
-		sprintf(&buf[strlen(buf)], "%s", piece_str(movePromoted(m) & 7, tmp3));
+		sprintf(&buf[strlen(buf)], "%s", pieceToString(movePromoted(m) & 7, tmp3));
 	}
 	return buf;
 }

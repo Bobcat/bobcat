@@ -18,7 +18,7 @@
 
 class Game {
 public:
-	__forceinline bool makeMove(const Move m, bool check_legal = true, bool calculate_in_check = true) { 
+	__forceinline bool makeMove(const Move m, bool check_legal, bool calculate_in_check) { 
 		if (m == 0) {
 			return MakeNullMove();
 		}
@@ -248,15 +248,15 @@ public:
 			p++;
 			continue;
 		}
-		if (!get_delimiter(&p) || (pos->side_to_move = get_color_to_move(&p)) == -1) {
+		if (!getDelimiter(&p) || (pos->side_to_move = getSideToMove(&p)) == -1) {
 			return 4;
 		}
 		p++;
-		if (!get_delimiter(&p) || (pos->castle_rights = get_castle_rights(&p)) == -1) {
+		if (!getDelimiter(&p) || (pos->castle_rights = getCastleRights(&p)) == -1) {
 			return 5;
 		}
 		Square sq;
-		if (!get_delimiter(&p) || (sq = get_ep_square(&p)) == -1) {
+		if (!getDelimiter(&p) || (sq = getEPsquare(&p)) == -1) {
 			return 6;
 		}
 		pos->en_passant_square = sq < 64 ? bbSquare(sq) : 0;
@@ -274,7 +274,7 @@ public:
 		return 0;
 	}
 
-	int getFen(char* fen) {
+	int getFEN(char* fen) {
 		char piece_letter[] = { "PNBRQK  pnbrqk" };
 		fen[0] = 0;
 
@@ -333,7 +333,7 @@ public:
 		return 0;
 	}
 
-	const char get_ep_square(const char** p) {
+	const char getEPsquare(const char** p) {
 		if (**p == '-') {
 			return 64; // 64 = no en passant square
 		}
@@ -347,7 +347,7 @@ public:
 		return (*((*p) - 1) - 'a') + (**p - '1') * 8;
 	}
 
-	int get_castle_rights(const char** p) { 
+	int getCastleRights(const char** p) { 
 		int rights = 0;
 		if (**p == '-') {
 			(*p)++;
@@ -374,7 +374,7 @@ public:
 		return rights == 0 ? -1 : rights;
 	}
 
-	char get_color_to_move(const char** p) {
+	char getSideToMove(const char** p) {
 		switch (**p) {
 			case 'w':
 				return 0;
@@ -386,7 +386,7 @@ public:
 		return -1;
 	}
 
-	bool get_delimiter(const char** p) {
+	bool getDelimiter(const char** p) {
 		if (**p != ' ') {
 			return false;
 		}

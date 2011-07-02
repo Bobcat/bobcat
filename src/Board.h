@@ -21,8 +21,8 @@ public:
 	void clear() {
 		memset(piece, 0, sizeof(piece));
 		memset(occupied_by_side, 0, sizeof(occupied_by_side));
-		for (int sq = 0; sq < 64; sq++) board[sq] = NoPiece;
-		king_square[0] = king_square[1] = -1;
+		for (uint sq = 0; sq < 64; sq++) board[sq] = NoPiece;
+		king_square[0] = king_square[1] = 64;
 		occupied = 0;
 	}
 	

@@ -23,12 +23,10 @@ public:
 	}
 
 	int seeMove(const Move move) {
-		initialiseSeeMove();
-
-		board->makeMove(move);
-		
 		int score;
+		board->makeMove(move);
 		if (!board->isAttacked(board->king_square[side(move)], side(move) ^ 1)) {
+			initialiseSeeMove();
 			score = seeRec(materialChange(move), nextToCapture(move), moveTo(move), side(move) ^ 1);
 		}
 		else {
@@ -45,7 +43,7 @@ public:
 
 private:
 	__forceinline int materialChange(const Move move) {
-		return  (isCapture(move) ? piece_value(moveCaptured(move)) : 0) + (isPromotion(move) ? 
+		return (isCapture(move) ? piece_value(moveCaptured(move)) : 0) + (isPromotion(move) ? 
 			(piece_value(movePromoted(move)) - piece_value(Pawn)) : 0);
 	}
 

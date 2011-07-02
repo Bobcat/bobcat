@@ -33,7 +33,7 @@ public:
 		return 0;
 	}
 
-	virtual int setFen(const char* fen) {
+	virtual int setFEN(const char* fen) {
 		return game->newGame(fen);
 	}
 
@@ -51,7 +51,7 @@ public:
 			char best_move[12], ponder_move[12];
 			protocol->postMoves(moveToString(search->pv[0][0].move, best_move), 
 				game->pos->pv_length > 1 ? moveToString(search->pv[0][1].move, ponder_move) : 0);
-			game->makeMove(search->pv[0][0].move);
+			game->makeMove(search->pv[0][0].move, true, true);
 		}
 		return 0;
 	}
@@ -76,14 +76,14 @@ public:
 	virtual bool makeMove(const char* m) {
 		const Move* move;
 		if (move = game->pos->stringToMove(m)) {
-			return game->makeMove(*move);
+			return game->makeMove(*move, true, true);
 		}
 		return false;
 	}
 
 	void goBook() {
 		char fen[128];
-		game->getFen(fen);
+		game->getFEN(fen);
 		uint64 key = book->hash(fen);
 		char m[6];
 		if (book->find(key, m) == 0) {
@@ -209,7 +209,7 @@ public:
 				game->pos->print_moves();
 			}
 			else if (stricmp(tokens[0], "perft") == 0) {
-				Test(game).perft(7);
+				Test(game).perft(6);
 			}
 			else if (stricmp(tokens[0], "divide") == 0) {
 				Test(game).perft_divide(5);
@@ -225,26 +225,29 @@ public:
 				protocol->setFlags(INFINITE_MOVE_TIME);
 				go();
 			}
+			else if (stricmp(tokens[0], "eval") == 0 || stricmp(tokens[0], "e") == 0) {
+				printf("eval->evaluate() returns %d cp\n", eval->evaluate());
+			}
 			else if (stricmp(tokens[0], "new") == 0) {
 				newGame();
 			}
 			else if (stricmp(tokens[0], "fen") == 0) {
 				if (num_tokens == 1) {
 					char fen[128];
-					game->getFen(fen);
+					game->getFEN(fen);
 					printf("%s\n", fen);
 				}
 				else {
 					int token = 0;
 					char fen[128];
-					if (fenFromParams(tokens, num_tokens, token, fen)) {
-						setFen(fen);
+					if (FENfromParams(tokens, num_tokens, token, fen)) {
+						setFEN(fen);
 					}
 				}
 			}
 			else if (stricmp(tokens[0], "book") == 0) {
 				char fen[128];
-				game->getFen(fen);
+				game->getFEN(fen);
 				BB key = book->hash(fen);
 				char move[6];
 				if (book->find(key, move) == 0) {

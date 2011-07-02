@@ -323,7 +323,7 @@ protected:
 		const MoveData* move_data) const
 	{
 		if (pos->in_check) {
-			return is_pv_node ? depth : depth - one_ply; 
+			return is_pv_node ? depth : depth - one_ply;
 		}
 		const Move m = move_data->move;
 		if (!isPassedPawnMove(m) 
@@ -339,7 +339,7 @@ protected:
 	__forceinline bool okToPruneLastMove(Score& best_score, const Depth next_depth, const Depth depth, 
 		const Score alpha) const 
 	{
-		static int margin[7] = { 0, 0, 0, 150, 150, 400 ,400 };
+		static int margin[7] = { 150, 150, 150, 150, 400, 400 ,400 };
 		
 		if (next_depth <= 3*one_ply  
 			&& next_depth < depth - one_ply

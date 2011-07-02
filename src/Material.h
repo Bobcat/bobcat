@@ -33,24 +33,24 @@ public:
 
 	__forceinline void remove(const Piece p) {
 		updateKey(p >> 3, p & 7, -1);
-		material_value[p >> 3] -= Material::piece_value[p & 7];
+		material_value[p >> 3] -= piece_value[p & 7];
 	}
 
 	__forceinline void add(const Piece p) {
 		updateKey(p >> 3, p & 7, 1);
-		material_value[p >> 3] += Material::piece_value[p & 7];
+		material_value[p >> 3] += piece_value[p & 7];
 	}
 
 	__forceinline void updateKey(const int c, const int p, const int delta) {
 		if (p != King) {
 			int x = count(c, p) + delta;
-			key[c] &= ~(15 << bit_shift[p]);
-			key[c] |= (x << bit_shift[p]); 
+			key[c] &= ~(15 << piece_bit_shift[p]);
+			key[c] |= (x << piece_bit_shift[p]); 
 		}
 	}
 	
 	__forceinline int count(const Side c, const Piece p) {
-		return (key[c] >> bit_shift[p]) & 15;
+		return (key[c] >> piece_bit_shift[p]) & 15;
 	}
 
 	__forceinline void makeMove(const Move m) {
@@ -76,7 +76,7 @@ public:
 	}
 
 	__forceinline int pawnValue() {
-		return (key[0] & 15) * Material::piece_value[Pawn] + (key[1] & 15) * Material::piece_value[Pawn];
+		return (key[0] & 15) * piece_value[Pawn] + (key[1] & 15) * piece_value[Pawn];
 	}
 
 	__forceinline int pawnCount() {
@@ -87,11 +87,9 @@ public:
 		return key[side] & 15;
 	}
 
-	// to do move rest to Eval class or to its own class.
-
 	__forceinline int evaluate(int& flags, int eval, int side_to_move, Board* board, const BB attacks[2]) {
-		uint32 key1, key2;
-		bool flip;
+		uint32 key1;
+		uint32 key2;
 		int score;
 		Side side1; 
 		if (key[side_to_move] >= key[side_to_move ^ 1]) {
@@ -99,7 +97,6 @@ public:
 			key2 = key[side_to_move ^ 1];
 			side1 = side_to_move; 
 			score = eval;
-			flip = false;
 		}
 		else {
 			key1 = key[side_to_move ^ 1];
@@ -157,9 +154,6 @@ public:
 					break;
 			}
 		}
-		//is_late_endgame = (count(0, Knight) + count(0, Bishop) + count(0, Rook) + count(0, Queen) +
-		//	count(1, Knight) + count(1, Bishop) + count(1, Rook) + count(1, Queen)) <= 3;
-
 		flags |= recognized_draw ? RECOGNIZEDDRAW : 0;
 		return side1 != side_to_move ? -score : score;
 	}
@@ -245,13 +239,14 @@ public:
 
 	__forceinline int KBNK(int eval, int side1) {
 		int loosing_kingsq = board->king_square[side1 ^ 1];
-		int a_winning_cornersq = a8, another_winning_cornersq = h1;
+		int a_winning_cornersq = a8;
+		int another_winning_cornersq = h1;
 		if (isDark(lsb(board->bishops(side1)))) {
 			a_winning_cornersq = a1;
 			another_winning_cornersq = h8;
 		}
-		return eval + 175 - min(25*chebyshev_distance[a_winning_cornersq][loosing_kingsq], 
-			25*chebyshev_distance[another_winning_cornersq][loosing_kingsq]);
+		return eval + 175 - min(25*distance[a_winning_cornersq][loosing_kingsq], 
+			25*distance[another_winning_cornersq][loosing_kingsq]);
 	}
 
 	__forceinline int KBKX(int eval, uint32 key2, const Side side1, const Side side2, int side_to_move) {
@@ -260,10 +255,10 @@ public:
 				if (key2 == kp) {
 					const BB& bishopbb = board->bishops(side1);
 					if (side1 == side_to_move || (bishopbb & attacks2) == 0) {
-						const Square bishopsq = lsb(bishopbb); 
-						const Square pawnsq = lsb(board->pawns(side2));
-						if (pawn_front_span[side2][pawnsq] & (this->board->bishopAttacks(bishopsq) | bishopbb)) {
-							return recognizedDraw();
+						if (pawn_front_span[side2][lsb(board->pawns(side2))] & 
+							(board->bishopAttacks(lsb(bishopbb)) | bishopbb)) 
+						{
+							return drawScore();
 						}
 					}
 				}
@@ -284,10 +279,10 @@ public:
 				if (key2 == kp) {
 					const BB& knightbb = board->knights(side1);
 					if (side1 == side_to_move || (knightbb & attacks2) == 0) {
-						const Square knightsq = lsb(knightbb);
-						const Square pawnsq = lsb(board->pawns(side2));
-						if (pawn_front_span[side2][pawnsq] & (board->knightAttacks(knightsq) | knightbb)) {
-							return recognizedDraw();
+						if (pawn_front_span[side2][lsb(board->pawns(side2))] & 
+							(board->knightAttacks(lsb(knightbb)) | knightbb)) 
+						{
+							return drawScore();
 						}
 					}
 				}
@@ -346,7 +341,7 @@ public:
 				(promosq1 == h1 && (bbk2 & corner_h1)) ||
 				(promosq1 == a1 && (bbk2 & corner_a1)))
 			{
-				return recognizedDraw();
+				return drawScore();
 			}
 		}
 		return eval;
@@ -368,19 +363,15 @@ public:
 			(promosq1 == h1 && (bbk2 & corner_h1)) ||
 			(promosq1 == a1 && (bbk2 & corner_a1)))
 		{
-			return recognizedDraw();
+			return drawScore();
 		}
 		return eval;
 	}
 
-	__forceinline int recognizedDraw() {
+	__forceinline int drawScore() {
 		recognized_draw = true;
 		return 0;
 	}
-
-	//__forceinline bool isLateEndgame() {
-	//	return is_late_endgame;
-	//}
 
 	__forceinline int highestAttackedPieceValue(const BB& attacks, const Board* board, const Side side) {
 		for (Piece p = Queen; p >= Pawn; p--) {
@@ -401,13 +392,13 @@ public:
 	}
 
 	bool recognized_draw;
-//	bool is_late_endgame;
 	uint32 key[2];
 	int material_value[2];
 	Board* board;
-	BB attacks1, attacks2;
+	BB attacks1;
+	BB attacks2;
 
-	static int bit_shift[7];
+	static int piece_bit_shift[7];
 	static int piece_value[6];
 
 	static const uint32 k   = 0x00000;
@@ -425,7 +416,7 @@ public:
 	static const uint32 all_pawns = 0xf;
 };
 
-int Material::bit_shift[7] = {0, 4, 8, 12, 16, 20};
+int Material::piece_bit_shift[7] = {0, 4, 8, 12, 16, 20};
 int Material::piece_value[6] = { 100, 400, 400, 600, 1200, 0 };
 
 #define piece_value(p) (Material::piece_value[p & 7])

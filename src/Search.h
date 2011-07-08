@@ -152,7 +152,7 @@ protected:
 			}
 			pos->gotoMove(0);
 			if (move_count == 0) { 
-				return searchNodeScore(pos->in_check ? -MAXSCORE : 0);
+				return pos->in_check ? searchNodeScore(-MAXSCORE) : drawScore();
 			}
 			else if (best_move) {
 				updateHistoryScores(best_move, depth/one_ply);
@@ -191,7 +191,7 @@ protected:
 
  	Score searchAll(const Depth depth, Score alpha, const Score beta) {
 		if (game->isRepetition()) {
-			return searchNodeScore(0);
+			return drawScore();
 		}
 		
 		findTranspositionRefineEval(depth, alpha, beta);
@@ -297,10 +297,10 @@ protected:
 			}
 		}
 		if (move_count == 0) { 
-			return searchNodeScore(pos->in_check ? -MAXSCORE + ply : 0);
+			return pos->in_check ? searchNodeScore(-MAXSCORE + ply) : drawScore();
 		}
 		else if (pos->reversible_half_move_count >= 100) { 
-			return searchNodeScore(0);
+			return drawScore();
 		}
 		else if (best_move) {
 			updateHistoryScores(best_move, depth/one_ply);

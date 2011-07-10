@@ -572,7 +572,7 @@ protected:
 				double stage = pos->material.value()/(double)pos->material.max_value_no_pawns;
 
 				if (search_time < time_left/10) {
-					search_time = (int)(stage*search_time*4 + (1-stage)*search_time); 
+					search_time = max(search_time, (int)(stage*search_time*3 + (1-stage)*search_time/2)); 
 				}
 
 				if (movestogo == 0 && search_time > time_left/4) {

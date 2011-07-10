@@ -25,6 +25,7 @@
 
 #include <windows.h>
 #include <intrin.h>
+#include <sys/timeb.h>
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4706)

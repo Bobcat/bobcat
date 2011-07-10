@@ -20,10 +20,11 @@ static const int RECOGNIZEDDRAW = 1;
 
 class Material {
 public:
-	int max_value;
-	
 	Material() {
-		max_value = 2*(2*piece_value[Knight]+2*piece_value[Bishop]+2*piece_value[Rook]+piece_value[Queen]);
+		max_value_no_pawns = 2*(2*piece_value[Knight]+2*piece_value[Bishop]+
+			2*piece_value[Rook]+piece_value[Queen]);
+
+		max_value = max_value_no_pawns + 2*8*piece_value[Pawn];
 	}
 
 	__forceinline void clear() {
@@ -373,30 +374,15 @@ public:
 		return 0;
 	}
 
-	__forceinline int highestAttackedPieceValue(const BB& attacks, const Board* board, const Side side) {
-		for (Piece p = Queen; p >= Pawn; p--) {
-			if (count(side, p) > 0 && (board->piece[p | (side << 3)] & attacks)) {
-				return piece_value[p];
-			}
-		}
-		return 0;
-	}
-
-	__forceinline int highestPieceValue(const Side side) {
-		for (Piece p = Queen; p >= Pawn; p--) {
-			if (count(side, p) > 0) {
-				return piece_value[p];
-			}
-		}
-		return 0;
-	}
-
 	bool recognized_draw;
 	uint32 key[2];
 	int material_value[2];
 	Board* board;
 	BB attacks1;
 	BB attacks2;
+	int max_value_no_pawns;
+	int max_value;
+
 
 	static int piece_bit_shift[7];
 	static int piece_value[6];

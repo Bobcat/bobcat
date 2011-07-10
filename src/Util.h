@@ -116,4 +116,21 @@ protected:
 	Runnable* runnable; 
 };
 
+const char* dateAndTimeString(char* buf) {
+	time_t now = time(NULL);
+	struct tm* time = localtime(&now);
+	sprintf(buf, "%04d-%02d-%02d %02d:%02d:%02d", time->tm_year + 1900, time->tm_mon + 1, 
+		time->tm_mday, time->tm_hour, time->tm_min, time->tm_sec);
+	return buf;
+}
+
+const char* timeString(char* buf) {
+	struct _timeb tb;
+	_ftime (&tb);
+	struct tm* time = localtime(&tb.time);
+	sprintf(buf, "%02d:%02d:%02d.%03d", time->tm_hour, time->tm_min, time->tm_sec, tb.millitm);
+	return buf;
+}
+
 #endif // defined(_MSCVER)
+

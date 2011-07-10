@@ -237,20 +237,20 @@ public:
 		file = 0;
 		char buf[1024];
 		if (config->getBool("Bobcat", "book-enable", true)) {
-			logger->log("Book enabled.");
+			logger->logts("Book enabled.");
 			const char* book_name = config->getString("Bobcat", "book-name", "TDDBII");
 			snprintf(buf, sizeof(buf), "Book name is %s.", book_name);
-			logger->log(buf);
+			logger->logts(buf);
 			const char* book_filename = config->getString(book_name, "book-file", "c:/Projects/books/TDDBII.bin");
 			snprintf(buf, sizeof(buf), "Book file name is %s.", book_filename);
-			logger->log(buf);
+			logger->logts(buf);
 			file = fopen(book_filename, "rb");
 			if (!file) {
-				logger->log("Book file could not be openend.");
+				logger->logts("Book file could not be openend.");
 			}
 		}
 		else {
-			logger->log("Book not enabled.");
+			logger->logts("Book not enabled.");
 		}
 	}
 

@@ -313,7 +313,7 @@ protected:
 
 	__forceinline bool okToTryNullMove(const Depth depth, const Score beta) const {
 		return !pos->in_check 
-			&& pos->null_moves_in_row < 1 
+			//&& pos->null_moves_in_row < 1 
 			&& depth > one_ply 
 			&& !pos->material.isKx(pos->side_to_move) 
 			&& pos->eval_score >= beta; 
@@ -645,7 +645,7 @@ protected:
 		return searchNodeScore(score);
 	}
 
-	__forceinline Score drawScore() const {
+	__forceinline Score drawScore() const { // In this method can be applied a contempt factor in the future.
 		return 0;
 	}
 

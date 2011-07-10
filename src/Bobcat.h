@@ -114,20 +114,20 @@ public:
 	}
 
 	virtual int setOption(const char* name, const char* value) {
-		char buf[128];
+		char buf[1024];
 		strcpy(buf, "");;
 		if (value != NULL) {
 			if (stricmp("Hash", name) == 0) {
 				transt->initialise(min(1024, max(8, strtol(value, NULL, 10))));
-				snprintf(buf, sizeof(buf), "Hash table size is %d Mb\n", transt->getSizeMb());
+				snprintf(buf, sizeof(buf), "Hash table size set to %d Mb.", transt->getSizeMb());
 			}
 			else if (stricmp("Threads", name) == 0) {
 				num_threads = min(4, max(1, strtol(value, NULL, 10)));
-				snprintf(buf, sizeof(buf), "Number of threads is %d\n", num_threads);
+				snprintf(buf, sizeof(buf), "Number of threads is set to %d.", num_threads);
 			}
 		}
 		if (strlen(buf)) {
-			logger->log(buf);
+			logger->logts(buf);
 		}
 		return 0;
 	}
@@ -139,18 +139,7 @@ public:
 		logger = new Logger();
 		config = new Config(argc > 1 ? argv[1] : "bobcat.ini");
 
-		if (config->getBool("Bobcat", "log-file", false)) {
-			logger->open(config->getString("Logging", "filename", "bobcat.log"));
-		}
-
-		char* buf;
-		if ((buf = _getcwd(NULL, 0)) == NULL) {
-			perror("_getcwd error");
-		}
-		else {
-			logger->log(buf);
-			free(buf);
-		}
+		logTimeAndCwd();
 
 		Bitmanip_h_initialise();
 		Bitboard_h_initialise();
@@ -159,8 +148,8 @@ public:
 		Square_h_initialise();
 
 		game = new Game(config);
-		input = new StdIn();
-		output = new StdOut();
+		input = new StdIn(logger);
+		output = new StdOut(logger);
 		protocol = new UCIProtocol(this, game, input, output);
 		book = new Book(config, logger);
 		pawnt = new PawnStructureTable(8);
@@ -172,15 +161,10 @@ public:
 		newGame();
 
 		bool console_mode = true;
-		//game->pos->board->print_board();
 		int exit = 0;
 
 		while (exit == 0) {
 			game->pos->generateMoves();
-
-			//if (console_mode) {
-			//	printf("> ");
-			//}
 
 			char line[16384];
 			input->getLine(true, line);
@@ -284,6 +268,19 @@ public:
 		delete transt;
 		delete search;
 		return 0;
+	}
+
+	void logTimeAndCwd() {
+		char buf1[2048];
+		char buf2[2048];
+
+		if (config->getBool("Bobcat", "log-file", false)) {
+			logger->open(config->getString("Logging", "filename", "bobcat.log"));
+		}
+		snprintf(buf1, sizeof(buf1), "Time is %s.", dateAndTimeString(buf2));
+		logger->logts(buf1);
+		snprintf(buf1, sizeof(buf1), "Working directory is %s.", _getcwd(buf2, 2048));
+		logger->logts(buf1);
 	}
 
 public:

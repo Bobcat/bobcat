@@ -34,14 +34,21 @@ public:
 		}
 	}
 
-	void log(const char* text) {
-		writeLine(text);
+	void logts(const char* text) {
+		char buf1[4096], buf2[64];
+		snprintf(buf1, sizeof(buf1), "%s %s", timeString(buf2), text);
+		writeLine(buf1);
+	}
+
+	void logts(const char* text1, const char* text2) {
+		char buf1[4096], buf2[64];
+		snprintf(buf1, sizeof(buf1), "%s %s%s", timeString(buf2), text1, text2);
+		writeLine(buf1);
 	}
 
 protected:
 	void write(const char* text) {
 		if (file <= 0) {
-			//printf(text);
 			return;
 		}
 		fwrite(text, 1, strlen(text), file);
@@ -68,8 +75,9 @@ protected:
 
 class StdIn {
 public:
-	StdIn() {
+	StdIn(Logger* logger) {
 		initialise();
+		this->logger = logger;
 	}
 
 	int getLine(bool blocking, char* line) { 
@@ -84,6 +92,9 @@ public:
 	} 
 
 protected:
+	StdIn() {
+	}
+
 	void initialise() { 
 		DWORD dw; 
 		handle = GetStdHandle(STD_INPUT_HANDLE); 
@@ -117,20 +128,30 @@ protected:
 			}
 		} while (true);
 		line[len] = 0;
+		if (logger) {
+			logger->logts("<", line);
+		}
 		return len;
 	}
 
 	HANDLE handle;
 	bool is_pipe;
+	Logger* logger;
 };
 
 class StdOut {
 public:
-	void writeLine(const char* line) {
-		printf("%s\n", line);
+	StdOut(Logger* logger) {
+		this->logger = logger;
 	}
 
-	void write(const char* text) {
-		printf("%s", text);
+	void writeLine(const char* line) {
+		printf("%s\n", line);
+		if (logger) {
+			logger->logts(">", line);
+		}
 	}
+
+protected:
+	Logger* logger;
 };

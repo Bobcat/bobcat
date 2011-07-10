@@ -96,12 +96,10 @@ public:
 		}
 		char buf[128];
 		snprintf(buf, sizeof(buf), "bestmove %s", bestmove);
-		output->write(buf);
 		if (pondermove) {
-			snprintf(buf, sizeof(buf), " ponder %s", pondermove);
-			output->write(buf);
+			snprintf(&buf[strlen(buf)], sizeof(buf) - strlen(buf), " ponder %s", pondermove);
 		}
-		output->writeLine("");
+		output->writeLine(buf);
 	}
 
 	virtual void postInfo(const Move curr_move, int curr_move_number, const int depth, int selective_depth, uint64 node_count, 
@@ -184,7 +182,7 @@ public:
 				"option name Hash type spin default 256 min 8 max 1024\n" \
 				"option name Ponder type check default true\n" \
 				"option name Threads type spin default 1 min 1 max 4\n" \
-				"uciok\n");
+				"uciok");
 
 			output->writeLine(buf);
 		}

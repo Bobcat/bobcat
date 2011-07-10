@@ -344,17 +344,6 @@ protected:
 		king_square[1] = &board->king_square[1];
 	}
 
-	void printPcsqTable(const char* table, int* values) {
-		printf("%s", table);
-		for (int i = 0; i < 64; i++) {
-			if (i % 8 == 0) {
-				printf("\n");
-			}
-			printf("%4d,  ",  values[i]);
-		}
-		printf("\n\n");
-	}
-
 	Board* board;
 	Position* pos;
 	Game* game;
@@ -367,7 +356,7 @@ protected:
 	int mateval[2];
 	int pawn_eval_mg[2];
 	int pawn_eval_eg[2];
-	int	passed_pawn_files[2];
+	int passed_pawn_files[2];
 	int attack_points[2];
 	int attack_count[2];
 

@@ -177,7 +177,7 @@ public:
 		if (stricmp(params[0], "uci") == 0) {
 			char buf[2048];
 			snprintf(buf, sizeof(buf),  
-				"id name Bobcat 2.75\n" \
+				"id name Bobcat 2.75 (1)\n" \
 				"id author Gunnar Harms\n" \
 				"option name Hash type spin default 256 min 8 max 1024\n" \
 				"option name Ponder type check default true\n" \

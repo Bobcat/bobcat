@@ -561,19 +561,13 @@ protected:
 			else {
 				int moves_left = movestogo;
 				if (moves_left == 0) {
-					moves_left = 40;
+					moves_left = 30;
 				}
 
 				time_left = pos->side_to_move == 0 ? wtime : btime;
 				time_inc = pos->side_to_move == 0 ? winc : binc;
 
 				search_time = time_left/moves_left + time_inc;
-
-				double stage = pos->material.value()/(double)pos->material.max_value_no_pawns;
-
-				if (search_time < time_left/10) {
-					search_time = max(search_time, (int)(stage*search_time*3 + (1-stage)*search_time/2)); 
-				}
 
 				if (movestogo == 0 && search_time > time_left/4) {
 					search_time = time_inc ? time_left/10 : time_left/30;

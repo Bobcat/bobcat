@@ -128,7 +128,7 @@ protected:
 
 			const BB& attacks = knight_attacks[sq];
 			int x = popCount(attacks & not_occupied & ~pawn_attacks[side ^ 1]);
-			poseval[side] += -40 + 5*x;
+			poseval[side] += -30 + 4*x;
 			all_attacks[side] |= attacks;
 
 			bool outpost = (passed_pawn_front_span[side][sq] & (pawns(side ^ 1) & ~pawn_front_span[side][sq])) == 0;
@@ -154,7 +154,7 @@ protected:
 
 			const BB attacks = Bmagic(sq, occupied);
 			int x = popCount(attacks & not_occupied);
-			poseval[side] += -50 + 6*x;
+			poseval[side] += -40 + 5*x;
 			all_attacks[side] |= attacks;
 			
 			if (bishop_trapped_a7h7[side] & bbsq) {
@@ -198,8 +198,8 @@ protected:
 			}
 			const BB attacks = Rmagic(sq, occupied);
 			int x = popCount(attacks & not_occupied);
-			poseval_mg[side] += -20 + 2*x;
-			poseval_eg[side] += -50 + 5*x;
+			poseval_mg[side] += -16 + 2*x;
+			poseval_eg[side] += -32 + 4*x;
 			all_attacks[side] |= attacks;
 
 			const BB attacks2 = Rmagic(sq, occupied & ~board->rooks(side) & ~board->queens(side) & 

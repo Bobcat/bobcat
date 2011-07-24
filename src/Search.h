@@ -94,7 +94,7 @@ protected:
 		uint64 nodes_per_sec, uint64 time, int hash_full)
 	{
 		if (!worker) {
-			protocol->postInfo(0, -1, search_depth/one_ply, max_ply_reached, node_count, nodesPerSecond(), timeUsed(), 
+			protocol->postInfo(curr_move, curr_move_number, search_depth/one_ply, max_ply_reached, node_count, nodesPerSecond(), timeUsed(), 
 				transt->getLoad());
 		}
 	}

@@ -41,7 +41,7 @@ public:
 				int winc = 0, int binc = 0, int movetime = 5000) 
 	{
 		game->pos->pv_length = 0;
-		if (!protocol->isAnalysing()) {
+		if (!protocol->isAnalysing() && !protocol->isFixedDepth()) {
 			goBook();
 		}
 		if (game->pos->pv_length == 0) {
@@ -194,6 +194,9 @@ public:
 			}
 			else if (stricmp(tokens[0], "perft") == 0) {
 				Test(game).perft(6);
+			}
+			else if (stricmp(tokens[0], "timetodepth") == 0 || stricmp(tokens[0], "ttd") == 0) {
+				Test(game).timeToDepth(search, this);
 			}
 			else if (stricmp(tokens[0], "divide") == 0) {
 				Test(game).perft_divide(5);

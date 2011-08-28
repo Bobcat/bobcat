@@ -17,8 +17,9 @@
 */
 
 const int FIXED_MOVE_TIME = 1;
-const int INFINITE_MOVE_TIME = 2;
-const int PONDER_SEARCH = 4;
+const int FIXED_DEPTH = 2;
+const int INFINITE_MOVE_TIME = 4;
+const int PONDER_SEARCH = 8;
 
 class ProtocolListener {
 public:
@@ -43,8 +44,10 @@ public:
 	virtual void checkInput() = 0;
 	virtual void postMoves(const char* bestmove, const char* pondermove) = 0;
 
-	virtual void postInfo(const Move curr_move, int curr_move_number, const int depth, int selective_depth, uint64 node_count, 
+	virtual void postInfo(const int depth, int selective_depth, uint64 node_count, 
 		uint64 nodes_per_sec, uint64 time, int hash_full) = 0;
+
+	virtual void postInfo(const Move curr_move, int curr_move_number) = 0;
 	
 	virtual void postPV(const int depth, int max_ply, uint64 node_count, uint64 nodes_per_second, uint64 time, int hash_full, 
 		int score, const char* pv) = 0; 
@@ -57,12 +60,21 @@ public:
 		return flags & FIXED_MOVE_TIME;
 	}
 
+	__forceinline int isFixedDepth() {
+		return flags & FIXED_DEPTH;
+	}
+
+	__forceinline int getDepth() {
+		return depth;
+	}
+
 	__forceinline void setFlags(int flags) {
 		this->flags = flags;
 	}
 
 protected:
 	int flags;
+	int depth;
 	ProtocolListener* callback;
 	StdIn* input;
 	StdOut* output;
@@ -102,46 +114,37 @@ public:
 		output->writeLine(buf);
 	}
 
-	virtual void postInfo(const Move curr_move, int curr_move_number, const int depth, int selective_depth, uint64 node_count, 
-		uint64 nodes_per_sec, uint64 time, int hash_full) 
+	virtual void postInfo(const int depth, int selective_depth, uint64 node_count, uint64 nodes_per_sec, uint64 time, 
+		int hash_full) 
 	{
+		char buf[1024];
+		snprintf(buf, sizeof(buf), 
+			"info depth %d " \
+			"seldepth %d " \
+			"hashfull %d " \
+			"nodes %llu " \
+			"nps %llu " \
+			"time %llu", 
+			depth, 
+			selective_depth, 
+			hash_full, 
+			node_count, 
+			nodes_per_sec, 
+			time);
+
+		output->writeLine(buf);
+	}
+
+	virtual void postInfo(const Move curr_move, int curr_move_number) {
 		char buf[1024];
 		char move_buf[32];
 
-		if (curr_move) {
-			snprintf(buf, sizeof(buf), 
-				"info currmove %s " \
-				"currmovenumber %d " \
-				"depth %d " \
-				"seldepth %d " \
-				"hashfull %d " \
-				"nodes %llu " \
-				"nps %llu " \
-				"time %llu", 
-				moveToString(curr_move, move_buf), 
-				curr_move_number, 
-				depth, 
-				selective_depth, 
-				hash_full, 
-				node_count, 
-				nodes_per_sec, 
-				time);
-		} 
-		else {
-			snprintf(buf, sizeof(buf), 
-				"info depth %d " \
-				"seldepth %d " \
-				"hashfull %d " \
-				"nodes %d " \
-				"nps %d " \
-				"time %llu",
-				depth, 
-				selective_depth, 
-				hash_full, 
-				node_count, 
-				nodes_per_sec, 
-				time);
-		}		
+		snprintf(buf, sizeof(buf), 
+			"info currmove %s " \
+			"currmovenumber %d ", 
+			moveToString(curr_move, move_buf), 
+			curr_move_number);
+
 		output->writeLine(buf);
 	}
 
@@ -222,6 +225,12 @@ public:
 				flags |= FIXED_MOVE_TIME;
 				if (++param < num_params) {
 					movetime = strtol(params[param], NULL, 10);
+				}
+			}
+			else if (stricmp(params[param], "depth") == 0) {
+				flags |= FIXED_DEPTH;
+				if (++param < num_params) {
+					depth = strtol(params[param], NULL, 10);
 				}
 			}
 			else if (stricmp(params[param], "wtime") == 0) {

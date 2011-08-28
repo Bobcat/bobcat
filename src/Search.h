@@ -44,7 +44,10 @@ public:
 				Score score = searchRoot(search_depth, alpha, beta);
 
 				savePV();
-				if (isEasyMove()) {
+				if (isEasyMove(score)) {
+					break;
+				}
+				if (protocol->isFixedDepth() && protocol->getDepth()*one_ply == search_depth) {
 					break;
 				}
 				alpha = max(-MAXSCORE, score - 50);
@@ -57,7 +60,6 @@ public:
 				savePV();
 			}
 		}
-		postInfo(0, -1, search_depth/one_ply, max_ply_reached, node_count, nodesPerSecond(), timeUsed(), transt->getLoad());
 		stopped = true;
 		return 0;
 	}
@@ -77,6 +79,10 @@ public:
 	virtual void newGame() {
 	}
 
+	virtual Protocol* getProtocol() {
+		return protocol;
+	}
+
 protected:
 	void initialise(Protocol* protocol, Game* game, Eval* eval, SEE* see, TranspositionTable* transt, bool worker) {
 		this->protocol = protocol;
@@ -90,11 +96,9 @@ protected:
 		one_ply = 2;
 	}
 
-	void postInfo(const Move curr_move, int curr_move_number, int depth, int selective_depth, uint64 node_count, 
-		uint64 nodes_per_sec, uint64 time, int hash_full)
-	{
+	void postInfo(int depth, int selective_depth, uint64 node_count, uint64 nodes_per_sec, uint64 time, int hash_full) {
 		if (!worker) {
-			protocol->postInfo(curr_move, curr_move_number, search_depth/one_ply, max_ply_reached, node_count, nodesPerSecond(), timeUsed(), 
+			protocol->postInfo(search_depth/one_ply, max_ply_reached, node_count, nodesPerSecond(), timeUsed(), 
 				transt->getLoad());
 		}
 	}
@@ -116,9 +120,8 @@ protected:
 				if (makeMove(m)) {
 					Depth next_depth = getNextDepth(true, depth, ++move_count, move_data);
 
-					if (search_depth > 10*one_ply && search_time > 5000) {
-						postInfo(m, move_count, search_depth/one_ply, max_ply_reached, node_count, nodesPerSecond(), 
-							timeUsed(), transt->getLoad());
+					if (search_depth > 10*one_ply && search_time > 5000 || (isAnalysing() && search_depth>10)) {
+						if (protocol) protocol->postInfo(m, move_count);
 					}
 
 					Score score;
@@ -325,6 +328,11 @@ protected:
 		if (pos->in_check) {
 			return is_pv_node ? depth : depth - one_ply;
 		}
+		// singular move extension is a way to find the mate in 9 in: fen 3r1r2/pppb1p1k/2npqP1p/2b1p3/8/2NP2PP/PPPQN1BK/R4R2 w - - 0 1
+		// should be possible without + better eval
+		if ((pos-1)->in_check && (pos-1)->moveCount() == 1) {
+			return is_pv_node ? depth : depth - one_ply;
+		}
 		const Move m = move_data->move;
 		if (!isPassedPawnMove(m) 
 			&& !isQueenPromotion(m) 
@@ -462,7 +470,7 @@ protected:
 
 	__forceinline void checkTime() {
 		if ((node_count & 0x3FFF) == 0) {
-			if (!isAnalysing()) {
+			if (!isAnalysing() && !protocol->isFixedDepth()) {
 				stop_search = search_depth > one_ply && timeUsed() > search_time;
 			}
 			else {
@@ -475,7 +483,7 @@ protected:
 			}
 		}
 		if ((node_count & 0x3FFFFF) == 0) {
-			postInfo(0, -1, search_depth, max_ply_reached, node_count, nodesPerSecond(), timeUsed(), transt->getLoad());
+			postInfo(search_depth, max_ply_reached, node_count, nodesPerSecond(), timeUsed(), transt->getLoad());
 		}
 	}
 
@@ -700,8 +708,10 @@ protected:
 		return move ? (score >= beta ? BETA : EXACT) : ALPHA;
 	}
 
-	bool isEasyMove() const {
-		if (pos->moveCount() == 1 && search_depth > 4*one_ply) {
+	bool isEasyMove(const Score score) const {
+		if ((pos->moveCount() == 1 && search_depth > 9*one_ply)
+			|| (score == MAXSCORE - 1)) 
+		{
 			return true;
 		}
 		return false;

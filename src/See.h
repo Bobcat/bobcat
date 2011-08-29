@@ -41,6 +41,11 @@ public:
 		return seeRec(materialChange(move), nextToCapture(move), moveTo(move), side(move) ^ 1);
 	}
 
+	int seeSquare(const Square sq) {
+		initialiseSeeMove();
+		//return seeRec(0, pawn moveTo(move), side(move) ^ 1);
+	}
+
 private:
 	__forceinline int materialChange(const Move move) {
 		return (isCapture(move) ? piece_value(moveCaptured(move)) : 0) + (isPromotion(move) ? 

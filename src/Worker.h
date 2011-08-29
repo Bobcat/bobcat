@@ -22,7 +22,7 @@ public:
 		game = new Game(config);
 		game->copy(master);
 		see = new SEE(game);
-		eval = new Eval(game, pawnt);
+		eval = new Eval(game, pawnt, see);
 		search = new Search(game, eval, see, transt);
 		thread = new Thread(search);
 		thread->start();

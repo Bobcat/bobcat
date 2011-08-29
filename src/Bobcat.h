@@ -152,10 +152,10 @@ public:
 		output = new StdOut(logger);
 		protocol = new UCIProtocol(this, game, input, output);
 		book = new Book(config, logger);
-		pawnt = new PawnStructureTable(8);
-		eval = new Eval(game, pawnt);
-		see = new SEE(game);
 		transt = new TranspositionTable(256);
+		pawnt = new PawnStructureTable(8);
+		see = new SEE(game);
+		eval = new Eval(game, pawnt, see);
 		search = new Search(protocol, game, eval, see, transt);
 		
 		newGame();

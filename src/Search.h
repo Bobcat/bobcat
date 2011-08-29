@@ -120,8 +120,8 @@ protected:
 				if (makeMove(m)) {
 					Depth next_depth = getNextDepth(true, depth, ++move_count, move_data);
 
-					if (search_depth > 10*one_ply && search_time > 5000 || (isAnalysing() && search_depth>10)) {
-						if (protocol) protocol->postInfo(m, move_count);
+					if (search_depth > 10*one_ply && (search_time > 5000 || isAnalysing()) && protocol) {
+						protocol->postInfo(m, move_count);
 					}
 
 					Score score;
@@ -325,19 +325,16 @@ protected:
 	__forceinline Depth getNextDepth(bool is_pv_node, const Depth depth, const int move_count, 
 		const MoveData* move_data) const
 	{
-		if (pos->in_check) {
-			return is_pv_node ? depth : depth - one_ply;
-		}
 		// singular move extension is a way to find the mate in 9 in: fen 3r1r2/pppb1p1k/2npqP1p/2b1p3/8/2NP2PP/PPPQN1BK/R4R2 w - - 0 1
 		// should be possible without + better eval
-		if ((pos-1)->in_check && (pos-1)->moveCount() == 1) {
-			return is_pv_node ? depth : depth - one_ply;
+		if (pos->in_check || ((pos-1)->in_check && (pos-1)->moveCount() == 1)) {
+			return (is_pv_node || move_count < 3) ? depth : depth - one_ply;
 		}
 		const Move m = move_data->move;
 		if (!isPassedPawnMove(m) 
 			&& !isQueenPromotion(m) 
 			&& !isCapture(m) 
-			&& move_count >= 5)
+			&& move_count >= 5) 
 		{
 			return depth - 2*one_ply - (depth/16)*one_ply - (max(0, (move_count-6)/12))*one_ply;
 		}

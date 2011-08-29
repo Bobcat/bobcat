@@ -184,8 +184,7 @@ private:
 				addCastleMove(ooo_king_from[side_to_move], ooo_king_to[side_to_move]);
 			}
 		}
-		const BB& pawns = board->pawns(side_to_move);
-		BB pushed = pawnPush[side_to_move](pawns & ~rank_7[side_to_move]) & ~occupied;
+		BB pushed = pawnPush[side_to_move](board->pawns(side_to_move) & ~rank_7[side_to_move]) & ~occupied;
 		addPawnMoves(pushed, pawn_push_dist, QUIET);
 		addPawnMoves(pawnPush[side_to_move](pushed & rank_3[side_to_move]) & ~occupied, pawn_double_push_dist, DOUBLEPUSH);
 		addMoves(~occupied);

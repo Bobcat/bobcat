@@ -18,8 +18,8 @@
 
 class Eval {
 public: 
-	Eval(Game* game, PawnStructureTable* pawnt) {
-		initialise(game, pawnt);
+	Eval(Game* game, PawnStructureTable* pawnt, SEE* see) {
+		initialise(game, pawnt, see);
 	}
 
 	virtual void newGame() {
@@ -291,10 +291,26 @@ protected:
 				int score_mg = rr*4; 
 				int score_eg = rr*3; 
 
-				score_eg += rr*(front_span & board->occupied_by_side[side] ? 0 : 1);
-				score_eg += rr*(front_span & board->occupied_by_side[side ^ 1] ? 0 : 1);
-				score_eg += rr*(front_span & all_attacks[side ^ 1] ? 0 : 1);
+				bool unblocked_them = (front_span & board->occupied_by_side[side ^ 1]) == 0;
+				bool unattacked = (front_span & all_attacks[side ^ 1]) == 0;
 
+				if (unblocked_them) {
+					score_eg += rr;
+				}
+				if (unattacked) {
+					score_eg += rr;
+				}
+
+				bool unblocked_us = (front_span & board->occupied_by_side[side]) == 0;
+				bool defended = (front_span & all_attacks[side]) == front_span;
+
+				if (unblocked_us) {
+					score_eg += rr;
+				}
+				if (defended) {
+					score_eg += rr;
+				}	
+				
 				score_eg += r*(distance[sq][kingSq(side ^ 1)]*2-distance[sq][kingSq(side)]*2);
 
 				poseval_mg[side] += score_mg;
@@ -340,10 +356,11 @@ protected:
 		all_attacks[1] = pawn_attacks[1] = pawnEastAttacks[1](pawns(1)) | pawnWestAttacks[1](pawns(1));
 	}
 
-	void initialise(Game* game, PawnStructureTable* pawnt) {
+	void initialise(Game* game, PawnStructureTable* pawnt, SEE* see) {
 		this->game = game;
 		board = game->pos->board;
 		this->pawnt = pawnt;
+		this->see = see;
 		pawns_array[0] = &board->pawns(0);
 		pawns_array[1] = &board->pawns(1);
 		king_square[0] = &board->king_square[0];
@@ -354,6 +371,7 @@ protected:
 	Position* pos;
 	Game* game;
 	PawnStructureTable* pawnt;
+	SEE* see;
 	PawnEntry* pawnp;
 
 	int poseval_mg[2];

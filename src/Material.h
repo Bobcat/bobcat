@@ -68,6 +68,10 @@ public:
 		return key[c] == (key[c] & 15); 
 	}
 
+	__forceinline bool isKx() {
+		return isKx(0) && isKx(1); 
+	}
+
 	__forceinline int value() {
 		return material_value[0] + material_value[1];
 	}

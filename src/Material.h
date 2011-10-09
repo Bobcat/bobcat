@@ -76,6 +76,10 @@ public:
 		return material_value[0] + material_value[1];
 	}
 
+	__forceinline int value(const Side c) {
+		return material_value[c];
+	}
+
 	__forceinline int balance() {
 		return material_value[0] - material_value[1];
 	}
@@ -410,3 +414,4 @@ int Material::piece_bit_shift[7] = {0, 4, 8, 12, 16, 20};
 int Material::piece_value[6] = { 100, 400, 400, 600, 1200, 0 };
 
 #define piece_value(p) (Material::piece_value[p & 7])
+//KQKQN KQKQB

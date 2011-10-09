@@ -40,14 +40,12 @@ public:
 			try {
 				search_depth += 1*one_ply;
 				max_plies = max(32, search_depth/one_ply + 16);
-				
+
 				Score score = searchRoot(search_depth, alpha, beta);
 
 				savePV();
-				if (isEasyMove(score)) {
-					break;
-				}
-				if (protocol->isFixedDepth() && protocol->getDepth()*one_ply == search_depth) {
+
+				if (moveIsEasy(score)) {
 					break;
 				}
 				alpha = max(-MAXSCORE, score - 50);
@@ -104,7 +102,7 @@ protected:
 	}
 
 	Score searchRoot(const Depth depth, Score alpha, Score beta) {
-		do { // stay in this loop until an exact score is found
+		do { // Stay in this loop until an exact score is found.
 			pv_length[0] = 0;
 			pos->eval_score = eval->evaluate();
 			findTranspositionRefineEval(depth, alpha, beta);
@@ -175,10 +173,10 @@ protected:
 	void sortRootMoves(bool use_root_move_scores) {
 		int move_count = 0;
 		while (MoveData* move_data = pos->nextMove()) {
-			if (use_root_move_scores) { // always false
+			if (use_root_move_scores) { // Always false for now.
 				move_data->score = root_move_score[move_count++];
 			}
-			else { // always take this branch for the moment
+			else { // Always take this branch for the moment.
 				sortMove(*move_data);
 			}
 		}
@@ -235,6 +233,8 @@ protected:
 			}
 		}
 
+		Move singular_move = getSingularMove(depth, is_pv_node);
+
 		if (!pos->transp_move && pos->eval_score >= beta - 100) {
 			if (is_pv_node) {
 				if (depth >= 4*one_ply) {
@@ -263,9 +263,10 @@ protected:
 			const Move m = move_data->move;
 
 			if (makeMove(m)) {
+				++move_count;
 
-				Depth next_depth = getNextDepth(is_pv_node, depth, ++move_count, move_data);
-
+				Depth next_depth = m == singular_move ? depth : getNextDepth(is_pv_node, depth, move_count, move_data);
+     
 				if (okToPruneLastMove(best_score, next_depth, depth, alpha)) {
 					unmakeMove();
 					continue;
@@ -314,6 +315,55 @@ protected:
 		return storeSearchNodeScore(best_score, depth, nodeType(best_score, beta, best_move), best_move);
 	}
 
+
+	__forceinline const Move getSingularMove(const Depth depth, const bool is_pv_node) {
+		if (is_pv_node 
+			&& (pos->transp_flags & (EXACT/*|BETA*/))
+			&& depth >= 4*one_ply 
+			&& pos->transp_move)
+		{
+			if (searchFailLow(depth/2, pos->eval_score - 75, pos->transp_move)) {
+				return pos->transp_move;
+			}
+        }
+		return 0;
+	}
+
+	bool searchFailLow(const Depth depth, Score alpha, const Move exclude_move) {
+		pos->generateMoves(this, pos->transp_move, STAGES);
+		
+		Score best_score = -MAXSCORE;
+		int move_count = 0;
+
+		while (const MoveData* move_data = pos->nextMove()) {
+			const Move m = move_data->move;
+			if (m == exclude_move) {
+				continue;
+			}
+			if (makeMove(m)) {
+				Depth next_depth = getNextDepth(true, depth, ++move_count, move_data);
+
+				if (okToPruneLastMove(best_score, next_depth, depth, alpha)) {
+					unmakeMove();
+					continue;
+				}
+				Score score = searchNextDepth(next_depth, -alpha - 1, -alpha);
+
+				if (score > alpha && next_depth < depth - one_ply) {
+					score = searchNextDepth(depth - one_ply, -alpha - 1, -alpha);
+				}
+				unmakeMove();
+				if (score > alpha) {
+					return false;
+				}
+			}
+		}
+		if (move_count == 0) { 
+			return false;
+		}
+		return true;
+	}
+
 	__forceinline bool okToTryNullMove(const Depth depth, const Score beta) const {
 		return !pos->in_check 
 			//&& pos->null_moves_in_row < 1 
@@ -325,13 +375,35 @@ protected:
 	__forceinline Depth getNextDepth(bool is_pv_node, const Depth depth, const int move_count, 
 		const MoveData* move_data) const
 	{
-		// singular move extension is a way to find the mate in 9 in: fen 3r1r2/pppb1p1k/2npqP1p/2b1p3/8/2NP2PP/PPPQN1BK/R4R2 w - - 0 1
-		// should be possible without + better eval
-		if (pos->in_check || ((pos-1)->in_check && (pos-1)->moveCount() == 1)) {
-			return (is_pv_node || move_count < 3) ? depth : depth - one_ply;
-		}
 		const Move m = move_data->move;
-		if (!isPassedPawnMove(m) 
+		bool reduce = true;
+		if (pos->in_check) {
+			if (see->seeLastMove(m) >= 0) {
+				return depth;
+			}
+			reduce = false;
+		}
+		
+		if (((pos-1)->in_check && (pos-1)->moveCount() == 1)) {
+			// Single repy extension is a way to find the mate in 9 in 
+			// 3r1r2/pppb1p1k/2npqP1p/2b1p3/8/2NP2PP/PPPQN1BK/R4R2 w - - 0 1
+			if (is_pv_node) {
+				return depth;
+			}
+			reduce = false;
+		}
+
+		if (isPassedPawnMove(m)) {
+			if (see->seeLastMove(m) >= 0) {
+				int r = rank(moveTo(m));
+				if (r == 1 || r == 6) {
+					return depth;
+				}
+				reduce = false;
+			}
+		}
+
+		if (reduce
 			&& !isQueenPromotion(m) 
 			&& !isCapture(m) 
 			&& move_count >= 5) 
@@ -542,6 +614,7 @@ protected:
 	}
 
 	__forceinline void updateKillerMoves(const Move m) {
+		// Same move can be stored twice for a given ply. 
 		if (!isCapture(m) && !isPromotion(m) && m != killer_moves[0][ply]) {
 			killer_moves[2][ply] = killer_moves[1][ply];
 			killer_moves[1][ply] = killer_moves[0][ply];
@@ -557,7 +630,7 @@ protected:
 	}
 
 	void initialiseSearch(int wtime, int btime, int movestogo, int winc, int binc, int movetime) {
-		pos = game->pos; // updated in makeMove and unmakeMove from here on
+		pos = game->pos; // Updated in makeMove and unmakeMove from here on.
 
 		if (!worker) {
 			if (protocol->isFixedTime()) {
@@ -628,13 +701,13 @@ protected:
 			move_data.score = PROMOTIONMOVESCORE + piece_value(movePromoted(m));
 		}
 		else if (m == killer_moves[0][ply]) {
-			move_data.score = KILLERMOVESCORE + 2;
+			move_data.score = KILLERMOVESCORE + 20;
 		}
 		else if (m == killer_moves[1][ply]) {
-			move_data.score = KILLERMOVESCORE + 1;
+			move_data.score = KILLERMOVESCORE + 19;
 		}
 		else if (m == killer_moves[2][ply]) {
-			move_data.score = KILLERMOVESCORE;
+			move_data.score = KILLERMOVESCORE + 18;
 		}
 		else {
 			move_data.score = history_scores[movePiece(m)][moveTo(m)];
@@ -650,7 +723,7 @@ protected:
 		return searchNodeScore(score);
 	}
 
-	__forceinline Score drawScore() const { // In this method can be applied a contempt factor in the future.
+	__forceinline Score drawScore() const { // In this method can be applied a contempt factor.
 		return 0;
 	}
 
@@ -705,8 +778,9 @@ protected:
 		return move ? (score >= beta ? BETA : EXACT) : ALPHA;
 	}
 
-	bool isEasyMove(const Score score) const {
+	bool moveIsEasy(const Score score) const {
 		if ((pos->moveCount() == 1 && search_depth > 9*one_ply)
+			|| (protocol->isFixedDepth() && protocol->getDepth()*one_ply == search_depth)
 			|| (score == MAXSCORE - 1)) 
 		{
 			return true;

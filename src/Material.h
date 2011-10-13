@@ -163,6 +163,11 @@ public:
 					break;
 			}
 		}
+
+		if ((key1 & all_pawns) == 0 && (key2 & all_pawns) == 0) {
+			if (abs(balance()) < 500) score/=8;
+		}
+
 		flags |= recognized_draw ? RECOGNIZEDDRAW : 0;
 		return side1 != side_to_move ? -score : score;
 	}

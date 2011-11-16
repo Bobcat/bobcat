@@ -442,7 +442,8 @@ protected:
 		} 
 
 		if (pos->eval_score >= beta && !pos->in_check) {
-			return storeSearchNodeScore(pos->eval_score, 0, BETA, 0);
+			return searchNodeScore(pos->eval_score);
+//			return storeSearchNodeScore(pos->eval_score, 0, BETA, 0);
 		}
 		
 		if (ply >= max_plies - 1 || qs_ply > 6) {

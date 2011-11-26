@@ -51,26 +51,27 @@ public:
 	}
 
 	__forceinline MoveData* nextMove() {
-		if (iteration == number_moves && stage < max_stage) {
-			if (stage == 0) {
-				generateTranspositionMove();
-				if (iteration < number_moves) {
-					return &move_list[iteration++];
-				}
-			}
-			if (iteration == number_moves && stage == 1) {
-				generateCapturesAndPromotions();
-			}
-			if (iteration == number_moves && stage == 2 && max_stage > 2) {
-				generateQuietMoves();
+		while (iteration == number_moves && stage < max_stage) {
+			switch (stage) {
+				case 0:
+					generateTranspositionMove();
+					break;
+				case 1:
+					generateCapturesAndPromotions();
+					break;
+				case 2:
+					generateQuietMoves();
+					break;
+				default: // error
+					return 0;
 			}
 		}
 		if (iteration == number_moves) {
 			return 0;
 		}
 		do {
-			int best_score = move_list[iteration].score;
 			int best_idx = iteration;
+			int best_score = move_list[best_idx].score;
 
 			for (int i = best_idx + 1; i < number_moves; i++) {
 				if (move_list[i].score > best_score) {

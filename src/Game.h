@@ -329,7 +329,7 @@ public:
 			sprintf(fen + strlen(fen), "- ");
 		}
 		sprintf(fen + strlen(fen), "%d ", pos->reversible_half_move_count);
-		sprintf(fen + strlen(fen), "%d", pos->reversible_half_move_count / 2 + 1);
+		sprintf(fen + strlen(fen), "%d", (pos - position_list)/2 + 1);
 		return 0;
 	}
 

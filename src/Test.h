@@ -39,11 +39,11 @@ public:
 		perft_result result;
 		for (int i = 1; i <= depth; i++) {
 			clock_t t1, t2;
-			t1 = clock();
+			t1 = millis();
 			perft_result result;
 			perft_(i, result);
-			t2 = clock();
-			double diff = (t2-t1)/(double)CLOCKS_PER_SEC;
+			t2 = millis();
+			double diff = (t2-t1)/(double)1000;
 			printf("%5d%14llu  %f\n", i, result.nodes, diff);
 		}
 	}
@@ -107,10 +107,10 @@ private:
 		sprintf(sdepth, "%d", depth);
 		char* p[3] = {"go", "depth", sdepth};
 		clock_t t1, t2;
-		t1 = clock();
+		t1 = millis();
 		search->getProtocol()->handleInput(p, 3);
-		t2 = clock();
-		double seconds = (t2-t1)/(double)CLOCKS_PER_SEC;
+		t2 = millis();
+		double seconds = (t2-t1)/(double)1000;
 		printf("%f\n", seconds);
 		total_time += seconds;
 	}

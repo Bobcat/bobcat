@@ -92,6 +92,7 @@ protected:
 		this->worker = worker;
 		stopped = false;
 		one_ply = 2;
+		verbosity = 1;
 	}
 
 	void postInfo(int depth, int selective_depth, uint64 node_count, uint64 nodes_per_sec, uint64 time, int hash_full) {
@@ -104,7 +105,7 @@ protected:
 	Score searchRoot(const Depth depth, Score alpha, Score beta) {
 		do { // Stay in this loop until an exact score is found.
 			pv_length[0] = 0;
-			pos->eval_score = eval->evaluate();
+			pos->eval_score = eval->evaluate(alpha, beta, false, 0);
 			findTranspositionRefineEval(depth, alpha, beta);
 			sortRootMoves(false);
 			
@@ -115,7 +116,7 @@ protected:
 			while (const MoveData* move_data = pos->nextMove()) {
 				const Move m = move_data->move;
 
-				if (makeMove(m)) {
+				if (makeMoveAndEvaluate(m, alpha, beta, false, 0)) {
 					Depth next_depth = getNextDepth(true, depth, ++move_count, move_data);
 
 					if (search_depth > 10*one_ply && (search_time > 5000 || isAnalysing()) && protocol) {
@@ -208,7 +209,7 @@ protected:
 		Score score;
 
 		if (okToTryNullMove(depth, beta)) {
-			makeMove(0);
+			makeMoveAndEvaluate(0, alpha, beta, false, 0);
 			score = searchNextDepth(depth - nullMoveReduction(depth), -beta, -beta + 1);
 			unmakeMove();
 			if (score >= beta) {
@@ -219,12 +220,12 @@ protected:
 			if (pos->eval_score + 125 < alpha) {
 				if (depth <= one_ply) {
 					score = searchQuiesce(alpha, beta, 0);
-					return max(score, pos->eval_score + 125);
+					return searchNodeScore(score);
 				}
 				else {
 					if (pos->eval_score + 400 < alpha) {
 						if ((score = searchQuiesce(alpha, beta, 0)) < alpha) {
-							return max(score, pos->eval_score + 400);
+							return searchNodeScore(score);
 						}
 					}
 				}
@@ -257,7 +258,7 @@ protected:
 		while (const MoveData* move_data = pos->nextMove()) {
 			const Move m = move_data->move;
 
-			if (makeMove(m)) {
+			if (makeMoveAndEvaluate(m, alpha, beta, false, 0)) {
 				++move_count;
 
 				Depth next_depth = m == singular_move ? depth : getNextDepth(is_pv_node, depth, move_count, move_data);
@@ -334,7 +335,7 @@ protected:
 			if (m == exclude_move) {
 				continue;
 			}
-			if (makeMove(m)) {
+			if (makeMoveAndEvaluate(m, alpha, alpha + 1, false, 0)) {
 				Depth next_depth = getNextDepth(true, depth, ++move_count, move_data);
 
 				if (okToPruneLastMove(best_score, next_depth, depth, alpha)) {
@@ -373,13 +374,6 @@ protected:
 		const Move m = move_data->move;
 		bool reduce = true;
 
-		// in decision making for next depth, to do/test:
-		// focus on (effects of) the last made move
-		// make sure not to drop in qs when that is not safe
-		// focus on node type
-		// dont extend when est. score too far outside alpha-beta
-		// never allow search explosion
-
 		if (pos->in_check) {
 			if (see->seeLastMove(m) >= 0) {
 				return depth;
@@ -389,7 +383,6 @@ protected:
 		if (((pos-1)->in_check && (pos-1)->moveCount() == 1)) {
 			// Single repy extension is a way to find the mate in 9 in 
 			// 3r1r2/pppb1p1k/2npqP1p/2b1p3/8/2NP2PP/PPPQN1BK/R4R2 w - - 0 1
-			// (last tested in v2.75)
 			if (is_pv_node) {
 				return depth;
 			}
@@ -468,7 +461,7 @@ protected:
 					continue;
 				}
 			}
-			if (makeMove(m)) {
+			if (makeMoveAndEvaluate(m, alpha, beta, true, 400)) {
 				++move_count;
 
 				Score score;
@@ -495,27 +488,25 @@ protected:
 			}
 		}
 		if (move_count == 0) { 
-			return best_score;
+			return searchNodeScore(best_score);
 		}
 		return storeSearchNodeScore(best_score, 0, nodeType(best_score, beta, best_move), best_move);
 	}
 
-	__forceinline bool makeMove(const Move m) {
+	__forceinline bool makeMoveAndEvaluate(const Move m, int alpha, int beta, bool use_lazy, int lazy_margin) {
 		if (game->makeMove(m, false, false)) {
 			pos = game->pos;
+			ply++;
 
 			Side us = pos->side_to_move;
-			Side them = us ^ 1;
 
-			pos->eval_score = eval->evaluate();
+			pos->eval_score = eval->evaluate(-beta, -alpha, use_lazy, lazy_margin);
 
-			if (eval->attacks(us) & bbSquare(board->king_square[them])) {
-				game->unmakeMove();
-				pos = game->pos;
+			if (eval->isIllegal(us)) {
+				unmakeMove();
 				return false;
 			}
-			pos->in_check = (eval->attacks(them) & bbSquare(board->king_square[us])) != 0;
-			ply++;
+			pos->in_check = eval->inCheck(us);
 
 			if (ply > max_ply_reached) {
 				max_ply_reached = ply;
@@ -580,7 +571,7 @@ protected:
 				snprintf(&buf[strlen(buf)], sizeof(buf) - strlen(buf), "%s ", 
 					moveToString(pv[ply][i].move, buf2));
 			}
-			if (!worker) {
+			if (!worker && verbosity > 0) {
 				protocol->postPV(search_depth/one_ply, max_ply_reached, node_count, nodesPerSecond(), 
 					timeUsed(), transt->getLoad(), score, buf);
 			}
@@ -777,11 +768,13 @@ protected:
 	}
 
 	bool moveIsEasy(const Score score) const {
-		if ((pos->moveCount() == 1 && search_depth > 9*one_ply)
-			|| (protocol->isFixedDepth() && protocol->getDepth()*one_ply == search_depth)
-			|| (score == MAXSCORE - 1)) 
-		{
-			return true;
+		if (!worker) {
+			if ((pos->moveCount() == 1 && search_depth > 9*one_ply)
+				|| (protocol->isFixedDepth() && protocol->getDepth()*one_ply == search_depth)
+				|| (score == MAXSCORE - 1)) 
+			{
+				return true;
+			}
 		}
 		return false;
 	}
@@ -808,6 +801,7 @@ public:
 	uint64 time_inc;
 	bool stop_search;
 	int max_plies;
+	int verbosity;
 
 protected:	
 	Depth search_depth;

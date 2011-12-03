@@ -73,6 +73,8 @@ public:
 	void timeToDepth(Search* search, ProtocolListener* app) {
 		this->app = app;
 		this->search = search;
+		int saved_verbosity = search->verbosity;
+		search->verbosity = 0;
 		total_time = 0;
 		// nunn.epd
 		timeToDepth("r2qkb1r/pp1n1ppp/2p2n2/3pp2b/4P3/3P1NPP/PPPN1PB1/R1BQ1RK1 b kq - 0 8");
@@ -96,6 +98,7 @@ public:
 		timeToDepth("r2q1rk1/pbpn1pp1/1p2pn1p/3p4/2PP3B/P1Q1PP2/1P4PP/R3KBNR w KQ - 1 11");
 		timeToDepth("r3qrk1/1ppb1pbn/n2p2pp/p2Pp3/2P1P2B/P1N5/1P1NBPPP/R2Q1RK1 w - - 1 13");
 		printf("%f\n", total_time);
+		search->verbosity = saved_verbosity;
 	}
 
 private:

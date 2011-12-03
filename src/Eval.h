@@ -25,13 +25,29 @@ public:
 	virtual void newGame() {
 	}
 
-	int evaluate() {
+	int evaluate(int alpha, int beta, bool use_lazy, int lazy_margin) {
+		pos = game->pos;
+		pos->flags = 0;
+
+		evalMaterialOneSide(0);
+		evalMaterialOneSide(1);
+
+		int mat_eval = mateval[0] - mateval[1];
+		
+		if (use_lazy) {
+			int lazy_eval = pos->side_to_move == 0 ? mat_eval : -mat_eval;
+
+			if (lazy_eval - lazy_margin > beta || lazy_eval + lazy_margin < alpha) {
+				was_lazy = true;
+				return lazy_eval;
+			}
+		}
+		was_lazy = false;
 		initialiseEvaluate();
 
 		// Pass 1.
 		evalPawnsBothSides();
 		for (Side side = 0; side < 2; side++) {
-			evalMaterialOneSide(side);
 			evalKingOneSide(side);
 			evalRooksOneSide(side);
 			evalKnightsOneSide(side);
@@ -51,20 +67,24 @@ public:
 		double stage = (pos->material.value()-pos->material.pawnValue())/
 			(double)pos->material.max_value_no_pawns;
 
-		int pos_eval = (int)(((poseval_mg[0]-poseval_mg[1])*stage)
-						+ ((poseval_eg[0]-poseval_eg[1])*(1-stage))
-						+ (poseval[0]-poseval[1]));
+		pos->pos_eval = (int)(((poseval_mg[0]-poseval_mg[1])*stage)
+							+ ((poseval_eg[0]-poseval_eg[1])*(1-stage))
+							+ (poseval[0]-poseval[1]));
 
-		int mat_eval = mateval[0] - mateval[1];
+		int eval = pos->pos_eval + mat_eval;
 
-		int eval = pos_eval + mat_eval;
-
-		return pos->material.evaluate(pos->flags, pos->side_to_move == 1 ? -eval : eval, 
-			pos->side_to_move, board, all_attacks);
+		return pos->material.evaluate(pos->flags, pos->side_to_move == 1 ? -eval : eval, pos->side_to_move, board);
 	}
 
-	__forceinline const BB& attacks(Side side) {
-		return all_attacks[side];
+	__forceinline bool isIllegal(int side_to_move) {
+		if (was_lazy) {
+			return board->isAttacked(board->king_square[side_to_move ^ 1], side_to_move);
+		}
+		return (all_attacks[side_to_move] & bbSquare(board->king_square[side_to_move ^ 1])) != 0;
+	}
+
+	__forceinline bool inCheck(int side_to_move) {
+		return isIllegal(side_to_move ^ 1);
 	}
 
 protected:
@@ -267,11 +287,11 @@ protected:
 	}
 
 	__forceinline void evalMaterialOneSide(const Side side) {
-		mateval[side] += pos->material.material_value[side];
+		mateval[side] = pos->material.material_value[side];
 		if (pos->material.count(side, Bishop) == 2) {
-				poseval[side] += 30;
+			mateval[side] += 30;
 			if (pos->material.pawnCount() <= 12) {
-				poseval[side] += 20;
+				mateval[side] += 20;
 			}
 		}
 	}
@@ -342,11 +362,8 @@ protected:
 	}
 
 	__forceinline void initialiseEvaluate() {
-		pos = game->pos;
-		pos->flags = 0;
-
-		poseval_mg[0] = poseval_eg[0] = poseval[0] = mateval[0] = 0;
-		poseval_mg[1] = poseval_eg[1] = poseval[1] = mateval[1] = 0;
+		poseval_mg[0] = poseval_eg[0] = poseval[0] = 0;
+		poseval_mg[1] = poseval_eg[1] = poseval[1] = 0;
 
 		attack_counter[0] = attack_counter[1] = 0;
 		attack_count[0] = attack_count[1] = 0;
@@ -382,6 +399,7 @@ protected:
 	PawnStructureTable* pawnt;
 	SEE* see;
 	PawnEntry* pawnp;
+	bool was_lazy;
 
 	int poseval_mg[2];
 	int poseval_eg[2];

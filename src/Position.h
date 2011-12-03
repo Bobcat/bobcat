@@ -80,4 +80,5 @@ public:
 	Move transp_move;
 	int flags;
 	Transposition* transposition;
+	int pos_eval;
 };

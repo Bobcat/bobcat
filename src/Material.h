@@ -96,7 +96,7 @@ public:
 		return key[side] & 15;
 	}
 
-	__forceinline int evaluate(int& flags, int eval, int side_to_move, Board* board, const BB attacks[2]) {
+	__forceinline int evaluate(int& flags, int eval, int side_to_move, Board* board) {
 		uint32 key1;
 		uint32 key2;
 		int score;
@@ -115,8 +115,6 @@ public:
 		}
 		const Side side2 = side1 ^ 1;
 		this->board = board;
-		attacks1 = attacks[side1];
-		attacks2 = attacks[side2];
 		recognized_draw = false;
 		if ((key1 & ~all_pawns) == key1) {
 			switch (key1) {
@@ -263,7 +261,7 @@ public:
 			case k: {
 				if (key2 == kp) {
 					const BB& bishopbb = board->bishops(side1);
-					if (side1 == side_to_move || (bishopbb & attacks2) == 0) {
+					if (side1 == side_to_move || !board->isAttacked(lsb(board->bishops(side1)), side2)) {
 						if (pawn_front_span[side2][lsb(board->pawns(side2))] & 
 							(board->bishopAttacks(lsb(bishopbb)) | bishopbb)) 
 						{
@@ -287,7 +285,7 @@ public:
 			case k: {
 				if (key2 == kp) {
 					const BB& knightbb = board->knights(side1);
-					if (side1 == side_to_move || (knightbb & attacks2) == 0) {
+					if (side1 == side_to_move || !board->isAttacked(lsb(board->knights(side1)), side2)) {
 						if (pawn_front_span[side2][lsb(board->pawns(side2))] & 
 							(board->knightAttacks(lsb(knightbb)) | knightbb)) 
 						{
@@ -386,8 +384,6 @@ public:
 	uint32 key[2];
 	int material_value[2];
 	Board* board;
-	BB attacks1;
-	BB attacks2;
 	int max_value_no_pawns;
 	int max_value;
 

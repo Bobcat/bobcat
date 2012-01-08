@@ -25,25 +25,22 @@ public:
 	virtual void newGame() {
 	}
 
-	int evaluate(int alpha, int beta, bool use_lazy, int lazy_margin) {
-		pos = game->pos;
-		pos->flags = 0;
+	int evaluate(int alpha, int beta) {
+		initialiseEvaluate();
 
 		evalMaterialOneSide(0);
 		evalMaterialOneSide(1);
 
 		int mat_eval = mateval[0] - mateval[1];
 		
-		if (use_lazy) {
+		if (pos->use_lazy) {
+			int lazy_margin = 300;
 			int lazy_eval = pos->side_to_move == 0 ? mat_eval : -mat_eval;
 
 			if (lazy_eval - lazy_margin > beta || lazy_eval + lazy_margin < alpha) {
-				was_lazy = true;
-				return lazy_eval;
+				return pos->material.evaluate(pos->flags, lazy_eval, pos->side_to_move, board);
 			}
 		}
-		was_lazy = false;
-		initialiseEvaluate();
 
 		// Pass 1.
 		evalPawnsBothSides();
@@ -63,28 +60,24 @@ public:
 			evalPassedPawnsOneSide(side);
 			evalKingAttackOneSide(side);
 		}
-
 		double stage = (pos->material.value()-pos->material.pawnValue())/
-			(double)pos->material.max_value_no_pawns;
+			(double)pos->material.max_value_without_pawns;
 
-		pos->pos_eval = (int)(((poseval_mg[0]-poseval_mg[1])*stage)
-							+ ((poseval_eg[0]-poseval_eg[1])*(1-stage))
-							+ (poseval[0]-poseval[1]));
+		int pos_eval_mg = (int)((poseval_mg[0]-poseval_mg[1])*stage);
+		int pos_eval_eg = (int)((poseval_eg[0]-poseval_eg[1])*(1-stage));
+		int pos_eval = pos_eval_mg + pos_eval_eg + (poseval[0] - poseval[1]);
 
-		int eval = pos->pos_eval + mat_eval;
-
-		return pos->material.evaluate(pos->flags, pos->side_to_move == 1 ? -eval : eval, pos->side_to_move, board);
-	}
-
-	__forceinline bool isIllegal(int side_to_move) {
-		if (was_lazy) {
-			return board->isAttacked(board->king_square[side_to_move ^ 1], side_to_move);
+		if (!pos->use_lazy
+			&& abs(pos_eval_mg) < 150
+			&& abs(pos_eval_eg) < 150
+			&& abs(pos_eval) < 150)
+		{
+			pos->use_lazy = true;
 		}
-		return (all_attacks[side_to_move] & bbSquare(board->king_square[side_to_move ^ 1])) != 0;
-	}
+		int eval = pos_eval + mat_eval;
 
-	__forceinline bool inCheck(int side_to_move) {
-		return isIllegal(side_to_move ^ 1);
+		return pos->material.evaluate(pos->flags, pos->side_to_move == 1 ? -eval : eval, 
+			pos->side_to_move, board);
 	}
 
 protected:
@@ -113,8 +106,8 @@ protected:
 		for (BB bb = pawns(side); bb; ) {
 			Square sq = lsb(bb);
 
-			int score_mg = pawn_pcsq_mg[flip[side][sq]];
-			int score_eg = pawn_pcsq_eg[flip[side][sq]];
+			int score_mg = 0;
+			int score_eg = 0;
 
 			if (board->isPawnPassed(sq, side)) {
 				passed_pawn_files[side] |= 1 << file(sq);
@@ -263,7 +256,7 @@ protected:
 			int score_eg = queen_pcsq_eg[flipsq];
 			int d = 7 - distance[sq][kingSq(side ^ 1)];
 			int score = 5*d;
-
+			
 			score_eg += 2*d;
 
 			if ((bbsq & rank_7[side]) && (rank_7_and_8[side] & (pawns(side ^ 1) | board->king(side ^ 1)))) {
@@ -362,6 +355,9 @@ protected:
 	}
 
 	__forceinline void initialiseEvaluate() {
+		pos = game->pos;
+		pos->flags = 0;
+
 		poseval_mg[0] = poseval_eg[0] = poseval[0] = 0;
 		poseval_mg[1] = poseval_eg[1] = poseval[1] = 0;
 
@@ -399,7 +395,6 @@ protected:
 	PawnStructureTable* pawnt;
 	SEE* see;
 	PawnEntry* pawnp;
-	bool was_lazy;
 
 	int poseval_mg[2];
 	int poseval_eg[2];
@@ -446,28 +441,6 @@ BB Eval::bishop_trapped_a7h7[2] = {
 BB Eval::pawns_trap_bishop_a7h7[2][2] = { 
 	{ (BB)1 << b6 | (BB)1 << c7, (BB)1 << b3 | (BB)1 << c2 }, 
 	{ (BB)1 << g6 | (BB)1 << f7, (BB)1 << g3 | (BB)1 << f2 } 
-};
-
-int Eval::pawn_pcsq_mg[64] = {
-   0,   0,   0,   0,   0,   0,   0,   0,
-  -5,   7,  13,  17,  17,  13,   7,  -5,
-  -6,   6,  12,  16,  16,  12,   6,  -6,
-  -7,   5,  11,  15,  15,  11,   5,  -7,
- -10,   2,   8,  12,  12,   8,   2, -10,
- -11,   1,   7, -10, -10,   7,   1, -11,
- -12,   0,   6, -40, -40,   6,   0, -12,
-   0,   0,   0,   0,   0,   0,   0,   0
-};
-
-int Eval::pawn_pcsq_eg[64] = {
-   0,   0,   0,   0,   0,   0,   0,   0,
-   0,  -2,  -5,  -7,  -7,  -5,  -2,   0,
-  -3,  -5,  -8, -10, -10,  -8,  -5,  -3,
-  -6,  -8, -11, -13, -13, -11,  -8,  -6,
-  -7,  -9, -12, -14, -14, -12,  -9,  -7,
-  -8, -10, -13, -15, -15, -13, -10,  -8,
-  -9, -11, -14, -16, -16, -14, -11,  -9,
-   0,   0,   0,   0,   0,   0,   0,   0
 };
 
 int Eval::knight_pcsq_mg[64] = {

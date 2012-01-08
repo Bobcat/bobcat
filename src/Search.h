@@ -105,7 +105,7 @@ protected:
 	Score searchRoot(const Depth depth, Score alpha, Score beta) {
 		do { // Stay in this loop until an exact score is found.
 			pv_length[0] = 0;
-			pos->eval_score = eval->evaluate(alpha, beta, false, 0);
+			pos->eval_score = eval->evaluate(alpha, beta);
 			findTranspositionRefineEval(depth, alpha, beta);
 			sortRootMoves(false);
 			
@@ -116,7 +116,7 @@ protected:
 			while (const MoveData* move_data = pos->nextMove()) {
 				const Move m = move_data->move;
 
-				if (makeMoveAndEvaluate(m, alpha, beta, false, 0)) {
+				if (makeMoveAndEvaluate(m, alpha, beta)) {
 					Depth next_depth = getNextDepth(true, depth, ++move_count, move_data);
 
 					if (search_depth > 10*one_ply && (search_time > 5000 || isAnalysing()) && protocol) {
@@ -209,7 +209,7 @@ protected:
 		Score score;
 
 		if (okToTryNullMove(depth, beta)) {
-			makeMoveAndEvaluate(0, alpha, beta, false, 0);
+			makeMoveAndEvaluate(0, alpha, beta);
 			score = searchNextDepth(depth - nullMoveReduction(depth), -beta, -beta + 1);
 			unmakeMove();
 			if (score >= beta) {
@@ -220,12 +220,12 @@ protected:
 			if (pos->eval_score + 125 < alpha) {
 				if (depth <= one_ply) {
 					score = searchQuiesce(alpha, beta, 0);
-					return searchNodeScore(score);
+					return max(score, pos->eval_score + 125);
 				}
 				else {
 					if (pos->eval_score + 400 < alpha) {
 						if ((score = searchQuiesce(alpha, beta, 0)) < alpha) {
-							return searchNodeScore(score);
+							return max(score, pos->eval_score + 400);
 						}
 					}
 				}
@@ -258,7 +258,7 @@ protected:
 		while (const MoveData* move_data = pos->nextMove()) {
 			const Move m = move_data->move;
 
-			if (makeMoveAndEvaluate(m, alpha, beta, false, 0)) {
+			if (makeMoveAndEvaluate(m, alpha, beta)) {
 				++move_count;
 
 				Depth next_depth = m == singular_move ? depth : getNextDepth(is_pv_node, depth, move_count, move_data);
@@ -335,7 +335,7 @@ protected:
 			if (m == exclude_move) {
 				continue;
 			}
-			if (makeMoveAndEvaluate(m, alpha, alpha + 1, false, 0)) {
+			if (makeMoveAndEvaluate(m, alpha, alpha + 1)) {
 				Depth next_depth = getNextDepth(true, depth, ++move_count, move_data);
 
 				if (okToPruneLastMove(best_score, next_depth, depth, alpha)) {
@@ -408,11 +408,11 @@ protected:
 	}
 
 	__forceinline bool okToPruneLastMove(Score& best_score, const Depth next_depth, const Depth depth, 
-		const Score alpha) const 
+		const Score alpha)  
 	{
 		static int margin[7] = { 150, 150, 150, 150, 400, 400 ,400 };
 		
-		if (next_depth <= 3*one_ply  
+		if (next_depth <= 3*one_ply
 			&& next_depth < depth - one_ply
 			&& -pos->eval_score + margin[max(0, next_depth)] < alpha) 
 		{
@@ -461,7 +461,7 @@ protected:
 					continue;
 				}
 			}
-			if (makeMoveAndEvaluate(m, alpha, beta, true, 400)) {
+			if (makeMoveAndEvaluate(m, alpha, beta)) {
 				++move_count;
 
 				Score score;
@@ -493,26 +493,17 @@ protected:
 		return storeSearchNodeScore(best_score, 0, nodeType(best_score, beta, best_move), best_move);
 	}
 
-	__forceinline bool makeMoveAndEvaluate(const Move m, int alpha, int beta, bool use_lazy, int lazy_margin) {
-		if (game->makeMove(m, false, false)) {
+	__forceinline bool makeMoveAndEvaluate(const Move m, int alpha, int beta) {
+		if (game->makeMove(m, true, true)) {
 			pos = game->pos;
-			ply++;
+			pv_length[ply] = ++ply;
+			node_count++;
 
-			Side us = pos->side_to_move;
-
-			pos->eval_score = eval->evaluate(-beta, -alpha, use_lazy, lazy_margin);
-
-			if (eval->isIllegal(us)) {
-				unmakeMove();
-				return false;
-			}
-			pos->in_check = eval->inCheck(us);
+			pos->eval_score = eval->evaluate(-beta, -alpha);
 
 			if (ply > max_ply_reached) {
 				max_ply_reached = ply;
 			}
-			pv_length[ply] = ply;
-			node_count++;
 			checkTime();
 			return true;
 		}
@@ -780,7 +771,7 @@ protected:
 	}
 
 	__forceinline bool isPassedPawnMove(const Move m) const {
-		return (movePiece(m) & 7) == Pawn && board->isPawnPassed(moveTo(m), side(m));
+		return movePieceType(m) == Pawn && board->isPawnPassed(moveTo(m), moveSide(m));
 	}
 
 	struct PVEntry {

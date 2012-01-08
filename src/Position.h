@@ -33,6 +33,7 @@ public:
 		null_moves_in_row = 0;
 		transposition = 0;
 		last_move = 0; 
+		use_lazy = false;
 	}
 
 	const Move* stringToMove(const char* m) {
@@ -80,5 +81,5 @@ public:
 	Move transp_move;
 	int flags;
 	Transposition* transposition;
-	int pos_eval;
+	bool use_lazy;
 };

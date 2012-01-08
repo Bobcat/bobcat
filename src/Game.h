@@ -53,6 +53,7 @@ public:
 		}
 		pos->key = prev->key;
 		pos->pawn_structure_key = prev->pawn_structure_key;
+		pos->use_lazy = prev->use_lazy;
 		updateKey(m);
 		pos->material.makeMove(m);
 		return true;
@@ -78,6 +79,7 @@ public:
 		pos->en_passant_square = 0;
 		pos->key = prev->key;
 		pos->pawn_structure_key = prev->pawn_structure_key;
+		pos->use_lazy = prev->use_lazy;
 		updateKey(0);
 		return true;
 	}

@@ -30,13 +30,14 @@ __forceinline uint moveFrom(const Move move) { return (move >> 6) & 63; }
 __forceinline void moveSetFrom(Move& move, const int sq) { move |= (sq << 6); }
 __forceinline uint moveTo(const Move move) { return move & 63; }
 __forceinline void moveSetTo(Move& move, const int sq) { move |= sq; }
+__forceinline int movePieceType(const Move move) { return (move >> 26) & 7; }
 
-__forceinline Side side(const Move m) {
+__forceinline Side moveSide(const Move m) {
 	return (m >> 29) & 1;
 }
 
 __forceinline int sideMask(const Move m) {
-	return side(m) << 3;
+	return moveSide(m) << 3;
 }
 
 const int QUIET =  1;

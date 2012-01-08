@@ -115,7 +115,7 @@ public:
 		}
 		if (isCapture(m)) {
 			const BB& bb_to = bbSquare(moveTo(m));
-			if ((occupied_by_side[side(m) ^ 1] & bb_to) == 0) {
+			if ((occupied_by_side[moveSide(m) ^ 1] & bb_to) == 0) {
 				return false;
 			}
 			if ((piece[moveCaptured(m)] & bb_to) == 0) {

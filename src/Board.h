@@ -74,7 +74,7 @@ public:
 			addPiece(Rook + sideMask(m), rook_castles_to[moveTo(m)]);
 		}
 		if ((movePiece(m) & 7) == King) {
-			king_square[side(m)] = moveTo(m);
+			king_square[moveSide(m)] = moveTo(m);
 		}
 	}
 
@@ -102,7 +102,7 @@ public:
 			addPiece(Rook + sideMask(m), rook_castles_from[moveTo(m)]);
 		}
 		if ((movePiece(m) & 7) == King) {
-			king_square[side(m)] = moveFrom(m);
+			king_square[moveSide(m)] = moveFrom(m);
 		}
 	}
 

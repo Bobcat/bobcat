@@ -213,7 +213,7 @@ public:
 				go();
 			}
 			else if (stricmp(tokens[0], "eval") == 0 || stricmp(tokens[0], "e") == 0) {
-				printf("eval->evaluate() returns %d cp\n", eval->evaluate(0, 0, false, 0));
+				printf("eval->evaluate() returns %d cp\n", eval->evaluate(-100000, 100000));
 			}
 			else if (stricmp(tokens[0], "new") == 0) {
 				newGame();

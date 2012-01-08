@@ -25,9 +25,9 @@ public:
 	int seeMove(const Move move) {
 		int score;
 		board->makeMove(move);
-		if (!board->isAttacked(board->king_square[side(move)], side(move) ^ 1)) {
+		if (!board->isAttacked(board->king_square[moveSide(move)], moveSide(move) ^ 1)) {
 			initialiseSeeMove();
-			score = seeRec(materialChange(move), nextToCapture(move), moveTo(move), side(move) ^ 1);
+			score = seeRec(materialChange(move), nextToCapture(move), moveTo(move), moveSide(move) ^ 1);
 		}
 		else {
 			score = SEE_INVALID_SCORE;
@@ -38,7 +38,7 @@ public:
 
 	int seeLastMove(const Move move) {
 		initialiseSeeMove();
-		return seeRec(materialChange(move), nextToCapture(move), moveTo(move), side(move) ^ 1);
+		return seeRec(materialChange(move), nextToCapture(move), moveTo(move), moveSide(move) ^ 1);
 	}
 
 private:
@@ -75,14 +75,14 @@ private:
 		}
 		while (1);
 
-		int score = -seeRec(materialChange(move), nextToCapture(move), moveTo(move), side(move) ^ 1);
+		int score = -seeRec(materialChange(move), nextToCapture(move), moveTo(move), moveSide(move) ^ 1);
 		
 		board->unmakeMove(move);
 
 		return (score < 0) ? material_change + score : material_change;
 	}
 
-	__forceinline bool lookupBestAttacker(const Square to, const Side side, Square& from) {
+	__forceinline bool lookupBestAttacker(const Square to, const Side side, Square& from) { // "Best" == "Lowest piece value" 
 		switch (current_piece[side]) {
 			case Pawn:
 				if (current_piece_bitboard[side] & pawn_captures[to | ((side ^ 1) << 6)]) {

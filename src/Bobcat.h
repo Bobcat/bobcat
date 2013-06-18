@@ -37,20 +37,24 @@ public:
 		return game->newGame(fen);
 	}
 
-	virtual int go(int wtime = 0, int btime = 0, int movestogo = 0, 
-				int winc = 0, int binc = 0, int movetime = 5000) 
-	{
+	virtual int go(int wtime = 0, int btime = 0, int movestogo = 0, int winc = 0, int binc = 0, int movetime = 5000) {
 		game->pos->pv_length = 0;
+
 		if (!protocol->isAnalysing() && !protocol->isFixedDepth()) {
 			goBook();
 		}
+
 		if (game->pos->pv_length == 0) {
 			goSearch(wtime, btime, movestogo, winc, binc, movetime);
 		}
+
 		if (game->pos->pv_length) {
-			char best_move[12], ponder_move[12];
-			protocol->postMoves(moveToString(search->pv[0][0].move, best_move), 
-				game->pos->pv_length > 1 ? moveToString(search->pv[0][1].move, ponder_move) : 0);
+			char best_move[12];
+			char ponder_move[12];
+
+			protocol->postMoves(game->moveToString(search->pv[0][0].move, best_move),
+				game->pos->pv_length > 1 ? game->moveToString(search->pv[0][1].move, ponder_move) : 0);
+
 			game->makeMove(search->pv[0][0].move, true, true);
 		}
 		return 0;
@@ -62,7 +66,8 @@ public:
 		}
 		else {
 			if (search->time_left > 30000 || search->time_inc > 0) {
-				search->search_time = min(search->search_time * 1.5, search->search_time + millis() - search->start_time);
+				search->search_time = std::min((uint64)(search->search_time*1.5),
+                                                search->search_time + millis() - search->start_time);
 			}
 		}
 		return 0;
@@ -74,8 +79,9 @@ public:
 	}
 
 	virtual bool makeMove(const char* m) {
-		const Move* move;
-		if (move = game->pos->stringToMove(m)) {
+		const Move* move = game->pos->stringToMove(m);
+
+		if (move) {
 			return game->makeMove(*move, true, true);
 		}
 		return false;
@@ -106,7 +112,7 @@ public:
 			workers[i].start(config,  game, transt, pawnt);
 		}
 	}
-	
+
 	void stopWorkers() {
 		for (int i = 0; i < num_threads - 1; i++) {
 			workers[i].stop();
@@ -118,12 +124,26 @@ public:
 		strcpy(buf, "");;
 		if (value != NULL) {
 			if (stricmp("Hash", name) == 0) {
-				transt->initialise(min(1024, max(8, strtol(value, NULL, 10))));
-				snprintf(buf, sizeof(buf), "Hash table size set to %d Mb.", transt->getSizeMb());
+				transt->initialise(std::min(1024, std::max(8, (int)strtol(value, NULL, 10))));
+				_snprintf(buf, sizeof(buf), "Hash ", transt->getSizeMb());
 			}
 			else if (stricmp("Threads", name) == 0) {
-				num_threads = min(4, max(1, strtol(value, NULL, 10)));
-				snprintf(buf, sizeof(buf), "Number of threads is set to %d.", num_threads);
+				num_threads = std::min(16, std::max(1, (int)strtol(value, NULL, 10)));
+				_snprintf(buf, sizeof(buf), "Threads %d.", num_threads);
+			}
+			else if (stricmp("UCI_Chess960", name) == 0) {
+				if (stricmp(value, "true") == 0) {
+					game->chess960 = true;
+				}
+				_snprintf(buf, sizeof(buf), "UCI_Chess960 ", game->chess960 ? on : off);
+			}
+			else if (stricmp("UCI_Chess960_Arena", name) == 0) {
+				if (stricmp(value, "true") == 0) {
+					game->chess960 = true;
+					game->xfen = true;
+				//	game->arena = true;
+				}
+			//	snprintf(buf, sizeof(buf), "UCI_Chess960_Arena ", game->arena ? on : off);
 			}
 		}
 		if (strlen(buf)) {
@@ -157,7 +177,11 @@ public:
 		see = new SEE(game);
 		eval = new Eval(game, pawnt, see);
 		search = new Search(protocol, game, eval, see, transt);
-		
+
+//		print_bb(bbSquare(flip[0][a2]), "bbSquare(flip[0][a2])");
+	//	print_bb(bbSquare(flip[1][a2]), "bbSquare(flip[1][a2])");
+		//print_bb(bbSquare(a2), "bbSquare(a2)");
+
 		newGame();
 
 		bool console_mode = true;
@@ -171,12 +195,12 @@ public:
 
 			char* tokens[1024];
 			int num_tokens = tokenize(trim(line), tokens, 1024);
-			
+
 			if (num_tokens == 0) {
 				continue;
 			}
 			if (stricmp(tokens[0], "uci") == 0 || !console_mode) {
-				exit = protocol->handleInput(tokens, num_tokens);
+				exit = protocol->handleInput((const char**)tokens, num_tokens);
 				console_mode = false;
 			}
 			else if (stricmp(tokens[0], "x") == 0) {
@@ -185,12 +209,12 @@ public:
 			else if (stricmp(tokens[0], "d") == 0) {
 				game->pos->board->print();
 				printf("\n");
-				printf("board key calculated  : %llu\n", game->calculateKey());
-				printf("board key incremental : %llu\n", game->pos->key);
-				printf("pawn structure key    : %llu\n", game->pos->pawn_structure_key);
+				printf("board key calculated  : %" PRIu64 "\n", game->calculateKey());
+				printf("board key incremental : %" PRIu64 "\n", game->pos->key);
+				printf("pawn structure key    : %" PRIu64 "\n", game->pos->pawn_structure_key);
 			}
 			else if (stricmp(tokens[0], "m") == 0) {
-				game->pos->print_moves();
+				game->print_moves();
 			}
 			else if (stricmp(tokens[0], "perft") == 0) {
 				Test(game).perft(6);
@@ -227,7 +251,7 @@ public:
 				else {
 					int token = 0;
 					char fen[128];
-					if (FENfromParams(tokens, num_tokens, token, fen)) {
+					if (FENfromParams((const char**)tokens, num_tokens, token, fen)) {
 						setFEN(fen);
 					}
 				}
@@ -245,8 +269,8 @@ public:
 				}
 			}
 			else if (stricmp(tokens[0], "see") == 0 && num_tokens > 0) {
-				const Move* m;
-				if (m = game->pos->stringToMove(tokens[1])) {
+				const Move* m = game->pos->stringToMove(tokens[1]);
+				if (m) {
 					printf("SEE score for %s is %d\n", tokens[1], see->seeMove(*m));
 				}
 			}
@@ -277,13 +301,14 @@ public:
 		char buf1[2048];
 		char buf2[2048];
 
-		if (config->getBool("Bobcat", "log-file", false)) {
+		if (true/*!!!!*/||config->getBool("Bobcat", "log-file", false)) {
 			logger->open(config->getString("Logging", "filename", "bobcat.log"));
 		}
 		snprintf(buf1, sizeof(buf1), "Time is %s.", dateAndTimeString(buf2));
 		logger->logts(buf1);
 		snprintf(buf1, sizeof(buf1), "Working directory is %s.", _getcwd(buf2, 2048));
 		logger->logts(buf1);
+        printf("%s\n",buf1);
 	}
 
 public:
@@ -299,6 +324,12 @@ public:
 	Book* book;
 	TTable* transt;
 	PSTable* pawnt;
-	Worker workers[3];
+	Worker workers[16];
 	int num_threads;
+
+	static const char* on;
+	static const char* off;
 };
+
+const char* Bobcat::on = "ON";
+const char* Bobcat::off = "OFF";

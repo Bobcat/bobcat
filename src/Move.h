@@ -63,8 +63,12 @@ __forceinline int isPromotion(const Move m) {
 	return moveType(m) & PROMOTION; 
 }
 
-__forceinline int isQueenPromotion(const Move m) { 
+__forceinline bool isQueenPromotion(const Move m) { 
 	return isPromotion(m) && (movePromoted(m) & 7) == Queen; 
+}
+
+__forceinline bool isNullMove(const Move m) { 
+	return m == 0;
 }
 
 __forceinline void initMove(Move& move, const Piece piece, 
@@ -78,13 +82,4 @@ __forceinline void initMove(Move& move, const Piece piece,
 	moveSetFrom(move, from);
 	moveSetTo(move, to);
 	moveSetType(move, type);
-}
-
-const char* moveToString(const Move m, char* buf) {
-	char tmp1[12], tmp2[12], tmp3[12];
-	sprintf(buf, "%s%s", squareToString(moveFrom(m), tmp1), squareToString(moveTo(m), tmp2));
-	if (isPromotion(m)) {
-		sprintf(&buf[strlen(buf)], "%s", pieceToString(movePromoted(m) & 7, tmp3));
-	}
-	return buf;
 }

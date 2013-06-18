@@ -48,7 +48,7 @@ public:
 
 protected:
 	void write(const char* text) {
-		if (file <= 0) {
+		if (file == NULL) {
 			return;
 		}
 		fwrite(text, 1, strlen(text), file);
@@ -61,7 +61,7 @@ protected:
 	}
 
 	void cleanup() {
-		if (file > 0) {
+		if (file != NULL) {
 			fclose(file);
 		}
 		file = 0;
@@ -69,8 +69,8 @@ protected:
 		logfile = NULL;
 	}
 
-	char* logfile;
 	FILE* file;
+	char* logfile;
 };
 
 class StdIn {
@@ -80,37 +80,37 @@ public:
 		this->logger = logger;
 	}
 
-	int getLine(bool blocking, char* line) { 
+	int getLine(bool blocking, char* line) {
 		line[0] = '\0';
 		if (!blocking) {
 			if (!isAvailable()) {
-				return 0; 
+				return 0;
 			}
 		}
 		getLine(line, 16384, stdin);
 		return 1;
-	} 
+	}
 
 protected:
 	StdIn() {
 	}
 
-	void initialise() { 
-		DWORD dw; 
-		handle = GetStdHandle(STD_INPUT_HANDLE); 
-		is_pipe = !GetConsoleMode(handle, &dw); 
+	void initialise() {
+		DWORD dw;
+		handle = GetStdHandle(STD_INPUT_HANDLE);
+		is_pipe = !GetConsoleMode(handle, &dw);
 	}
 
-	int isAvailable() { 
-		DWORD bytes_read; 
-		if (is_pipe) { 
+	int isAvailable() {
+		DWORD bytes_read;
+		if (is_pipe) {
 			if (!PeekNamedPipe(handle, NULL, 0, NULL, &bytes_read, NULL)) {
-				return 0; 
+				return 0;
 			}
-			return bytes_read; 
-		} 
-		return _kbhit(); 
-	} 
+			return bytes_read;
+		}
+		return _kbhit();
+	}
 
 	int getLine(char* line, int size, FILE* stream) {
 		int c;
@@ -123,7 +123,7 @@ protected:
 			else if (c == '\n') {
 				break;
 			}
-			else if (len < size - 1) { 
+			else if (len < size - 1) {
 				line[len++] = (char)c;
 			}
 		} while (true);

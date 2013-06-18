@@ -23,7 +23,7 @@ const int PONDER_SEARCH = 8;
 
 class ProtocolListener {
 public:
-	virtual int newGame() = 0; 
+	virtual int newGame() = 0;
 	virtual int setFEN(const char* fen) = 0;
 	virtual int go(int wtime, int btime, int movestogo, int winc, int binc, int movetime) = 0;
 	virtual int ponderHit() = 0;
@@ -40,17 +40,20 @@ public:
 		this->output = output;
 	}
 
-	virtual int handleInput(char* params[], int num_params) = 0;
+    virtual ~Protocol() {
+    }
+
+	virtual int handleInput(const char* params[], int num_params) = 0;
 	virtual void checkInput() = 0;
 	virtual void postMoves(const char* bestmove, const char* pondermove) = 0;
 
-	virtual void postInfo(const int depth, int selective_depth, uint64 node_count, 
+	virtual void postInfo(const int depth, int selective_depth, uint64 node_count,
 		uint64 nodes_per_sec, uint64 time, int hash_full) = 0;
 
 	virtual void postInfo(const Move curr_move, int curr_move_number) = 0;
-	
-	virtual void postPV(const int depth, int max_ply, uint64 node_count, uint64 nodes_per_second, uint64 time, int hash_full, 
-		int score, const char* pv) = 0; 
+
+	virtual void postPV(const int depth, int max_ply, uint64 node_count, uint64 nodes_per_second, uint64 time, int hash_full,
+		int score, const char* pv, int node_type) = 0;
 
 	__forceinline int isAnalysing() {
 		return flags & (INFINITE_MOVE_TIME | PONDER_SEARCH);
@@ -83,8 +86,8 @@ protected:
 
 class UCIProtocol : public Protocol {
 public:
-	UCIProtocol(ProtocolListener* callback, Game* game, StdIn* input, StdOut* output) : 
-		Protocol(callback, game, input, output) 
+	UCIProtocol(ProtocolListener* callback, Game* game, StdIn* input, StdOut* output) :
+		Protocol(callback, game, input, output)
 	{
 	}
 
@@ -114,22 +117,22 @@ public:
 		output->writeLine(buf);
 	}
 
-	virtual void postInfo(const int depth, int selective_depth, uint64 node_count, uint64 nodes_per_sec, uint64 time, 
-		int hash_full) 
+	virtual void postInfo(const int depth, int selective_depth, uint64 node_count, uint64 nodes_per_sec, uint64 time,
+		int hash_full)
 	{
 		char buf[1024];
-		snprintf(buf, sizeof(buf), 
+		_snprintf(buf, sizeof(buf),
 			"info depth %d " \
 			"seldepth %d " \
 			"hashfull %d " \
-			"nodes %llu " \
-			"nps %llu " \
-			"time %llu", 
-			depth, 
-			selective_depth, 
-			hash_full, 
-			node_count, 
-			nodes_per_sec, 
+			"nodes %" PRIu64 " " \
+			"nps %" PRIu64 " " \
+			"time %" PRIu64 "",
+			depth,
+			selective_depth,
+			hash_full,
+			node_count,
+			nodes_per_sec,
 			time);
 
 		output->writeLine(buf);
@@ -139,52 +142,67 @@ public:
 		char buf[1024];
 		char move_buf[32];
 
-		snprintf(buf, sizeof(buf), 
+		snprintf(buf, sizeof(buf),
 			"info currmove %s " \
-			"currmovenumber %d ", 
-			moveToString(curr_move, move_buf), 
+			"currmovenumber %d ",
+			game->moveToString(curr_move, move_buf),
 			curr_move_number);
 
 		output->writeLine(buf);
 	}
 
-	virtual void postPV(const int depth, int max_ply, uint64 node_count, uint64 nodes_per_second, uint64 time, int hash_full, 
-				int score, const char* pv) 
+	virtual void postPV(const int depth, int max_ply, uint64 node_count, uint64 nodes_per_second, uint64 time, int hash_full,
+				int score, const char* pv, int node_type)
 	{
+		char bound[24];
+
+		if (node_type == 4) {
+			strcpy(bound, "upperbound ");
+		}
+		else if (node_type == 2) {
+			strcpy(bound, "lowerbound ");
+		}
+		else {
+			bound[0] = 0;
+		}
 		char buf[1024];
-		snprintf(buf, sizeof(buf), 
+
+		_snprintf(buf, sizeof(buf),
 			"info depth %d "
 			"seldepth %d "
 			"score cp %d "
+			"%s"
 			"hashfull %d "
-			"nodes %llu "
-			"nps %llu "
-			"time %llu "
-			"pv %s", 
-			depth, 
-			max_ply, 
-			score, 
-			hash_full, 
-			node_count, 
-			nodes_per_second, 
-			time, 
+			"nodes %" PRIu64 " "
+			"nps %" PRIu64 " "
+			"time %" PRIu64 " "
+			"pv %s",
+			depth,
+			max_ply,
+			score,
+			bound,
+			hash_full,
+			node_count,
+			nodes_per_second,
+			time,
 			pv);
 
 		output->writeLine(buf);
 	}
 
-	virtual int handleInput(char* params[], int num_params) {
+	virtual int handleInput(const char* params[], int num_params) {
 		if (num_params < 1) {
 			return -1;
 		}
 		if (stricmp(params[0], "uci") == 0) {
 			char buf[2048];
-			snprintf(buf, sizeof(buf),  
-				"id name Bobcat 3.25\n" \
+			snprintf(buf, sizeof(buf),
+				"id name Bobcat 3.25(7)\n" \
 				"id author Gunnar Harms\n" \
 				"option name Hash type spin default 256 min 8 max 1024\n" \
 				"option name Ponder type check default true\n" \
 				"option name Threads type spin default 1 min 1 max 4\n" \
+				"option name UCI_Chess960 type check default false\n" \
 				"uciok");
 
 			output->writeLine(buf);
@@ -211,7 +229,7 @@ public:
 		return 0;
 	}
 
-	int handleGo(char* params[], int num_params, ProtocolListener* callback) {
+	int handleGo(const char* params[], int num_params, ProtocolListener* callback) {
 		int wtime = 0;
 		int btime = 0;
 		int winc = 0;
@@ -269,7 +287,7 @@ public:
 		return 0;
 	}
 
-	int handlePosition(char* params[], int num_params) {
+	int handlePosition(const char* params[], int num_params) {
 		int param = 1;
 		if (num_params < param + 1) {
 			return -1;
@@ -301,20 +319,19 @@ public:
 		return 0;
 	}
 
-	bool handleSetOption(char* params[], int num_params) {
+	bool handleSetOption(const char* params[], int num_params) {
 		int param = 1;
-		char* option_name;
-		char* option_value;
-		if (parseOptionName(param, params, num_params, &option_name) && 
-				parseOptionValue(param, params, num_params, &option_value)) 
+		const char* option_name;
+		const char* option_value;
+		if (parseOptionName(param, params, num_params, &option_name) &&
+				parseOptionValue(param, params, num_params, &option_value))
 		{
 			return callback->setOption(option_name, option_value) == 0;
 		}
 		return false;
 	}
 
-	bool parseOptionName(int& param, char* params[], int num_params, char** option_name) {
-		*option_name = NULL;
+	bool parseOptionName(int& param, const char* params[], int num_params, const char** option_name) {
 		while (param < num_params) {
 			if (stricmp(params[param++], "name") == 0) {
 				break;
@@ -322,19 +339,22 @@ public:
 		}
 		if (param < num_params) {
 			*option_name = params[param++];
+			return *option_name != '\0';
 		}
-		return *option_name != NULL;
+		return false;
 	}
 
-	bool parseOptionValue(int& param, char* params[], int num_params, char** option_value) {
+	bool parseOptionValue(int& param, const char* params[], int num_params, const char** option_value) {
 		*option_value = NULL;
 		while (param < num_params) {
 			if (stricmp(params[param++], "value") == 0) {
 				break;
 			}
 		}
+
 		if (param < num_params) {
 			*option_value = params[param++];
+			return *option_value != NULL;
 		}
 		return true;
 	}

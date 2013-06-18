@@ -20,7 +20,7 @@ __forceinline void resetLSB(uint64& x) {
 	x &= (x - 1);
 }
 
-__forceinline int popCount(uint64 x) { 
+__forceinline int popCount(uint64 x) {
 	int count = 0;
 	while (x) {
 		count++;
@@ -30,7 +30,7 @@ __forceinline int popCount(uint64 x) {
 }
 
 static int msb_table[256];
-__forceinline int msb(uint64 x) { // E.N. method 
+__forceinline int msb(uint64 x) { // E.N. method
 	int result = 0;
 	if (x > 0xFFFFFFFF) {
 		x >>= 32;
@@ -47,28 +47,34 @@ __forceinline int msb(uint64 x) { // E.N. method
 	return result + msb_table[x];
 }
 
-#if defined(_MSC_VER) && defined(_M_X64)
+#if true||defined(_MSC_VER) && defined(_M_X64)
 // by Microsoft
-__forceinline int lsb(uint64 x) { 
+__forceinline int lsb(uint64 x) {
 	DWORD index;
 	_BitScanForward64(&index, x);
 	return index;
 }
 #elif defined(_MSC_VER) && defined(_M_X86)
 // from Strelka
-__forceinline int lsb(uint64 x) { 
-	_asm { 
+__forceinline int lsb(uint64 x) {
+	_asm {
 		mov  eax, dword ptr x[0]
 		test eax, eax
 		jz   f_hi
 		bsf  eax, eax
 		jmp  f_ret
-f_hi:    
+f_hi:
 		bsf  eax, dword ptr x[4]
 		add  eax, 20h
 f_ret:
 	}
 }
+
+#elif 1
+__forceinline int lsb(uint64 x) {
+	return __builtin_ctzll(x);
+}
+
 #else
 // by Matt Taylor, the fastest non intrinsic/assembly
 const unsigned char lsb_64_table[64] = {

@@ -142,25 +142,25 @@ static unsigned __int64 genrand64_int64(void)
 } 
 
 /* generates a random number on [0, 2^63-1]-interval */ 
-static __int64 genrand64_int63(void) 
-{ 
-    return (__int64)(genrand64_int64() >> 1); 
-} 
+//static __int64 genrand64_int63(void) 
+//{ 
+//    return (__int64)(genrand64_int64() >> 1); 
+//} 
 
 /* generates a random number on [0,1]-real-interval */ 
-static double genrand64_real1(void) 
-{ 
-    return (genrand64_int64() >> 11) * (1.0/9007199254740991.0); 
-} 
+//static double genrand64_real1(void) 
+//{ 
+//    return (genrand64_int64() >> 11) * (1.0/9007199254740991.0); 
+//} 
 
 /* generates a random number on [0,1)-real-interval */ 
-static double genrand64_real2(void) 
-{ 
-    return (genrand64_int64() >> 11) * (1.0/9007199254740992.0); 
-} 
+//static double genrand64_real2(void) 
+//{ 
+//    return (genrand64_int64() >> 11) * (1.0/9007199254740992.0); 
+//} 
 
 /* generates a random number on (0,1)-real-interval */ 
-static double genrand64_real3(void) 
-{ 
-    return ((genrand64_int64() >> 12) + 0.5) * (1.0/4503599627370496.0); 
-} 
+//static double genrand64_real3(void) 
+//{ 
+//    return ((genrand64_int64() >> 12) + 0.5) * (1.0/4503599627370496.0); 
+//} 

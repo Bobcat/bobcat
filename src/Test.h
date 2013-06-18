@@ -44,7 +44,7 @@ public:
 			perft_(i, result);
 			t2 = millis();
 			double diff = (t2-t1)/(double)1000;
-			printf("%5d%14llu  %f\n", i, result.nodes, diff);
+			printf("%5d%14" PRIu64 "  %f\n", i, result.nodes, diff);
 		}
 	}
 
@@ -65,9 +65,9 @@ public:
 			uint64 nodes_start = result.nodes;
 			perft_(depth - 1, result);
 			game->unmakeMove();
-			printf("%7s %11llu\n", moveToString(*m, buf), result.nodes - nodes_start);
+			printf("%7s %" PRIu64 "\n", game->moveToString(*m, buf), result.nodes - nodes_start);
 		}
-		printf("total positions is %llu\n", result.nodes);
+		printf("total positions is %" PRIu64 "\n", result.nodes);
 	}
 
 	void timeToDepth(Search* search, ProtocolListener* app) {
@@ -103,12 +103,12 @@ public:
 
 private:
 	double total_time;
-	void timeToDepth(const char* fen, int depth = 11) {
+	void timeToDepth(const char* fen, int depth = 12) {
 		app->newGame();
 		app->setFEN(fen);
 		char sdepth[12];
 		sprintf(sdepth, "%d", depth);
-		char* p[3] = {"go", "depth", sdepth};
+		const char* p[3] = {"go", "depth", sdepth};
 		clock_t t1, t2;
 		t1 = millis();
 		search->getProtocol()->handleInput(p, 3);
@@ -119,15 +119,15 @@ private:
 	}
 
 	int perft_(int depth, perft_result& result) {
-		if (depth == 0) { 
-			result.nodes++; 
-			return 0; 
+		if (depth == 0) {
+			result.nodes++;
+			return 0;
 		}
 		Position* pos = game->pos;
 		pos->generateMoves(0, 0, flags);
 
-		if ((flags & STAGES) == 0 && depth == 1) { 
-			result.nodes += pos->moveCount(); 
+		if ((flags & STAGES) == 0 && depth == 1) {
+			result.nodes += pos->moveCount();
 		}
 		else {
 			while (const MoveData* move_data = pos->nextMove()) {
@@ -174,7 +174,7 @@ void printSearchData() {
 				if (n1 && n2) {
 					double bf = (double) n1 / n2;
 					printf(" %5.2f |", bf);
-				} 
+				}
 				else
 					printf("       |");
 			}

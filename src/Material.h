@@ -46,10 +46,10 @@ public:
 		if (p != King) {
 			int x = count(c, p) + delta;
 			key[c] &= ~(15 << piece_bit_shift[p]);
-			key[c] |= (x << piece_bit_shift[p]); 
+			key[c] |= (x << piece_bit_shift[p]);
 		}
 	}
-	
+
 	__forceinline int count(const Side c, const Piece p) {
 		return (key[c] >> piece_bit_shift[p]) & 15;
 	}
@@ -65,11 +65,11 @@ public:
 	}
 
 	__forceinline bool isKx(const Side c) {
-		return key[c] == (key[c] & 15); 
+		return key[c] == (key[c] & 15);
 	}
 
 	__forceinline bool isKx() {
-		return isKx(0) && isKx(1); 
+		return isKx(0) && isKx(1);
 	}
 
 	__forceinline int value() {
@@ -101,18 +101,18 @@ public:
 		uint32 key1;
 		uint32 key2;
 		int score;
-		Side side1; 
+		Side side1;
 
 		if (key[side_to_move] >= key[side_to_move ^ 1]) {
 			key1 = key[side_to_move];
 			key2 = key[side_to_move ^ 1];
-			side1 = side_to_move; 
+			side1 = side_to_move;
 			score = eval;
 		}
 		else {
 			key1 = key[side_to_move ^ 1];
 			key2 = key[side_to_move];
-			side1 = side_to_move ^ 1; 
+			side1 = side_to_move ^ 1;
 			score = -eval;
 		}
 		Side side2 = side1 ^ 1;
@@ -123,6 +123,12 @@ public:
 		drawish = 0;
 
 		switch (key1 & ~all_pawns) {
+			case kqb:
+				score = KQBKX(score, key2);
+				break;
+			case kqn:
+				score = KQNKX(score, key2);
+				break;
 			case krb:
 				score = KRBKX(score, key2);
 				break;
@@ -159,25 +165,20 @@ public:
 				score = drawish_score;
 			}
 			else if (pc1 == 0) {
-				score = min(drawish_score, score);
+				score = std::min(drawish_score, score);
 			}
-	//		else if (pc2 == 0) {
-	//			score = max(drawish_score, score);
-	//		}
+			else if (pc2 == 0) {
+				score = std::max(drawish_score, score);
+			}
 		}
 		flags = this->flags;
 		return side1 != side_to_move ? -score : score;
 	}
 
-	__forceinline int KRBKX(int eval, uint32 key2) {
+	__forceinline int KQBKX(int eval, uint32 key2) {
 		switch (key2 & ~all_pawns) {
-			case kr:
-				drawish = 8;
-				break;
-			case kbb:
-			case kbn:
-			case knn:
-				drawish = 4;
+			case kq:
+				drawish = 16;
 				break;
 			default:
 				break;
@@ -185,7 +186,18 @@ public:
 		return eval;
 	}
 
-	__forceinline int KRNKX(int eval, uint32 key2) {
+	__forceinline int KQNKX(int eval, uint32 key2) {
+		switch (key2 & ~all_pawns) {
+			case kq:
+				drawish = 16;
+				break;
+			default:
+				break;
+		}
+		return eval;
+	}
+
+	__forceinline int KRBKX(int eval, uint32 key2) {
 		switch (key2 & ~all_pawns) {
 			case kr:
 				drawish = 16;
@@ -201,16 +213,32 @@ public:
 		return eval;
 	}
 
+	__forceinline int KRNKX(int eval, uint32 key2) {
+		switch (key2 & ~all_pawns) {
+			case kr:
+				drawish = 32;
+				break;
+			case kbb:
+			case kbn:
+			case knn:
+				drawish = 16;
+				break;
+			default:
+				break;
+		}
+		return eval;
+	}
+
 	__forceinline int KRKX(int eval, uint32 key2) {
 		switch (key2 & ~all_pawns) {
 			case kbb:
 			case kbn:
 			case knn:
-				drawish = 8;
+				drawish = 16;
 				break;
 			case kb:
 			case kn:
-				drawish = 4;
+				drawish = 8;
 				break;
 			default:
 				break;
@@ -221,7 +249,7 @@ public:
 	__forceinline int KBBKX(int eval, uint32 key2) {
 		switch (key2 & ~all_pawns) {
 			case kb:
-				drawish = 8;
+				drawish = 16;
 				break;
 			case kn:
 				break;
@@ -258,12 +286,12 @@ public:
 			a_winning_cornersq = a1;
 			another_winning_cornersq = h8;
 		}
-		return eval + 175 - min(25*distance[a_winning_cornersq][loosing_kingsq], 
+		return eval + 175 - std::min(25*distance[a_winning_cornersq][loosing_kingsq],
 			25*distance[another_winning_cornersq][loosing_kingsq]);
 	}
 
-	__forceinline int KBKX(int eval, uint32 key1, uint32 key2, int pc1, int pc2, const Side side1, const Side side2, 
-		int side_to_move) 
+	__forceinline int KBKX(int eval, uint32 key1, uint32 key2, int pc1, int pc2, const Side side1, const Side side2,
+		int side_to_move)
 	{
 		if (pc1 > 0) {
 			return KBxKX(eval, key1, key2, side1);
@@ -276,8 +304,8 @@ public:
 				else if (pc1 == 0 && pc2 == 1) {
 					const BB& bishopbb = board->bishops(side1);
 					if (side1 == side_to_move || !board->isAttacked(lsb(board->bishops(side1)), side2)) {
-						if (pawn_front_span[side2][lsb(board->pawns(side2))] & 
-							(board->bishopAttacks(lsb(bishopbb)) | bishopbb)) 
+						if (pawn_front_span[side2][lsb(board->pawns(side2))] &
+							(board->bishopAttacks(lsb(bishopbb)) | bishopbb))
 						{
 							return drawScore();
 						}
@@ -285,15 +313,15 @@ public:
 				}
 				break;
 			}
-			case kb: 
+			case kb:
 			case knn:
 			case kn:
-				drawish = 8; 
+				drawish = 16;
 				break;
 			default:
 				break;
 		}
-		return min(0, eval);
+		return std::min(0, eval);
 	}
 
 	__forceinline int KNKX(int eval, uint32 key2, int pc1, int pc2, const Side side1, const Side side2, int side_to_move) {
@@ -305,8 +333,8 @@ public:
 				if (pc1 == 0 && pc2 == 1) {
 					const BB& knightbb = board->knights(side1);
 					if (side1 == side_to_move || !board->isAttacked(lsb(board->knights(side1)), side2)) {
-						if (pawn_front_span[side2][lsb(board->pawns(side2))] & 
-							(board->knightAttacks(lsb(knightbb)) | knightbb)) 
+						if (pawn_front_span[side2][lsb(board->pawns(side2))] &
+							(board->knightAttacks(lsb(knightbb)) | knightbb))
 						{
 							return drawScore();
 						}
@@ -315,24 +343,24 @@ public:
 				break;
 			}
 			case kn:
-				drawish = 8; 
+				drawish = 16;
 				break;
 			default:
 				break;
 		}
-		return pc1 == 0 ? min(0, eval) : eval;
+		return pc1 == 0 ? std::min(0, eval) : eval;
 	}
 
 	__forceinline int KNNKX(int eval, uint32 key2, int pc1) {
 		switch (key2 & ~all_pawns) {
 			case k:
 			case kn:
-				drawish = 16;
+				drawish = 32;
 				break;
 			default:
 				break;
 		}
-		return pc1 == 0 ? min(0, eval) : eval;
+		return pc1 == 0 ? std::min(0, eval) : eval;
 	}
 
 	__forceinline int KKx(int eval, uint32 key1, uint32 key2, int pc1, int pc2, int side1) {
@@ -348,8 +376,8 @@ public:
 	__forceinline int KBxKX(int eval, uint32 key1, uint32 key2, int side1) {
 		switch (key2 & ~all_pawns) {
 			case kb:
-				if (!sameColor(lsb(board->bishops(0)), lsb(board->bishops(1))) && 
-					abs(pawnCount(0) - pawnCount(1)) <= 2) 
+				if (!sameColor(lsb(board->bishops(0)), lsb(board->bishops(1))) &&
+					abs(pawnCount(0) - pawnCount(1)) <= 2)
 				{
 					return eval/2;
 				}
@@ -369,7 +397,7 @@ public:
 		return eval;
 	}
 
-	// fen 8/6k1/8/8/3K4/5B1P/8/8 w - - 0 1 
+	// fen 8/6k1/8/8/3K4/5B1P/8/8 w - - 0 1
 	__forceinline int KBpK(int eval, int side1) {
 		Square pawnsq1 = lsb(board->pawns(side1));
 		Square promosq1 = side1 == 1 ? file(pawnsq1) : file(pawnsq1) + 56;
@@ -429,12 +457,15 @@ public:
 	static const uint32 kn  = 0x00010;
 	static const uint32 kb  = 0x00100;
 	static const uint32 kr  = 0x01000;
+	static const uint32 kq  = 0x10000;
 	static const uint32 krr = 0x02000;
 	static const uint32 kbb = 0x00200;
 	static const uint32 kbn = 0x00110;
 	static const uint32 knn = 0x00020;
 	static const uint32 krn = 0x01010;
 	static const uint32 krb = 0x01100;
+	static const uint32 kqb = 0x10100;
+	static const uint32 kqn = 0x10010;
 
 	static const uint32 all_pawns = 0xf;
 };

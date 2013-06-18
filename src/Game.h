@@ -18,12 +18,12 @@
 
 class Game {
 public:
-	__forceinline bool makeMove(const Move m, bool check_legal, bool calculate_in_check) { 
+	__forceinline bool makeMove(const Move m, bool check_legal, bool calculate_in_check) {
 		if (m == 0) {
-			return MakeNullMove();
+			return makeNullMove();
 		}
 		board.makeMove(m);
-		if (check_legal && !(moveType(m) & CASTLE)) { 
+		if (check_legal && !(moveType(m) & CASTLE)) {
 			if (board.isAttacked(board.king_square[pos->side_to_move], pos->side_to_move ^ 1)) {
 				board.unmakeMove(m);
 				return false;
@@ -32,11 +32,11 @@ public:
 		Position* prev = pos++;
 		pos->side_to_move = prev->side_to_move ^ 1;
 		pos->material = prev->material;
-		pos->last_move = m; 
+		pos->last_move = m;
 		if (calculate_in_check) {
 			pos->in_check = board.isAttacked(board.king_square[pos->side_to_move], pos->side_to_move ^ 1);
 		}
-		pos->castle_rights = prev->castle_rights & castle_rights_mask[moveFrom(m)] & castle_rights_mask[moveTo(m)]; 
+		pos->castle_rights = prev->castle_rights & castle_rights_mask[moveFrom(m)] & castle_rights_mask[moveTo(m)];
 		pos->null_search = prev->null_search;
 		pos->null_moves_in_row = 0;
 		if (isCapture(m) || (movePiece(m) & 7) == Pawn) {
@@ -47,7 +47,7 @@ public:
 		}
 		if (moveType(m) & DOUBLEPUSH) {
 			pos->en_passant_square = bbSquare(moveTo(m) + pawn_push_dist[pos->side_to_move]);
-		} 
+		}
 		else {
 			pos->en_passant_square = 0;
 		}
@@ -66,11 +66,11 @@ public:
 		pos--;
 	}
 
-	__forceinline bool MakeNullMove() { 
+	__forceinline bool makeNullMove() {
 		Position* prev = pos++;
 		pos->side_to_move = prev->side_to_move ^ 1;
 		pos->material = prev->material;
-		pos->last_move = 0; 
+		pos->last_move = 0;
 		pos->in_check = false;
 		pos->castle_rights = prev->castle_rights;
 		pos->null_search = true;
@@ -127,7 +127,7 @@ public:
 		if (moveType(m) & PROMOTION) {
 			pos->key ^= zobrist_pcsq[movePromoted(m)][moveTo(m)];
 		}
-		else { 
+		else {
 			if ((movePiece(m) & 7) == Pawn) {
 				pos->pawn_structure_key ^= zobrist_pcsq[movePiece(m)][moveTo(m)];
 			}
@@ -164,8 +164,10 @@ public:
 	__forceinline  bool isRepetition() {
 		int num_moves = pos->reversible_half_move_count;
 		Position* prev = pos;
+
 		while (((num_moves = num_moves - 2) >= 0) && ((prev - position_list) > 1)) {
 			prev -= 2;
+
 			if (prev->key == pos->key) {
 				return true;
 			}
@@ -175,8 +177,10 @@ public:
 
 	void addPiece(const Piece p, const Side c, const Square sq) {
 		int pc = p | (c << 3);
+
 		board.addPiece(p, c, sq);
 		pos->key ^= zobrist_pcsq[pc][sq];
+
 		if (p == Pawn) {
 			pos->pawn_structure_key ^= zobrist_pcsq[pc][sq];
 		}
@@ -189,7 +193,7 @@ public:
 		}
 		return setFen(START_POSITION);
 	}
-	
+
 	int setFen(const char* fen) {
 		pos = position_list;
 		pos->clear();
@@ -208,6 +212,7 @@ public:
 				p++;
 				continue;
 			}
+
 			if (*p == '/') {
 				if (f != 9) {
 					return 2;
@@ -219,10 +224,12 @@ public:
 				continue;
 			}
 			Side color = 0;
+
 			if (islower(*p)) {
 				color = 1;
 			}
 			Piece piece;
+
 			switch (toupper(*p)) {
 				case 'R':
 					piece = Rook;
@@ -244,21 +251,24 @@ public:
 					break;
 				default:
 					return 3;
-			} 
+			}
 			addPiece(piece, color, (f - 1) + (r - 1) * 8);
 			f++;
 			p++;
 			continue;
 		}
+
 		if (!getDelimiter(&p) || (pos->side_to_move = getSideToMove(&p)) == -1) {
 			return 4;
 		}
 		p++;
-		if (!getDelimiter(&p) || (pos->castle_rights = getCastleRights(&p)) == -1) {
+
+		if (!getDelimiter(&p) || setupCastling(&p) == -1) {
 			return 5;
 		}
 		Square sq;
-		if (!getDelimiter(&p) || (sq = getEPsquare(&p)) == -1) {
+
+		if (!getDelimiter(&p) || (int)(sq = getEPsquare(&p)) == -1) {
 			return 6;
 		}
 		pos->en_passant_square = sq < 64 ? bbSquare(sq) : 0;
@@ -269,6 +279,7 @@ public:
 			pos->pawn_structure_key ^= zobrist_side;
 		}
 		pos->key ^= zobrist_castling[pos->castle_rights];
+
 		if (pos->en_passant_square) {
 			pos->key ^= zobrist_ep_file[file(lsb(pos->en_passant_square))];
 		}
@@ -331,11 +342,11 @@ public:
 			sprintf(fen + strlen(fen), "- ");
 		}
 		sprintf(fen + strlen(fen), "%d ", pos->reversible_half_move_count);
-		sprintf(fen + strlen(fen), "%d", (pos - position_list)/2 + 1);
+		sprintf(fen + strlen(fen), "%d", static_cast<int>((pos - position_list)/2 + 1));
 		return 0;
 	}
 
-	const char getEPsquare(const char** p) {
+	char getEPsquare(const char** p) {
 		if (**p == '-') {
 			return 64; // 64 = no en passant square
 		}
@@ -348,32 +359,117 @@ public:
 		}
 		return (*((*p) - 1) - 'a') + (**p - '1') * 8;
 	}
+	/*
+		fen r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1
+		fen 8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1
+		fen r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1
+		fen r2q1rk1/pP1p2pp/Q4n2/bbp1p3/Np6/1B3NBn/pPPP1PPP/R3K2R b KQ - 0 1
+	*/
+	int setupCastling(const char** p) {
+		for (int sq = 0; sq < 64; sq++) {
+			castle_rights_mask[sq] = 15;
+		}
 
-	int getCastleRights(const char** p) { 
-		int rights = 0;
 		if (**p == '-') {
 			(*p)++;
-			return rights;
+			return 0;
 		}
-		while (**p != 0) {
-			if (**p == 'K' && rights < 1) {
-				rights |= 1;
+		int i = 0;
+
+		while (**p != 0 && **p != ' ') {
+			if (i == 4) {
+				return -1;
 			}
-			else if (**p == 'Q' && rights < 2) {
-				rights |= 2;
+			char c = **p;
+
+			if (c >= 'A' && c <= 'H') {
+				chess960 = true;
+				xfen = false;
+
+				int rook_file = c - 'A';
+
+				if (rook_file > file(board.king_square[0])) {
+					addShortCastleRights(0, rook_file);
+				}
+				else {
+					addLongCastleRights(0, rook_file);
+				}
 			}
-			else if (**p == 'k' && rights < 4) {
-				rights |= 4;
-			}
-			else if (**p == 'q' && rights < 8) {
-				rights |= 8;
+			else if (c >= 'a' && c <= 'h') {
+				chess960 = true;
+				xfen = false;
+
+				int rook_file = c - 'a';
+
+				if (rook_file > file(board.king_square[1])) {
+					addShortCastleRights(1, rook_file);
+				}
+				else {
+					addLongCastleRights(1, rook_file);
+				}
 			}
 			else {
-				break;
+				if (c == 'K') {
+					addShortCastleRights(0, -1);
+				}
+				else if (c == 'Q') {
+					addLongCastleRights(0, -1);
+				}
+				else if (c == 'k') {
+					addShortCastleRights(1, -1);
+				}
+				else if (c == 'q') {
+					addLongCastleRights(1, -1);
+				}
+				else if (c != '-') {
+					return -1;
+				}
 			}
 			(*p)++;
 		}
-		return rights == 0 ? -1 : rights;
+		return 0;
+	}
+
+	void addShortCastleRights(int side, int rook_file) {
+		if (rook_file == -1) {
+			for (int i = 7; i >= 0; i--) {
+				if (board.getPieceType(i + side*56) == Rook) {
+					rook_file = i; // right outermost rook for side
+					break;
+				}
+			}
+			xfen = true;
+		}
+		pos->castle_rights |= side == 0 ? 1 : 4;
+		castle_rights_mask[flip[side ^ 1][rook_file]] -= oo_allowed_mask[side];
+		castle_rights_mask[flip[side ^ 1][file(board.king_square[side])]] -= oo_allowed_mask[side];
+		rook_castles_from[flip[side ^ 1][g1]] = flip[side ^ 1][rook_file];
+		oo_king_from[side] = board.king_square[side];
+
+		if (file(board.king_square[side]) != 4 || rook_file != 7) {
+			chess960 = true;
+		}
+	}
+
+	void addLongCastleRights(int side, int rook_file) {
+		if (rook_file == -1) {
+			for (int i = 0; i <= 7; i++) {
+				if (board.getPieceType(i + side*56) == Rook) {
+					rook_file = i; // left outermost rook for side
+					break;
+				}
+			}
+			xfen = true;
+		}
+		pos->castle_rights |= side == 0 ? 2 : 8;
+		castle_rights_mask[flip[side ^ 1][rook_file]] -= ooo_allowed_mask[side];
+		castle_rights_mask[flip[side ^ 1][file(board.king_square[side])]] -= ooo_allowed_mask[side];
+		rook_castles_from[flip[side ^ 1][c1]] = flip[side ^ 1][rook_file];
+		ooo_king_from[side] = board.king_square[side];
+
+		if (file(board.king_square[side]) != 4 || rook_file != 0) {
+			chess960 = true;
+		}
 	}
 
 	char getSideToMove(const char** p) {
@@ -382,7 +478,7 @@ public:
 				return 0;
 			case 'b':
 				return 1;
-			default: 
+			default:
 				break;
 		}
 		return -1;
@@ -401,14 +497,57 @@ public:
 			position_list[i].board = &board;
 		}
 		pos = position_list;
+		chess960 = false;
+		xfen = false;
 	}
 
 	void copy(Game* other) {
 		board = other->board;
+		chess960 = other->chess960;
+		xfen = other->xfen;
+
 		pos += (other->pos - other->position_list);
+
 		for (int i = 0; i < 2000; i++) {
 			position_list[i] = other->position_list[i];
 			position_list[i].board = &board;
+		}
+	}
+
+	const char* moveToString(const Move m, char* buf) {
+		char tmp1[12];
+		char tmp2[12];
+		char tmp3[12];
+
+		if (isCastleMove(m) && chess960) {
+			if (xfen && moveTo(m) == ooo_king_to[moveSide(m)]) {
+				strcpy(buf, "O-O-O");
+			}
+			else if (xfen) {
+				strcpy(buf, "O-O");
+			}
+			else { // shredder fen
+				sprintf(buf, "%s%s", squareToString(moveFrom(m), tmp1),
+					squareToString(rook_castles_from[moveTo(m)], tmp2));
+			}
+		}
+		else {
+			sprintf(buf, "%s%s", squareToString(moveFrom(m), tmp1), squareToString(moveTo(m), tmp2));
+
+			if (isPromotion(m)) {
+				sprintf(&buf[strlen(buf)], "%s", pieceToString(movePromoted(m) & 7, tmp3));
+			}
+		}
+		return buf;
+	}
+
+	void print_moves() {
+		int i = 0;
+		char buf[12];
+		while (const MoveData* m = pos->nextMove()) {
+			printf("%d. ", i++ + 1);
+			printf("%s", moveToString(m->move, buf));
+			printf("   %d\n", m->score);
 		}
 	}
 
@@ -417,6 +556,8 @@ public:
 	Position* pos;
 	Position position_list[2000];
 	Board board;
+	bool chess960;
+	bool xfen;
 
 	static const char START_POSITION[];
 };

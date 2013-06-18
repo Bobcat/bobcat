@@ -49,7 +49,7 @@ int tokenize(char* input, char* tokens[], int max_tokens) {
 	return num_tokens;
 }
 
-static uint64 rand64() {
+static uint64_t rand64() {
 	return genrand64_int64();
 }
 
@@ -61,7 +61,7 @@ static int pow2(int x) {
 	return (int)pow(2.0, x);
 }
 
-const char* FENfromParams(char* params[], int num_params, int& param, char* fen) {
+const char* FENfromParams(const char* params[], int num_params, int& param, char* fen) {
 	if ((num_params - param - 1) < 6) {
 		return NULL;
 	}
@@ -75,7 +75,7 @@ const char* FENfromParams(char* params[], int num_params, int& param, char* fen)
 	return fen;
 }
 
-#if defined(_MSC_VER)
+//#if defined(_MSC_VER)
 
 __forceinline uint64 millis() {
 	return GetTickCount();
@@ -105,7 +105,7 @@ public:
 			::CloseHandle(handle);
 		}
 	}
- 
+
 protected:
 	static DWORD __stdcall threadProc(LPVOID param) {
 		((Runnable*)param)->run();
@@ -113,13 +113,13 @@ protected:
 	}
 
 	HANDLE handle;
-	Runnable* runnable; 
+	Runnable* runnable;
 };
 
 const char* dateAndTimeString(char* buf) {
 	time_t now = time(NULL);
 	struct tm* time = localtime(&now);
-	sprintf(buf, "%04d-%02d-%02d %02d:%02d:%02d", time->tm_year + 1900, time->tm_mon + 1, 
+	sprintf(buf, "%04d-%02d-%02d %02d:%02d:%02d", time->tm_year + 1900, time->tm_mon + 1,
 		time->tm_mday, time->tm_hour, time->tm_min, time->tm_sec);
 	return buf;
 }
@@ -132,5 +132,5 @@ const char* timeString(char* buf) {
 	return buf;
 }
 
-#endif // defined(_MSCVER)
+//#endif // defined(_MSCVER)
 

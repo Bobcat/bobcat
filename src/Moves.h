@@ -28,11 +28,13 @@ public:
 
 static const int LEGALMOVES = 1;
 static const int STAGES = 2;
+static const int QUEENPROMOTION = 4;
+static const int GIVECHECK = 8;
 
 class Moves {
 public:
-	__forceinline void generateMoves(MoveSorter* sorter = 0, const Move transposition_move = 0, const int flags = 0) {
-		reset(sorter, transposition_move, flags);
+	__forceinline void generateMoves(MoveSorter* sorter = 0, const Move transp_move = 0, const int flags = 0) {
+		reset(sorter, transp_move, flags);
 		max_stage = 3;
 		if ((flags & STAGES) == 0) {
 			generateTranspositionMove();
@@ -41,13 +43,14 @@ public:
 		}
 	}
 
-	__forceinline void generateCapturesAndPromotions(MoveSorter* sorter, const Move transposition_move = 0, const int flags = 0) {
-		reset(sorter, transposition_move, flags);
+	__forceinline void generateCapturesAndPromotions(MoveSorter* sorter) {
+		reset(sorter, 0, QUEENPROMOTION|STAGES);
 		max_stage = 2;
-		if ((flags & STAGES) == 0) {
-			generateTranspositionMove();
-			generateCapturesAndPromotions();
-		}
+		stage = 1;
+	}
+
+	__forceinline void generateCapturesPromotionsAndChecks(MoveSorter* sorter, const int flags) {
+        generateMoves(sorter, 0, flags | GIVECHECK);
 	}
 
 	__forceinline MoveData* nextMove() {
@@ -79,33 +82,24 @@ public:
 					best_idx = i;
 				}
 			}
+
 			if (max_stage > 2 && stage == 2 && move_list[best_idx].score < 0) {
 				generateQuietMoves();
 				continue;
 			}
 			MoveData tmp = move_list[iteration];
-			move_list[iteration] = move_list[best_idx]; 
-			move_list[best_idx] = tmp; 
+			move_list[iteration] = move_list[best_idx];
+			move_list[best_idx] = tmp;
 			return &move_list[iteration++];
 		} while (1);
 	}
 
-	__forceinline int moveCount() { 
+	__forceinline int moveCount() {
 		return number_moves;
 	}
 
-	__forceinline void gotoMove(int pos) { 
+	__forceinline void gotoMove(int pos) {
 		iteration = pos;
-	}
-
-	void print_moves() {
-		int i = 0;
-		char buf[12];
-		while (const MoveData* m = nextMove()) {
-			printf("%d. ", i++ + 1);
-			printf("%s", moveToString(m->move, buf));
-			printf("   %d\n", m->score);
-		}
 	}
 
 	__forceinline bool isPseudoLegal(const Move m) {
@@ -137,15 +131,16 @@ public:
 private:
 	__forceinline void reset(MoveSorter* sorter, const Move move, const int flags) {
 		this->sorter = sorter;
-		transposition_move = move;
-		// WORKAROUND
-		// needed because isPseudoLegal() is not complete yet.
+		this->transp_move = move;
+		this->flags = flags;
+
 		if (move) {
-			if (isCastleMove(move) || isEpCapture(move)) {
-				transposition_move = 0;
+			if (isCastleMove(this->transp_move) || isEpCapture(this->transp_move)) {
+                // needed because isPseudoLegal() is not complete yet.
+                this->transp_move = 0;
+				this->flags &= ~STAGES;
 			}
 		}
-		this->flags = flags;
 		iteration = 0;
 		number_moves = 0;
 		stage = 0;
@@ -158,14 +153,14 @@ private:
 	}
 
 	__forceinline void generateTranspositionMove() {
-		if (transposition_move && isPseudoLegal(transposition_move)) {
+		if (transp_move && isPseudoLegal(transp_move)) {
 			move_list[number_moves].score = 890010;
-			move_list[number_moves++].move = transposition_move;
+			move_list[number_moves++].move = transp_move;
 		}
 		stage++;
 	}
 
-	void generateCapturesAndPromotions() { 
+	void generateCapturesAndPromotions() {
 		addMoves(occupied_by_side[side_to_move ^ 1]);
 		const BB& pawns = board->pawns(side_to_move);
 		addPawnMoves(pawnPush[side_to_move](pawns & rank_7[side_to_move]) & ~occupied, pawn_push_dist, QUIET);
@@ -176,11 +171,12 @@ private:
 		stage++;
 	}
 
-	void generateQuietMoves() { 
+	void generateQuietMoves() {
 		if (!in_check) {
-			if (canCastleShort()) { 
+			if (canCastleShort()) {
 				addCastleMove(oo_king_from[side_to_move], oo_king_to[side_to_move]);
 			}
+
 			if (canCastleLong()) {
 				addCastleMove(ooo_king_from[side_to_move], ooo_king_to[side_to_move]);
 			}
@@ -199,7 +195,7 @@ private:
 			captured = board->getPiece(to);
 		}
 		else if (type & EPCAPTURE) {
-			captured = Pawn | ((side_to_move ^ 1) << 3); 
+			captured = Pawn | ((side_to_move ^ 1) << 3);
 		}
 		else {
 			captured = 0;
@@ -207,13 +203,18 @@ private:
 
 		initMove(move, piece, captured, from, to, type, promoted);
 
-		if (transposition_move == move) {
+		if (transp_move == move) {
 			return;
 		}
 
-		if (((flags & LEGALMOVES) && !isLegal(move, piece, from, type))) {
+        if ((flags & GIVECHECK) && !(isCapture(move) || isPromotion((move)) || givesCheck(move))) {
+            return;
+		}
+
+        if ((flags & LEGALMOVES) && !isLegal(move, piece, from, type)) {
 			return;
 		}
+
 		MoveData& move_data = move_list[number_moves++];
 		move_data.move = move;
 		if (sorter) {
@@ -224,7 +225,7 @@ private:
 		}
 	}
 
-	__forceinline void addMoves(const BB& to_squares) { 
+	__forceinline void addMoves(const BB& to_squares) {
 		BB bb;
 		int offset = side_to_move << 3;
 		Square from;
@@ -262,7 +263,11 @@ private:
 			Square to = lsb(bb);
 			Square from = to - dist[side_to_move];
 			if (rank(to) == 0 || rank(to) == 7) {
-				for (Piece promoted = Queen; promoted >= Knight; promoted--) { 
+				if (flags & QUEENPROMOTION) {
+					addMove(Pawn | (side_to_move << 3), from, to, type | PROMOTION, Queen | (side_to_move << 3));
+					return;
+				}
+				for (Piece promoted = Queen; promoted >= Knight; promoted--) {
 					addMove(Pawn | (side_to_move << 3), from, to, type | PROMOTION, promoted | (side_to_move << 3));
 				}
 			}
@@ -274,6 +279,18 @@ private:
 
 	__forceinline void addCastleMove(const Square from, const Square to) {
 		addMove(King | (side_to_move << 3), from, to, CASTLE);
+	}
+
+
+	__forceinline bool givesCheck(const Move m) {
+		board->makeMove(m);
+
+		if (board->isAttacked(board->king_square[side_to_move ^ 1], side_to_move)) {
+			board->unmakeMove(m);
+			return true;
+		}
+		board->unmakeMove(m);
+		return false;
 	}
 
 	__forceinline bool isLegal(const Move m, const Piece piece, const Square from, Move type) {
@@ -288,19 +305,54 @@ private:
 		return true;
 	}
 
-	__forceinline bool canCastleShort() { 
-		return (castle_rights & oo_allowed_mask[side_to_move]) && board->isCastleAllowed(oo_king_to[side_to_move]);
+	__forceinline bool canCastleShort() {
+		return (castle_rights & oo_allowed_mask[side_to_move])
+			&& isCastleAllowed(oo_king_to[side_to_move], side_to_move);
 	}
 
-	__forceinline bool canCastleLong() { 
-		return (castle_rights & ooo_allowed_mask[side_to_move]) && board->isCastleAllowed(ooo_king_to[side_to_move]);
+	__forceinline bool canCastleLong() {
+		return (castle_rights & ooo_allowed_mask[side_to_move])
+			&& isCastleAllowed(ooo_king_to[side_to_move], side_to_move);
+	}
+
+	__forceinline bool isCastleAllowed(Square to, const Side side_to_move) {
+		// A bit complicated because of Chess960. See http://en.wikipedia.org/wiki/Chess960
+		// The following comments were taken from that source.
+
+		// Check that the smallest back rank interval containing the king, the castling rook, and their
+		// destination squares, contains no pieces other than the king and castling rook.
+
+		Square rook_to = rook_castles_to[to];
+		Square rook_from = rook_castles_from[to];
+		Square king_square = board->king_square[side_to_move];
+
+		BB bb_castle_pieces = bbSquare(rook_from) | bbSquare(king_square);
+
+		BB bb_castle_span = bb_castle_pieces
+							| bbSquare(rook_to) | bbSquare(to)
+							| bb_between[king_square][rook_from]
+							| bb_between[rook_from][rook_to];
+
+		if ((bb_castle_span & occupied) != bb_castle_pieces) {
+			return false;
+		}
+
+		// Check that no square between the king's initial and final squares (including the initial and final
+		// squares) may be under attack by an enemy piece. (Initial square was already checked a this point.)
+
+		for (BB bb = bb_between[king_square][to] | bbSquare(to); bb; resetLSB(bb)) {
+			if (board->isAttacked(lsb(bb), side_to_move ^ 1)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 public:
 	Side side_to_move;
 	int castle_rights;
 	bool in_check;
-	BB en_passant_square; 
+	BB en_passant_square;
 	Board* board;
 
 private:
@@ -313,7 +365,7 @@ private:
 	int number_moves;
 	BB pinned;
 	MoveSorter* sorter;
-	Move transposition_move;
+	Move transp_move;
 	int flags;
 	MoveData move_list[256];
 };

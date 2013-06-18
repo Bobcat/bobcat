@@ -32,7 +32,7 @@ public:
 		strcpy(key, section_name);
 	}
 
-	ConfigSection::~ConfigSection() {
+	~ConfigSection() {
 		for (int i = 0; i < size; i++) {
 			delete pairs[i];
 		}
@@ -46,7 +46,7 @@ public:
 			strcpy(pairs[size]->key, key);
 			pairs[size]->value = new char[strlen(value) + 1];
 			strcpy(pairs[size]->value, value);
-			size++;		
+			size++;
 		}
 	}
 
@@ -65,9 +65,9 @@ public:
 
 class Config {
 public:
-	Config(const char* filename) : 
-		line_number(0), 
-		empty_section(new ConfigSection("empty")), 
+	Config(const char* filename) :
+		line_number(0),
+		empty_section(new ConfigSection("empty")),
 		size(0),
 		status(0)
 	{
@@ -98,7 +98,7 @@ public:
 		}
 	}
 
-	Config::~Config() {
+	~Config() {
 		for (int i = 0; i < size; i++) {
 			delete sections[i];
 		}
@@ -113,7 +113,7 @@ public:
 		}
 		return empty_section;
 	}
-	
+
 	const char* getString(const char* section, const char* key, const char* def = 0) const {
 		return getSection(section)->getString(key, def);
 	}
@@ -162,9 +162,9 @@ public:
 		}
 		return line;
 	}
-	int status;
+	int line_number;
 	ConfigSection* sections[16];
 	ConfigSection* empty_section;
 	int size;
-	int line_number;
+	int status;
 };

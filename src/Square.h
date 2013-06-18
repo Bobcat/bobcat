@@ -18,16 +18,16 @@
 
 typedef uint Square;
 
-__forceinline int rank(const Square sq) { 
-	return sq >> 3; 
+__forceinline int rank(const Square sq) {
+	return sq >> 3;
 }
 
-__forceinline int file(const Square sq) { 
-	return sq & 7; 
-} 
+__forceinline int file(const Square sq) {
+	return sq & 7;
+}
 
-__forceinline Square square(const Square f, const Square r) { 
-	return (r << 3) + f; 
+__forceinline Square square(const Square f, const Square r) {
+	return (r << 3) + f;
 }
 
 __forceinline bool isDark(const Square sq) {
@@ -38,7 +38,7 @@ __forceinline bool sameColor(const Square sq1, const Square sq2) {
 	return isDark(sq1) == isDark(sq2);
 }
 
-enum enSquare {
+enum SquareEnum {
   a1, b1, c1, d1, e1, f1, g1, h1,
   a2, b2, c2, d2, e2, f2, g2, h2,
   a3, b3, c3, d3, e3, f3, g3, h3,
@@ -51,12 +51,12 @@ enum enSquare {
 
 static uint oo_allowed_mask[2] = { 1, 4 };
 static uint ooo_allowed_mask[2] = { 2, 8 };
-static uint oo_king_from[2] = { e1, e8 };
+static uint oo_king_from[2];
 static uint oo_king_to[2] = { g1, g8 };
-static uint ooo_king_from[2] = { e1, e8 };
+static uint ooo_king_from[2];
 static uint ooo_king_to[2] = { c1, c8 };
-static uint rook_castles_to[64];
-static uint rook_castles_from[64];
+static uint rook_castles_to[64]; // indexed by position of the king
+static uint rook_castles_from[64]; // also
 static uint castle_rights_mask[64];
 static uint distance[64][64]; // chebyshev distance
 static uint flip[2][64];
@@ -65,24 +65,20 @@ static void Square_h_initialise() {
 	for (uint sq = 0; sq < 64; sq++) {
 		flip[0][sq] = file(sq) + ((7 - rank(sq)) << 3);
 		flip[1][sq] = file(sq) + (rank(sq) << 3);
-		castle_rights_mask[sq] = 15;
 	}
 	for (uint sq1 = 0; sq1 < 64; sq1++) {
 		for (uint sq2 = 0; sq2 < 64; sq2++) {
 			uint ranks = abs(rank(sq1) - rank(sq2));
 			uint files = abs(file(sq1) - file(sq2));
-			distance[sq1][sq2] = max(ranks, files);
+			distance[sq1][sq2] = std::max(ranks, files);
 		}
 	}
 	for (int side = 0; side <= 1; side++) {
-		rook_castles_from[flip[side][g1]] = flip[side][h1];
 		rook_castles_to[flip[side][g1]] = flip[side][f1];
-		rook_castles_from[flip[side][c1]] = flip[side][a1];
 		rook_castles_to[flip[side][c1]] = flip[side][d1];
-		castle_rights_mask[flip[side ^ 1][a1]] = 15 - ooo_allowed_mask[side];
-		castle_rights_mask[flip[side ^ 1][e1]] = 15 - oo_allowed_mask[side] - ooo_allowed_mask[side];
-		castle_rights_mask[flip[side ^ 1][h1]] = 15 - oo_allowed_mask[side];
 	}
+	// Arrays castle_right_mask, rook_castles_from, ooo_king_from and oo_king_from
+	// are initialised in method setupCastling of class Game.
 }
 
 const char* squareToString(const Square sq, char* buf) {

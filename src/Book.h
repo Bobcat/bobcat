@@ -1,10 +1,10 @@
-/* 
+/*
   Polyglot book reader class.
   Based on the explanation and source code from:
   Michel Van den Bergh<michel.vandenbergh(at)uhasselt.be>
   http://alpha.uhasselt.be/Research/Algebra/Toga/book_format.html
   http://alpha.uhasselt.be/Research/Algebra/Toga/pg_key.c
-  http://alpha.uhasselt.be/Research/Algebra/Toga/pg_show.c 
+  http://alpha.uhasselt.be/Research/Algebra/Toga/pg_show.c
 */
 #ifdef _MSC_VER
 #pragma warning(disable : 4244)
@@ -214,10 +214,10 @@ uint64 *RandomCastle = Random64 + 768;
 uint64 *RandomEnPassant = Random64 + 772;
 uint64 *RandomTurn = Random64 + 780;
 
-char *piece_names = "pPnNbBrRqQkK";
+const char *piece_names = "pPnNbBrRqQkK";
 
 typedef struct {
-    uint64 key;	
+    uint64 key;
     uint16 move;
     uint16 weight;
     uint32 learn;
@@ -227,7 +227,7 @@ entry_t entry_none = {
     0, 0, 0, 0
 };
 
-char *promote_pieces = " nbrq";
+const char *promote_pieces = " nbrq";
 
 #define MAX_MOVES 100
 
@@ -303,7 +303,7 @@ public:
 		char board_s[72+1];
 		char to_move_c;
 		char castle_flags_s[4+1];
-		char ep_square_s[2+1]; 
+		char ep_square_s[2+1];
 		char board[8][8];
 		char c;
 		int p,r,f,i,p_enc;
@@ -399,7 +399,7 @@ private:
 
 	int entry_from_file(FILE *f, entry_t *entry){
 		int ret;
-		uint64 r;
+		uint64 r=0; // assignemnt only to surpress warning [gh]
 		ret = int_from_file(f,8,&r);
 		if(ret) return 1;
 		entry->key = r;
@@ -473,5 +473,5 @@ private:
 			strcpy(move_s,"e8c8");
 		}
 	}
-	FILE* file; 
+	FILE* file;
 };

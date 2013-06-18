@@ -44,7 +44,6 @@ BB pawn_west_attack_span[2][64];
 BB pawn_captures[128];
 BB knight_attacks[64];
 BB king_attacks[64];
-BB king_area_wide[64];
 BB corner_a1;
 BB corner_a8;
 BB corner_h1;
@@ -64,15 +63,15 @@ __forceinline BB southWestOne(const BB& bb) { return (bb  & ~AFILE) >> 9; }
 __forceinline BB northWestOne(const BB& bb) { return (bb  & ~AFILE) << 7; }
 
 __forceinline BB northFill(const BB& bb) {
-	BB fill = bb; 
+	BB fill = bb;
 	fill |= (fill <<  8);
 	fill |= (fill << 16);
 	fill |= (fill << 32);
 	return fill;
 }
- 
+
 __forceinline BB southFill(const BB& bb) {
-	BB fill = bb; 
+	BB fill = bb;
 	fill |= (fill >>  8);
 	fill |= (fill >> 16);
 	fill |= (fill >> 32);
@@ -96,11 +95,13 @@ void initBetweenBitboards(const Square from, BB (*stepFunc)(const BB&), int step
 	Square to = from + step;
 	BB between = 0;
 	while (bb) {
-		bb_between[from][to] = between;
-		between |= bb;
-		bb = stepFunc(bb);
-		to += step;
-	}
+        if (from < 64 && to < 64) { // to make gcc happy
+            bb_between[from][to] = between;
+            between |= bb;
+            bb = stepFunc(bb);
+            to += step;
+        }
+    }
 }
 
 void Bitboard_h_initialise() {
@@ -136,10 +137,10 @@ void Bitboard_h_initialise() {
 		pawn_captures[sq] |= (bbSquare(sq) & ~AFILE) << 7;
 		pawn_captures[sq + 64] = (bbSquare(sq) & ~AFILE) >> 9;
 		pawn_captures[sq + 64] |= (bbSquare(sq) & ~HFILE) >> 7;
-	
-		knight_attacks[sq] = (bbSquare(sq) & ~(AFILE | BFILE)) << 6; 
+
+		knight_attacks[sq] = (bbSquare(sq) & ~(AFILE | BFILE)) << 6;
 		knight_attacks[sq] |= (bbSquare(sq) & ~AFILE) << 15;
-		knight_attacks[sq] |= (bbSquare(sq) & ~HFILE) << 17; 
+		knight_attacks[sq] |= (bbSquare(sq) & ~HFILE) << 17;
 		knight_attacks[sq] |= (bbSquare(sq) & ~(GFILE | HFILE)) << 10;
 		knight_attacks[sq] |= (bbSquare(sq) & ~(GFILE | HFILE)) >> 6;
 		knight_attacks[sq] |= (bbSquare(sq) & ~HFILE) >> 15;
@@ -154,14 +155,6 @@ void Bitboard_h_initialise() {
 		king_attacks[sq] |= (bbSquare(sq) & ~HFILE) >> 7;
 		king_attacks[sq] |= bbSquare(sq) >> 8;
 		king_attacks[sq] |= (bbSquare(sq) & ~AFILE) >> 9;
-	}
-	for (Square sq = a1; sq <= h8; sq++) {
-		king_area_wide[sq] = 0;
-		for (BB bb = king_attacks[sq]; bb; resetLSB(bb)) {
-			king_area_wide[sq] |= king_attacks[lsb(bb)];
-		}
-		king_area_wide[sq] &= ~king_attacks[sq] & ~bbSquare(sq);
-		//print_bb(king_area_wide[sq]);
 	}
 	corner_a1 = bbSquare(a1) | bbSquare(b1) | bbSquare(a2) | bbSquare(b2);
 	corner_a8 = bbSquare(a8) | bbSquare(b8) | bbSquare(a7) | bbSquare(b7);

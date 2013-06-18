@@ -18,12 +18,12 @@
 
 #pragma pack(1)
 struct Transposition {
-	uint32 key; 
+	uint32 key;
 	uint16 age; // 7 bits left
 	uint8 depth;
 	uint8 flags; // 5 bits left
 	int16 score;
-	Move move; 
+	Move move;
 	uint16 unused;
 };
 #pragma pack()
@@ -32,14 +32,14 @@ class TranspositionTable {
 public:
 	TranspositionTable(int size_mb) : table(NULL), size_mb(-1) {
 		if (sizeof(Transposition) != 16) {
-			printf("error sizeof(Transposition) == %d\n", sizeof(Transposition));
+			printf("error sizeof(Transposition) == %d\n", static_cast<int>(sizeof(Transposition)));
 			exit(0);
 		}
 		initialise(size_mb);
 	}
 
 	void initialise(int new_size_mb) {
-		new_size_mb = pow2(log2(new_size_mb));
+		new_size_mb = pow2(log2((uint)new_size_mb));
 		if (new_size_mb == size_mb) {
 			return;
 		}
@@ -143,14 +143,14 @@ class PawnStructureTable {
 public:
 	PawnStructureTable(int size_mb) : table(NULL) {
 		if (sizeof(PawnEntry) != 16) {
-			printf("error sizeof(PawnEntry) == %d\n", sizeof(PawnEntry));
+			printf("error sizeof(PawnEntry) == %d\n", static_cast<int>(sizeof(PawnEntry)));
 			exit(0);
 		}
 		initialise(size_mb);
 	}
 
 	void initialise(int size_mb) {
-		size = 1024*1024*pow2(log2(size_mb))/sizeof(PawnEntry);
+		size = 1024*1024*pow2(log2((uint)size_mb))/sizeof(PawnEntry);
 		mask = size - 1;
 		delete [] table;
 		table = new PawnEntry[size];

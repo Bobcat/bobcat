@@ -148,14 +148,14 @@ private:
 	int flags;
 };
 
-class PGNParser : public PGNFileReader {
+class PGNParserx : public PGNFileReader {
 public:
-	PGNParser(const char* path) : PGNFileReader(path), game_count(0) {
-//		game = new Game();
+	PGNParserx(const char* path) :
+	    PGNFileReader(path),
+	    game_count(0) {
 	}
 
-	virtual ~PGNParser() {
-		delete game;
+	virtual ~PGNParserx() {
 	}
 
 	virtual void readPGNDatabase() {
@@ -164,7 +164,6 @@ public:
 	}
 
 	virtual void readPGNGame() {
-		fen[0] = '\0';
 		PGNFileReader::readPGNGame();
 		game_count++;
 
@@ -175,11 +174,6 @@ public:
 
 	virtual void readTagSection() {
 		PGNFileReader::readTagSection();
-
-	//	game->fromFen(fen);
-	//	game->board.print();
-	//	game->pos->generateMoves();
-	//	game->pos->printMoves();
 	}
 
 	virtual void readTagName() {
@@ -190,37 +184,10 @@ public:
 		PGNFileReader::readTagValue();
 
 		if (game_count % 100000 == 0) {
-			printf("[%s %s]\n", tagName(), tagValue());
+			printf("[%s %s]\n", tag_name, tag_value);
 		}
 	}
 
 private:
 	int64_t game_count;
-	char fen[128];
-	Game* game;
 };
-/*
-int _tmain(int argc, _TCHAR* argv[])
-{
-	chess_h_Initialize();
-
-	time_t t0 = time(NULL);
-//	std::map<int, int> mapje;
-
-	try {
-		PGNParser parser("c:\\pgn\\IB1210A.pgn");
-		//GameDatabase game("c:\\pgn\\test3.pgn");
-		//GameDatabase game("c:\\pgn\\test2.pgn");
-		//PGNParser parser("test.pgn");
-		parser.read();
-	}
-	catch (const UnexpectedToken& e) {
-		printf("%s\n", e.str());
-	}
-	catch (...) {
-		printf("unidentified exception\n");
-	}
-	printf("elapsed time: %d sec.\n", (time(NULL) - t0));
-	return 0;
-}
-*/

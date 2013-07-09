@@ -148,42 +148,79 @@ private:
 	int flags;
 };
 
-void printSearchData() {
-#ifdef DEBUG
-		printf("\nBF(ply) = nodes[ply]/nodes[ply-1]\n");
-		printf("------");
-		for (int id = 1; id <= search->search_depth - 1; id++) {
-			printf("--------");
+class PGNParser : public PGNFileReader {
+public:
+	PGNParser(const char* path) : PGNFileReader(path), game_count(0) {
+//		game = new Game();
+	}
+
+	virtual ~PGNParser() {
+		delete game;
+	}
+
+	virtual void readPGNDatabase() {
+		PGNFileReader::readPGNDatabase();
+		printf("games: %" PRIu64 "\n", game_count);
+	}
+
+	virtual void readPGNGame() {
+		fen[0] = '\0';
+		PGNFileReader::readPGNGame();
+		game_count++;
+
+		if (game_count % 100000 == 0) {
+			printf("games: %" PRIu64 "\n", game_count);
 		}
-		printf("\n");
-		printf("PLxID|");
-		for (int id = 1; id <= search->search_depth - 1; id++) {
-			printf(" %5d |", id);
+	}
+
+	virtual void readTagSection() {
+		PGNFileReader::readTagSection();
+
+	//	game->fromFen(fen);
+	//	game->board.print();
+	//	game->pos->generateMoves();
+	//	game->pos->printMoves();
+	}
+
+	virtual void readTagName() {
+		PGNFileReader::readTagName();
+	}
+
+	virtual void readTagValue() {
+		PGNFileReader::readTagValue();
+
+		if (game_count % 100000 == 0) {
+			printf("[%s %s]\n", tagName(), tagValue());
 		}
-		printf("\n");
-		printf("------");
-		for (int id = 1; id <= search->search_depth - 1; id++) {
-			printf("--------");
-		}
-		printf("\n");
-		for (int ply = 0; ply < search->MplyMax; ply++) {
-			printf(" %3d |", ply);
-			for (int id = 1; id <= search->search_depth - 1; id++) {
-				__int64 n1 = search->MnumInteriorNodes[id][ply + 1] + search->MnumLeafNodes[id][ply + 1];
-				__int64 n2 = search->MnumInteriorNodes[id][ply] + search->MnumLeafNodes[id][ply];
-				if (n1 && n2) {
-					double bf = (double) n1 / n2;
-					printf(" %5.2f |", bf);
-				}
-				else
-					printf("       |");
-			}
-			printf("\n");
-		}
-		printf("------");
-		for (int id =1; id <= search->search_depth - 1; id++) {
-			printf("--------");
-		}
-		printf("\n");
-#endif
+	}
+
+private:
+	int64_t game_count;
+	char fen[128];
+	Game* game;
+};
+/*
+int _tmain(int argc, _TCHAR* argv[])
+{
+	chess_h_Initialize();
+
+	time_t t0 = time(NULL);
+//	std::map<int, int> mapje;
+
+	try {
+		PGNParser parser("c:\\pgn\\IB1210A.pgn");
+		//GameDatabase game("c:\\pgn\\test3.pgn");
+		//GameDatabase game("c:\\pgn\\test2.pgn");
+		//PGNParser parser("test.pgn");
+		parser.read();
+	}
+	catch (const UnexpectedToken& e) {
+		printf("%s\n", e.str());
+	}
+	catch (...) {
+		printf("unidentified exception\n");
+	}
+	printf("elapsed time: %d sec.\n", (time(NULL) - t0));
+	return 0;
 }
+*/

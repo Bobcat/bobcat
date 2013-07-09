@@ -17,6 +17,7 @@
 */
 
 #include "Env.h"
+#include "Pgn.h"
 #include "Mersenne.h"
 #include "Util.h"
 #include "Config.h"

@@ -245,7 +245,7 @@ protected:
 				return searchNodeScore(score);
 			}
 		}
-		static int razor_margin[7] = { 0, 125, 125, 400, 400, 400, 400 };
+		static int razor_margin[4] = { 0, 125, 125, 400 };
 
 		if (depth <= 3
 			&& pos->eval_score + razor_margin[depth] < beta)
@@ -499,7 +499,7 @@ protected:
 	__forceinline bool okToTryNullMove(const Depth depth, const Score beta) const {
 		return !pos->in_check
 			&& pos->null_moves_in_row < 1
-			&& depth > 1  //?
+			//&& depth > 1  //?
 			&& !pos->material.isKx(pos->side_to_move)
 			&& pos->eval_score >= beta;
 	}
@@ -514,31 +514,37 @@ protected:
 			if (see->seeLastMove(m) >= 0) {
 				return depth;
 			}
-//			reduce = false;
+			reduce = false;
 		}
+
+        if (isPassedPawnMove(m)) {
+			if (see->seeLastMove(m) >= 0) {
+                int r = rank(moveTo(m));
+
+                if (r == 1 || r == 6) {
+                    return depth;
+                }
+                reduce = false;
+			}
+        }
 
 		if (((pos-1)->in_check && (pos-1)->moveCount() == 1)) {
+			// Single repy extension is a way to find the mate in 9 in
 			// 3r1r2/pppb1p1k/2npqP1p/2b1p3/8/2NP2PP/PPPQN1BK/R4R2 w - - 0 1
-			return depth;
-		}
-
-		if (isPassedPawnMove(m)) {
-//			if (see->seeLastMove(m) >= 0) {
-				int r = rank(moveTo(m));
-
-				if (r == 1 || r == 6) {
-					return depth;
-				}
-//				reduce = false;
-//			}
+			if (is_pv_node) {
+				return depth;
+			}
+			reduce = false;
 		}
 
 		if (reduce
 			&& !isQueenPromotion(m)
 			&& !isCapture(m)
-			&& move_count >= 5)
+			//&& depth >= 2
+			&& !isKillerMove(m, ply - 1)
+			&& move_count >= 3)
 		{
-			return depth - 2 - (depth/16) - (std::max(0, (move_count-6)/12));
+            return depth - 2 - depth/6 - (move_count-6)/12;
 		}
 		return depth - 1;
 	}
@@ -546,20 +552,20 @@ protected:
 	__forceinline bool okToPruneLastMove(Score& best_score, const Depth next_depth, const Depth depth,
 		const Score alpha)
 	{
-		static int margin[7] = { 150, 150, 150, 150, 400, 400 ,400 };
+		static int margin[4] = { 150, 150, 150 ,400 };
 
 		if (next_depth <= 3
 			&& next_depth < depth - 1
 			&& -pos->eval_score + margin[std::max(0, next_depth)] < alpha)
 		{
-			best_score = std::max(best_score, -pos->eval_score + margin[std::max(0, next_depth)]);
-			return true;
+                best_score = std::max(best_score, -pos->eval_score + margin[std::max(0, next_depth)]);
+                return true;
 		}
 		return false;
 	}
 
 	__forceinline int nullMoveReduction(const Depth depth) const {
-		return 4 + (depth/16);
+		return 4 + depth/8;
 	}
 
 	Score searchQuiesce(Score alpha, const Score beta, int qs_ply, bool search_pv) {
@@ -740,6 +746,10 @@ protected:
 			killer_moves[1][ply] = killer_moves[0][ply];
 			killer_moves[0][ply] = m;
 		}
+	}
+
+	__forceinline bool isKillerMove(const Move m, int ply) const {
+        return m == killer_moves[0][ply] || m == killer_moves[1][ply] || m == killer_moves[2][ply];
 	}
 
 	__forceinline Score codecTTableScore(Score score, Score ply) const {

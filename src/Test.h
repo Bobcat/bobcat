@@ -148,14 +148,14 @@ private:
 	int flags;
 };
 
-class PGNParserx : public PGNFileReader {
+class PGNParser : public PGNFileReader {
 public:
-	PGNParserx(const char* path) :
+	PGNParser(const char* path) :
 	    PGNFileReader(path),
 	    game_count(0) {
 	}
 
-	virtual ~PGNParserx() {
+	virtual ~PGNParser() {
 	}
 
 	virtual void readPGNDatabase() {

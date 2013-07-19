@@ -52,7 +52,7 @@ public:
 
 	const char* getString(const char* key, const char* def = 0) const {
 		for (int i = 0; i < size; i++) {
-			if (stricmp(pairs[i]->key, key) == 0) {
+			if (strieq(pairs[i]->key, key)) {
 				return pairs[i]->value;
 			}
 		}
@@ -107,7 +107,7 @@ public:
 
 	const ConfigSection* getSection(const char* key) const {
 		for (int i = 0; i < size; i++) {
-			if (stricmp(sections[i]->key, key) == 0) {
+			if (strieq(sections[i]->key, key)) {
 				return sections[i];
 			}
 		}
@@ -120,7 +120,7 @@ public:
 
 	bool getBool(const char* section, const char* key, const bool def = false) const {
 		const char* s = getSection(section)->getString(key);
-		return s ? stricmp(s, "true") == 0 : def;// 1
+		return s ? strieq(s, "true") : def;// 1
 	}
 
 	bool sectionNameFromLine(const char* line, char* section_name) {

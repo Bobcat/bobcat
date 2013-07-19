@@ -123,22 +123,22 @@ public:
 		char buf[1024];
 		strcpy(buf, "");;
 		if (value != NULL) {
-			if (stricmp("Hash", name) == 0) {
+			if (strieq("Hash", name)) {
 				transt->initialise(std::min(1024, std::max(8, (int)strtol(value, NULL, 10))));
 				_snprintf(buf, sizeof(buf), "Hash ", transt->getSizeMb());
 			}
-			else if (stricmp("Threads", name) == 0) {
+			else if (strieq("Threads", name)) {
 				num_threads = std::min(16, std::max(1, (int)strtol(value, NULL, 10)));
 				_snprintf(buf, sizeof(buf), "Threads %d.", num_threads);
 			}
-			else if (stricmp("UCI_Chess960", name) == 0) {
-				if (stricmp(value, "true") == 0) {
+			else if (strieq("UCI_Chess960", name)) {
+				if (strieq(value, "true")) {
 					game->chess960 = true;
 				}
 				_snprintf(buf, sizeof(buf), "UCI_Chess960 ", game->chess960 ? on : off);
 			}
-			else if (stricmp("UCI_Chess960_Arena", name) == 0) {
-				if (stricmp(value, "true") == 0) {
+			else if (strieq("UCI_Chess960_Arena", name)) {
+				if (strieq(value, "true")) {
 					game->chess960 = true;
 					game->xfen = true;
 				//	game->arena = true;
@@ -161,7 +161,6 @@ public:
 
 		logTimeAndCwd();
 
-		Bitmanip_h_initialise();
 		Bitboard_h_initialise();
 		Magic_h_initialise();
 		Zobrist_h_initialise();
@@ -199,50 +198,50 @@ public:
 			if (num_tokens == 0) {
 				continue;
 			}
-			if (stricmp(tokens[0], "uci") == 0 || !console_mode) {
+			if (strieq(tokens[0], "uci") || !console_mode) {
 				exit = protocol->handleInput((const char**)tokens, num_tokens);
 				console_mode = false;
 			}
-			else if (stricmp(tokens[0], "x") == 0) {
+			else if (strieq(tokens[0], "x")) {
 				exit = 1;
 			}
-			else if (stricmp(tokens[0], "d") == 0) {
+			else if (strieq(tokens[0], "d")) {
 				game->pos->board->print();
 				printf("\n");
 				printf("board key calculated  : %" PRIu64 "\n", game->calculateKey());
 				printf("board key incremental : %" PRIu64 "\n", game->pos->key);
 				printf("pawn structure key    : %" PRIu64 "\n", game->pos->pawn_structure_key);
 			}
-			else if (stricmp(tokens[0], "m") == 0) {
+			else if (strieq(tokens[0], "m")) {
 				game->print_moves();
 			}
-			else if (stricmp(tokens[0], "perft") == 0) {
+			else if (strieq(tokens[0], "perft")) {
 				Test(game).perft(6);
 			}
-			else if (stricmp(tokens[0], "timetodepth") == 0 || stricmp(tokens[0], "ttd") == 0) {
+			else if (strieq(tokens[0], "timetodepth") || strieq(tokens[0], "ttd")) {
 				Test(game).timeToDepth(search, this);
 			}
-			else if (stricmp(tokens[0], "divide") == 0) {
+			else if (strieq(tokens[0], "divide")) {
 				Test(game).perft_divide(5);
 			}
-			else if (stricmp(tokens[0], "t") == 0) {
+			else if (strieq(tokens[0], "t")) {
 				game->unmakeMove();
 			}
-			else if (stricmp(tokens[0], "go") == 0) {
+			else if (strieq(tokens[0], "go")) {
 				protocol->setFlags(FIXED_MOVE_TIME);
 				go();
 			}
-			else if (stricmp(tokens[0], "analyse") == 0 || stricmp(tokens[0], "a") == 0) {
+			else if (strieq(tokens[0], "analyse") || strieq(tokens[0], "a")) {
 				protocol->setFlags(INFINITE_MOVE_TIME);
 				go();
 			}
-			else if (stricmp(tokens[0], "eval") == 0 || stricmp(tokens[0], "e") == 0) {
+			else if (strieq(tokens[0], "eval") || strieq(tokens[0], "e")) {
 				printf("eval->evaluate() returns %d cp\n", eval->evaluate(-100000, 100000));
 			}
-			else if (stricmp(tokens[0], "new") == 0) {
+			else if (strieq(tokens[0], "new")) {
 				newGame();
 			}
-			else if (stricmp(tokens[0], "fen") == 0) {
+			else if (strieq(tokens[0], "fen")) {
 				if (num_tokens == 1) {
 					char fen[128];
 					game->getFEN(fen);
@@ -256,7 +255,7 @@ public:
 					}
 				}
 			}
-			else if (stricmp(tokens[0], "book") == 0) {
+			else if (strieq(tokens[0], "book")) {
 				char fen[128];
 				game->getFEN(fen);
 				BB key = book->hash(fen);
@@ -268,7 +267,7 @@ public:
 					printf("no book move\n");
 				}
 			}
-			else if (stricmp(tokens[0], "see") == 0 && num_tokens > 0) {
+			else if (strieq(tokens[0], "see") && num_tokens > 0) {
 				const Move* m = game->pos->stringToMove(tokens[1]);
 				if (m) {
 					printf("SEE score for %s is %d\n", tokens[1], see->seeMove(*m));

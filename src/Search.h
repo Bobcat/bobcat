@@ -524,8 +524,8 @@ protected:
                 if (r == 1 || r == 6) {
                     return depth;
                 }
-                reduce = false;
-			}
+            reduce = false;
+        }
         }
 
 		if (((pos-1)->in_check && (pos-1)->moveCount() == 1)) {
@@ -558,8 +558,8 @@ protected:
 			&& next_depth < depth - 1
 			&& -pos->eval_score + margin[std::max(0, next_depth)] < alpha)
 		{
-                best_score = std::max(best_score, -pos->eval_score + margin[std::max(0, next_depth)]);
-                return true;
+			best_score = std::max(best_score, -pos->eval_score + margin[std::max(0, next_depth)]);
+			return true;
 		}
 		return false;
 	}

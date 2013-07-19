@@ -94,11 +94,11 @@ public:
 	virtual void checkInput() {
 		char line[16384];
 		input->getLine(false, line);
-		if (stricmp(trim(line), "stop") == 0) {
+		if (strieq(trim(line), "stop")) {
 			flags &= ~(INFINITE_MOVE_TIME | PONDER_SEARCH);
 			callback->stop();
 		}
-		else if (stricmp(trim(line), "ponderhit") == 0) {
+		else if (strieq(trim(line), "ponderhit")) {
 			flags &= ~(INFINITE_MOVE_TIME | PONDER_SEARCH);
 			callback->ponderHit();
 		}
@@ -194,7 +194,7 @@ public:
 		if (num_params < 1) {
 			return -1;
 		}
-		if (stricmp(params[0], "uci") == 0) {
+		if (strieq(params[0], "uci")) {
 			char buf[2048];
 			snprintf(buf, sizeof(buf),
 				"id name Bobcat 3.25(7)\n" \
@@ -207,23 +207,23 @@ public:
 
 			output->writeLine(buf);
 		}
-		else if (stricmp(params[0], "isready") == 0) {
+		else if (strieq(params[0], "isready")) {
 			printf("readyok\n");
 		}
-		else if (stricmp(params[0], "ucinewgame") == 0) {
+		else if (strieq(params[0], "ucinewgame")) {
 			callback->newGame();
 			printf("readyok\n");
 		}
-		else if (stricmp(params[0], "position") == 0) {
+		else if (strieq(params[0], "position")) {
 			handlePosition(params, num_params);
 		}
-		else if (stricmp(params[0], "go") == 0) {
+		else if (strieq(params[0], "go")) {
 			handleGo(params, num_params, callback);
 		}
-		else if (stricmp(params[0], "setoption") == 0) {
+		else if (strieq(params[0], "setoption")) {
 			handleSetOption(params, num_params);
 		}
-		else if (stricmp(params[0], "quit") == 0) {
+		else if (strieq(params[0], "quit")) {
 			return 1;
 		}
 		return 0;
@@ -239,47 +239,47 @@ public:
 
 		flags = 0;
 		for (int param = 1; param < num_params; param++) {
-			if (stricmp(params[param], "movetime") == 0) {
+			if (strieq(params[param], "movetime")) {
 				flags |= FIXED_MOVE_TIME;
 				if (++param < num_params) {
 					movetime = strtol(params[param], NULL, 10);
 				}
 			}
-			else if (stricmp(params[param], "depth") == 0) {
+			else if (strieq(params[param], "depth")) {
 				flags |= FIXED_DEPTH;
 				if (++param < num_params) {
 					depth = strtol(params[param], NULL, 10);
 				}
 			}
-			else if (stricmp(params[param], "wtime") == 0) {
+			else if (strieq(params[param], "wtime")) {
 				if (++param < num_params) {
 					wtime = strtol(params[param], NULL, 10);
 				}
 			}
-			else if (stricmp(params[param], "movestogo") == 0) {
+			else if (strieq(params[param], "movestogo")) {
 				if (++param < num_params) {
 					movestogo = strtol(params[param], NULL, 10);
 				}
 			}
-			else if (stricmp(params[param], "btime") == 0) {
+			else if (strieq(params[param], "btime")) {
 				if (++param < num_params) {
 					btime = strtol(params[param], NULL, 10);
 				}
 			}
-			else if (stricmp(params[param], "winc") == 0) {
+			else if (strieq(params[param], "winc")) {
 				if (++param < num_params) {
 					winc = strtol(params[param], NULL, 10);
 				}
 			}
-			else if (stricmp(params[param], "binc") == 0) {
+			else if (strieq(params[param], "binc")) {
 				if (++param < num_params) {
 					binc = strtol(params[param], NULL, 10);
 				}
 			}
-			else if (stricmp(params[param], "infinite") == 0) {
+			else if (strieq(params[param], "infinite")) {
 				flags |= INFINITE_MOVE_TIME;
 			}
-			else if (stricmp(params[param], "ponder") == 0) {
+			else if (strieq(params[param], "ponder")) {
 				flags |= PONDER_SEARCH;
 			}
 		}
@@ -293,11 +293,11 @@ public:
 			return -1;
 		}
 		char fen[128];
-		if (stricmp(params[param], "startpos") == 0) {
+		if (strieq(params[param], "startpos")) {
 			strcpy(fen, game->START_POSITION);
 			param++;
 		}
-		else if (stricmp(params[param], "fen") == 0) {
+		else if (strieq(params[param], "fen")) {
 			if (!FENfromParams(params, num_params, param, fen)) {
 				return -1;
 			}
@@ -307,7 +307,7 @@ public:
 			return -1;
 		}
 		callback->setFEN(fen);
-		if ((num_params > param) && (stricmp(params[param++], "moves") == 0)) {
+		if ((num_params > param) && (strieq(params[param++], "moves"))) {
 			while (param < num_params) {
 				const Move* move = game->pos->stringToMove(params[param++]);
 				if (move == 0) {
@@ -333,7 +333,7 @@ public:
 
 	bool parseOptionName(int& param, const char* params[], int num_params, const char** option_name) {
 		while (param < num_params) {
-			if (stricmp(params[param++], "name") == 0) {
+			if (strieq(params[param++], "name")) {
 				break;
 			}
 		}
@@ -347,7 +347,7 @@ public:
 	bool parseOptionValue(int& param, const char* params[], int num_params, const char** option_value) {
 		*option_value = NULL;
 		while (param < num_params) {
-			if (stricmp(params[param++], "value") == 0) {
+			if (strieq(params[param++], "value")) {
 				break;
 			}
 		}

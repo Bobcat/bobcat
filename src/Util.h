@@ -61,6 +61,19 @@ static int pow2(int x) {
 	return (int)pow(2.0, x);
 }
 
+bool strieq(const char* s1, const char* s2) {
+    if (strlen(s1) != strlen(s2)) {
+        return false;
+    }
+
+    for (size_t i = 0; i < strlen(s1); i++) {
+        if (::tolower(*(s1 + i)) != ::tolower(*(s2 + i))) {
+            return false;
+        }
+    }
+    return true;
+}
+
 const char* FENfromParams(const char* params[], int num_params, int& param, char* fen) {
 	if ((num_params - param - 1) < 6) {
 		return NULL;

@@ -64,9 +64,11 @@ public:
 				attack_counter[side] += 2;
 			}
 		}
+
 		// Pass 2.
 		for (Side side = 0; side < 2; side++) {
 			evalPassedPawnsOneSide(side);
+			evalCandidatePassedPawnsOneSide(side);
 			evalKingAttackOneSide(side);
 		}
 		double stage = (pos->material.value()-pos->material.pawnValue())/
@@ -214,6 +216,17 @@ protected:
 			if (bbSquare(sq) & pawn_attacks[side^1]) {
 				score += -14;
 			}
+
+			if (pawnPush[side ^ 1](bbsq) & pawns(side)) {
+				int r = side == 0 ? rank(sq) : 7 - rank(sq);
+
+				if (r == 2) {
+					poseval_mg[side] += bishop_blocks_minor[file(sq)];
+				}
+				else if (r == 3) {
+					poseval_mg[side] += bishop_blocks_minor[file(sq)]/2;
+				}
+			}
 			poseval[side] += score;
 			poseval_mg[side] += score_mg;
 			poseval_eg[side] += score_eg;
@@ -359,23 +372,65 @@ protected:
 	__forceinline void evalPassedPawnsOneSide(const Side side) {
 		for (BB files = pawnp ? pawnp->passed_pawn_files[side] : 0; files; resetLSB(files)) {
 			for (BB bb = bbFile(lsb(files)) & pawns(side); bb; resetLSB(bb)) {
-				int sq = lsb(bb);
-				const BB& front_span = pawn_front_span[side][sq];
-				int r = side == 0 ? rank(sq) : 7 - rank(sq);
-				int rr = r*r;
-
-				int score_mg = rr*4;
-				int score_eg = rr*3;
-
-				score_eg += rr*(front_span & board->occupied_by_side[side] ? 0 : 1);
-				score_eg += rr*(front_span & board->occupied_by_side[side ^ 1] ? 0 : 1);
-				score_eg += rr*(front_span & all_attacks[side ^ 1] ? 0 : 1);
-				score_eg += r*(distance[sq][kingSq(side ^ 1)]*2-distance[sq][kingSq(side)]*2);
-
-				poseval_mg[side] += score_mg;
-				poseval_eg[side] += score_eg;
+				evalPassedPawn(side, lsb(bb), false);
 			}
 		}
+	}
+
+	__forceinline void evalCandidatePassedPawnsOneSide(const Side side) {
+		BB files_wo_enemy_pawns = ~northFill(southFill(pawns(side ^ 1)));
+		BB my_pawns_on_files_wo_enemy_pawns = pawns(side) & files_wo_enemy_pawns;
+
+		for (; my_pawns_on_files_wo_enemy_pawns ; resetLSB(my_pawns_on_files_wo_enemy_pawns)) {
+			Square sq = lsb(my_pawns_on_files_wo_enemy_pawns);
+			// passed?
+			if ((passed_pawn_front_span[side][sq] & pawns(side ^ 1)) == 0) { // from bb to sq to bb :(
+				continue;
+			}
+			const BB& bbsq = bbSquare(sq);
+			BB westAdjacentFile = southFill(northFill(westOne(bbsq)));
+			BB eastAdjacentFile = southFill(northFill(eastOne(bbsq)));
+			int numberOfHelpers = 0;
+			int numberOfSentries = 0;
+
+			if (westAdjacentFile  & pawns(side)) {
+				numberOfHelpers++;
+			}
+
+			if (eastAdjacentFile & pawns(side)) {
+				numberOfHelpers++;
+			}
+
+			if (westAdjacentFile  & pawns(side ^ 1)) {
+				numberOfSentries++;
+			}
+
+			if (eastAdjacentFile & pawns(side ^ 1)) {
+				numberOfSentries++;
+			}
+
+			if (numberOfSentries > numberOfHelpers) {
+				continue;
+			}
+			evalPassedPawn(side, sq, true);
+		}
+	}
+
+	__forceinline void evalPassedPawn(const Side side, const Square sq, bool candidate) {
+		const BB& front_span = pawn_front_span[side][sq];
+		int r = side == 0 ? rank(sq) : 7 - rank(sq);
+		int rr = r*r;
+
+		int score_mg = rr*4;
+		int score_eg = rr*3;
+
+		score_eg += rr*(front_span & board->occupied_by_side[side] ? 0 : 1);
+		score_eg += rr*2*(front_span & board->occupied_by_side[side ^ 1] ? 0 : 1);
+		score_eg += rr*(front_span & all_attacks[side ^ 1] ? 0 : 1);
+		score_eg += r*(distance[sq][kingSq(side ^ 1)]*2-distance[sq][kingSq(side)]*3);
+
+		poseval_mg[side] += candidate ? score_mg/3 : score_mg;
+		poseval_eg[side] += candidate ? score_eg/3 : score_eg;
 	}
 
 	__forceinline void evalKingAttackOneSide(const Side side) {
@@ -475,6 +530,8 @@ protected:
 	static int king_pcsq_mg[64];
 	static int king_pcsq_eg[64];
 
+	static int bishop_blocks_minor[8];
+
 	static BB bishop_trapped_a7h7[2];
 	static BB pawns_trap_bishop_a7h7[2][2];
 };
@@ -486,6 +543,10 @@ BB Eval::bishop_trapped_a7h7[2] = {
 BB Eval::pawns_trap_bishop_a7h7[2][2] = {
 	{ (BB)1 << b6 | (BB)1 << c7, (BB)1 << b3 | (BB)1 << c2 },
 	{ (BB)1 << g6 | (BB)1 << f7, (BB)1 << g3 | (BB)1 << f2 }
+};
+
+int Eval::bishop_blocks_minor[8] = {
+	-10, -20, -40, -70, -70, -40, -20, -10
 };
 
 int Eval::knight_pcsq_mg[64] = {

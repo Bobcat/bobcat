@@ -145,5 +145,12 @@ const char* timeString(char* buf) {
 	return buf;
 }
 
-//#endif // defined(_MSCVER)
-
+/*
+const char* timeString(char* buf) {
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	struct tm* time = localtime((const time_t*)&tv.tv_sec);
+	sprintf(buf, "%02d:%02d:%02d.%03ld", time->tm_hour, time->tm_min, time->tm_sec, tv.tv_usec);
+	return buf;
+}
+*/

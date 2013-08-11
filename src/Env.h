@@ -17,7 +17,7 @@
 */
 #include <windows.h>
 #include <sys/timeb.h>
-#include <x86intrin.h>
+#include <intrin.h>
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
 #define __USE_MINGW_ANSI_STDIO 1
@@ -36,9 +36,13 @@ typedef unsigned int uint;
 #include <conio.h>
 #include <math.h>
 #include <direct.h>
+#include <sys/time.h>
 
 #ifdef __forceinline
 #undef __forceinline
 #endif
 #define __forceinline __attribute__((always_inline)) inline
+
+typedef int Score;
+typedef int Depth;
 

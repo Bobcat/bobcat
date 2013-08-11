@@ -37,7 +37,6 @@ public:
 			pos->in_check = board.isAttacked(board.king_square[pos->side_to_move], pos->side_to_move ^ 1);
 		}
 		pos->castle_rights = prev->castle_rights & castle_rights_mask[moveFrom(m)] & castle_rights_mask[moveTo(m)];
-		pos->null_search = prev->null_search;
 		pos->null_moves_in_row = 0;
 		if (isCapture(m) || (movePiece(m) & 7) == Pawn) {
 			pos->reversible_half_move_count = 0;
@@ -73,7 +72,6 @@ public:
 		pos->last_move = 0;
 		pos->in_check = false;
 		pos->castle_rights = prev->castle_rights;
-		pos->null_search = true;
 		pos->null_moves_in_row = prev->null_moves_in_row + 1;
 		pos->reversible_half_move_count = 0;
 		pos->en_passant_square = 0;

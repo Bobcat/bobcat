@@ -30,7 +30,6 @@ public:
 		key = 0;
 		material.clear();
 		last_move = 0;
-		null_search = false;
 		null_moves_in_row = 0;
 		transposition = 0;
 		last_move = 0;
@@ -115,7 +114,6 @@ public:
 	uint64 pawn_structure_key;
 	uint64 key;
 	Material material;
-	bool null_search;
 	int null_moves_in_row;
 	int pv_length;
 	Move last_move;

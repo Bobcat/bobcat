@@ -231,6 +231,7 @@ protected:
 			return searchNodeScore(pos->eval_score);
 		}
 		Score score;
+		bool threat = false;
 
 		if (okToTryNullMove(depth, beta)) {
 			makeMoveAndEvaluate(0, beta - 1, beta);
@@ -240,6 +241,7 @@ protected:
 			if (score >= beta) {
 				return searchNodeScore(score);
 			}
+			threat = true;
 		}
 
 		if (depth <= 3
@@ -260,7 +262,7 @@ protected:
 			const Move m = move_data->move;
 
 			if (makeMoveAndEvaluate(m, beta - 1, beta)) {
-				Depth next_depth = getNextDepth(0, false, depth, ++move_count, move_data, beta - 1, best_score);
+				Depth next_depth = getNextDepth(0, false, depth, ++move_count, move_data, beta - 1, best_score, threat);
 
 				if (next_depth == -999) {
 					unmakeMove();
@@ -307,6 +309,7 @@ protected:
 			return searchNodeScore(pos->eval_score);
 		}
 		Score score;
+		bool threat = false;
 
 		if (okToTryNullMove(depth, beta)) {
 			makeMoveAndEvaluate(0, alpha, beta);
@@ -316,6 +319,7 @@ protected:
 			if (score >= beta) {
 				return searchNodeScore(score);
 			}
+			threat = true;
 		}
 		Move singular_move = getSingularMove(depth, true);
 
@@ -336,7 +340,7 @@ protected:
 				++move_count;
 
 				Depth next_depth = getNextDepth(singular_move, move_count == 1, depth, move_count, move_data, alpha,
-													best_score);
+													best_score, threat);
 
 				if (next_depth == -999) {
 					unmakeMove();
@@ -450,20 +454,19 @@ protected:
 	__forceinline bool okToTryNullMove(const Depth depth, const Score beta) const {
 		return !pos->in_check
 			&& pos->null_moves_in_row < 1
-			//&& depth > 1  //?
 			&& !pos->material.isKx(pos->side_to_move)
 			&& pos->eval_score >= beta;
 	}
 
 	__forceinline Depth getNextDepth(Move singular_move, bool is_pv_node, const Depth depth, const int move_count,
-		const MoveData* move_data, const Score alpha, Score& best_score) const
+		const MoveData* move_data, const Score alpha, Score& best_score, bool threat = false) const
 	{
 		const Move m = move_data->move;
 
 		if (m == singular_move && singular_move != 0) {
 			return depth;
 		}
-		bool reduce = true;
+		bool reduce = !threat;
 
 		if (pos->in_check) {
 			if (see->seeLastMove(m) >= 0) {
@@ -479,7 +482,7 @@ protected:
                 if (r == 1 || r == 6) {
                     return depth;
                 }
-            reduce = false;
+				reduce = false;
         }
         }
 
@@ -491,26 +494,16 @@ protected:
 			}
 			reduce = false;
 		}
-//		bool prune = reduce;
-
-//		if (prune
-//			&& (pos-1)->last_move != 0
-//			&& counter_moves[movePiece((pos-1)->last_move)][moveTo((pos-1)->last_move)] == m)
-//		{
-//			prune = false;
-//		}
 
 		if (reduce
 			&& !isQueenPromotion(m)
 			&& !isCapture(m)
 			&& !isKillerMove(m, ply - 1)
-			&& !pos->material.isKx()
 			&& move_count >= 3)
 		{
 			Depth next_depth = depth - 2 - depth/6 - (move_count-6)/12;
 
 			if (next_depth <= 3
-//				&& prune
 				&& -pos->eval_score + futility_margin[std::max(0, next_depth)] < alpha)
 			{
 				best_score = std::max(best_score, -pos->eval_score + futility_margin[std::max(0, next_depth)]);
@@ -531,8 +524,9 @@ protected:
 		if (!search_pv && pos->transp_score_valid && pos->transp_depth_valid) {
 			return searchNodeScore(pos->transp_score);
 		}
+		bool escape_check = pos->in_check && qs_ply <= 1;
 
-		if (pos->eval_score >= beta) {
+		if (pos->eval_score >= beta && !escape_check) {
 			return searchNodeScore(pos->eval_score);
 		}
 
@@ -540,18 +534,24 @@ protected:
 			return searchNodeScore(pos->eval_score);
 		}
 		Move best_move = 0;
-		Score best_score = pos->eval_score;
+		Score best_score = escape_check ? -MAXSCORE : pos->eval_score;
 		int move_count = 0;
 
 		if (best_score > alpha) {
 			alpha = best_score;
 		}
-        pos->generateCapturesAndPromotions(this);
+
+		if (!escape_check) {
+			pos->generateCapturesAndPromotions(this);
+		}
+		else {
+			pos->generateMoves(this, 0, LEGALMOVES);
+		}
 
 		while (const MoveData* move_data = pos->nextMove()) {
 			const Move m = move_data->move;
 
-			if (!isPromotion(m)) {
+			if (!escape_check && isCapture(m)) {
 				if (move_data->score < 0) {
 					break;
 				}
@@ -581,6 +581,7 @@ protected:
 						best_move = m;
 
 						if (score >= beta) {
+							//updatePV(best_move, best_score, 0, BETA);
 							break;
 						}
 						updatePV(best_move, best_score, 0, EXACT);
@@ -591,7 +592,7 @@ protected:
 		}
 
 		if (move_count == 0) {
-			return searchNodeScore(best_score);
+			return escape_check ? searchNodeScore(-MAXSCORE) : searchNodeScore(pos->eval_score);
 		}
 		return storeSearchNodeScore(best_score, 0, nodeType(best_score, beta, best_move), best_move);
 	}
@@ -697,13 +698,9 @@ protected:
         }
 	}
 
-	__forceinline void updateKillerMoves(const Move& move) {
+	__forceinline void updateKillerMoves(const Move move) {
 		// Same move can be stored twice for a ply.
 		if (!isCapture(move) && !isPromotion(move)) {
-//			if ((pos-1)->last_move != 0) {
-//				counter_moves[movePiece((pos-1)->last_move)][moveTo((pos-1)->last_move)] = move;
-//			}
-
 			if (move != killer_moves[0][ply]) {
 				killer_moves[2][ply] = killer_moves[1][ply];
 				killer_moves[1][ply] = killer_moves[0][ply];
@@ -764,7 +761,6 @@ protected:
 		memset(root_move_score, 0, sizeof(root_move_score));
 		memset(killer_moves, 0, sizeof(killer_moves));
 		memset(history_scores, 0, sizeof(history_scores));
-//		memset(counter_moves, 0, sizeof(counter_moves));
 		pos->generateMoves(this, 0, LEGALMOVES);
 	}
 
@@ -911,7 +907,6 @@ protected:
 	bool worker;
 	Move killer_moves[4][128];
 	int history_scores[16][64];
-//	Move counter_moves[16][64];
 	Score root_move_score[256];
 	bool stopped;
 	Protocol* protocol;

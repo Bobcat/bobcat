@@ -29,7 +29,7 @@ public:
 static const int LEGALMOVES = 1;
 static const int STAGES = 2;
 static const int QUEENPROMOTION = 4;
-static const int GIVECHECK = 8;
+static const int QUIESCENCE1 = 8;
 
 class Moves {
 public:
@@ -49,8 +49,8 @@ public:
 		stage = 1;
 	}
 
-	__forceinline void generateCapturesPromotionsAndChecks(MoveSorter* sorter, const int flags) {
-        generateMoves(sorter, 0, flags | GIVECHECK);
+	__forceinline void generateQuiescence0(MoveSorter* sorter, const int flags) {
+        generateMoves(sorter, 0, flags | QUIESCENCE1);
 	}
 
 	__forceinline MoveData* nextMove() {
@@ -191,6 +191,7 @@ private:
 	__forceinline void addMove(const Piece piece, const Square from, const Square to, const Move type, const Piece promoted = 0) {
 		Move move;
 		Piece captured;
+
 		if (type & CAPTURE) {
 			captured = board->getPiece(to);
 		}
@@ -200,23 +201,22 @@ private:
 		else {
 			captured = 0;
 		}
-
 		initMove(move, piece, captured, from, to, type, promoted);
 
 		if (transp_move == move) {
 			return;
 		}
 
-        if ((flags & GIVECHECK) && !(isCapture(move) || isPromotion((move)) || givesCheck(move))) {
-            return;
-		}
-
-        if ((flags & LEGALMOVES) && !isLegal(move, piece, from, type)) {
+		if ((flags & QUIESCENCE1) && !(isCapture(move) || isPromotion((move)) || givesCheck(move))) {
 			return;
 		}
 
+		if ((flags & LEGALMOVES) && !isLegal(move, piece, from, type)) {
+			return;
+		}
 		MoveData& move_data = move_list[number_moves++];
 		move_data.move = move;
+
 		if (sorter) {
 			sorter->sortMove(move_data);
 		}

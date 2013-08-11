@@ -17,7 +17,7 @@
 */
 #include <windows.h>
 #include <sys/timeb.h>
-#include <intrin.h>
+#include <x86intrin.h>
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
 #define __USE_MINGW_ANSI_STDIO 1

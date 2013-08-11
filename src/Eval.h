@@ -68,7 +68,6 @@ public:
 		// Pass 2.
 		for (Side side = 0; side < 2; side++) {
 			evalPassedPawnsOneSide(side);
-			//evalCandidatePassedPawnsOneSide(side);
 			evalKingAttackOneSide(side);
 		}
 		double stage = (pos->material.value()-pos->material.pawnValue())/
@@ -215,17 +214,6 @@ protected:
 
 			if (bbSquare(sq) & pawn_attacks[side^1]) {
 				score += -14;
-			}
-
-			if (pawnPush[side ^ 1](bbsq) & pawns(side)) {
-				int r = side == 0 ? rank(sq) : 7 - rank(sq);
-
-				if (r == 2) {
-					poseval_mg[side] += -40;
-				}
-				else if (r == 3) {
-					poseval_mg[side] += -20;
-				}
 			}
 			poseval[side] += score;
 			poseval_mg[side] += score_mg;
@@ -390,48 +378,7 @@ protected:
 			}
 		}
 	}
-/*
-	__forceinline void evalCandidatePassedPawnsOneSide(const Side side) {
-		BB files_wo_enemy_pawns = ~northFill(southFill(pawns(side ^ 1)));
-		BB my_pawns_on_files_wo_enemy_pawns = pawns(side) & files_wo_enemy_pawns;
 
-		for (; my_pawns_on_files_wo_enemy_pawns ; resetLSB(my_pawns_on_files_wo_enemy_pawns)) {
-			Square sq = lsb(my_pawns_on_files_wo_enemy_pawns);
-			// passed?
-//			if ((passed_pawn_front_span[side][sq] & pawns(side ^ 1)) == 0) { // from bb to sq to bb :(
-//				continue;
-//			}
-			const BB& bbsq = bbSquare(sq);
-			BB westAdjacentFile = southFill(northFill(westOne(bbsq)));
-			BB eastAdjacentFile = southFill(northFill(eastOne(bbsq)));
-			int numberOfHelpers = 0;
-			int numberOfSentries = 0;
-
-			if (westAdjacentFile  & pawns(side)) {
-				numberOfHelpers++;
-			}
-
-			if (eastAdjacentFile & pawns(side)) {
-				numberOfHelpers++;
-			}
-
-			if (westAdjacentFile  & pawns(side ^ 1)) {
-				numberOfSentries++;
-			}
-
-			if (eastAdjacentFile & pawns(side ^ 1)) {
-				numberOfSentries++;
-			}
-
-			if (numberOfSentries > numberOfHelpers) {
-				continue;
-			}
-			int r = side == 0 ? rank(sq) : 7 - rank(sq);
-			poseval_mg[side] += 10*r;
-			poseval_eg[side] += 5*r;
-		}
-	}
-*/
 	__forceinline void evalKingAttackOneSide(const Side side) {
 		if (attack_count[side] > 1) {
 			poseval_mg[side] += attack_counter[side]*(attack_count[side]-1);

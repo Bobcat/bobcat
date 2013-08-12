@@ -497,6 +497,11 @@ protected:
 			&& !isKillerMove(m, ply - 1)
 			&& move_count >= 3)
 		{
+			if ((pos-1)->last_move != 0
+				&& counter_moves[movePiece((pos-1)->last_move)][moveTo((pos-1)->last_move)] == m)
+			{
+				return depth - 2;
+			}
 			Depth next_depth = depth - 2 - depth/6 - (move_count-6)/12;
 
 			if (next_depth <= 3
@@ -689,6 +694,10 @@ protected:
 	__forceinline void updateKillerMoves(const Move move) {
 		// Same move can be stored twice for a ply.
 		if (!isCapture(move) && !isPromotion(move)) {
+			if (pos->last_move != 0) {
+				counter_moves[movePiece(pos->last_move)][moveTo(pos->last_move)] = move;
+			}
+
 			if (move != killer_moves[0][ply]) {
 				killer_moves[2][ply] = killer_moves[1][ply];
 				killer_moves[1][ply] = killer_moves[0][ply];
@@ -749,6 +758,7 @@ protected:
 		memset(root_move_score, 0, sizeof(root_move_score));
 		memset(killer_moves, 0, sizeof(killer_moves));
 		memset(history_scores, 0, sizeof(history_scores));
+		memset(counter_moves, 0, sizeof(counter_moves));
 		pos->generateMoves(this, 0, LEGALMOVES);
 	}
 
@@ -895,6 +905,7 @@ protected:
 	bool worker;
 	Move killer_moves[4][128];
 	int history_scores[16][64];
+	Move counter_moves[16][64];
 	Score root_move_score[256];
 	bool stopped;
 	Protocol* protocol;

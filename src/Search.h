@@ -165,11 +165,9 @@ protected:
 			}
 			else if (best_move) {
 				updateHistoryScores(best_move, depth);
+				updateKillerMoves(best_move);
 
-				if (best_score >= beta) {
-					updateKillerMoves(best_move);
-				}
-				else {
+				if (best_score < beta) {
 					return searchNodeScore(best_score);
 				}
 			}
@@ -292,10 +290,7 @@ protected:
 		}
 		else if (best_move) {
 			updateHistoryScores(best_move, depth);
-
-			if (best_score >= beta) {
-				updateKillerMoves(best_move);
-			}
+			updateKillerMoves(best_move);
 		}
 		return storeSearchNodeScore(best_score, depth, nodeType(best_score, beta, best_move), best_move);
 	}
@@ -387,10 +382,7 @@ protected:
 		}
 		else if (best_move) {
 			updateHistoryScores(best_move, depth);
-
-			if (best_score >= beta) {
-				updateKillerMoves(best_move);
-			}
+			updateKillerMoves(best_move);
 		}
 		return storeSearchNodeScore(best_score, depth, nodeType(best_score, beta, best_move), best_move);
 	}

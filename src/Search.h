@@ -165,9 +165,11 @@ protected:
 			}
 			else if (best_move) {
 				updateHistoryScores(best_move, depth);
-				updateKillerMoves(best_move);
 
-				if (best_score < beta) {
+				if (best_score >= beta) {
+					updateKillerMoves(best_move);
+				}
+				else {
 					return searchNodeScore(best_score);
 				}
 			}
@@ -382,7 +384,10 @@ protected:
 		}
 		else if (best_move) {
 			updateHistoryScores(best_move, depth);
-			updateKillerMoves(best_move);
+
+			if (best_score >= beta) {
+				updateKillerMoves(best_move);
+			}
 		}
 		return storeSearchNodeScore(best_score, depth, nodeType(best_score, beta, best_move), best_move);
 	}
@@ -393,7 +398,7 @@ protected:
 			&& depth >= 4
 			&& pos->transp_move)
 		{
-			if (searchFailLow(depth/2, pos->eval_score - 75, pos->transp_move)) {
+			if (searchFailLow(depth/2, std::max(-MAXSCORE, pos->eval_score - 75), pos->transp_move)) {
 				return pos->transp_move;
 			}
         }
@@ -494,7 +499,7 @@ protected:
 			{
 				return depth - 2;
 			}
-			Depth next_depth = depth - 2 - depth/6 - (move_count-6)/12;
+			Depth next_depth = depth - 2 - depth/8 - (move_count-6)/12;
 
 			if (next_depth <= 3
 				&& -pos->eval_score + futility_margin[std::max(0, next_depth)] < alpha)

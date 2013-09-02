@@ -36,7 +36,7 @@ public:
 	__forceinline void generateMoves(MoveSorter* sorter = 0, const Move transp_move = 0, const int flags = 0) {
 		reset(sorter, transp_move, flags);
 		max_stage = 3;
-		if ((flags & STAGES) == 0) {
+		if ((this->flags & STAGES) == 0) {
 			generateTranspositionMove();
 			generateCapturesAndPromotions();
 			generateQuietMoves();
@@ -280,7 +280,6 @@ private:
 	__forceinline void addCastleMove(const Square from, const Square to) {
 		addMove(King | (side_to_move << 3), from, to, CASTLE);
 	}
-
 
 	__forceinline bool givesCheck(const Move m) {
 		board->makeMove(m);

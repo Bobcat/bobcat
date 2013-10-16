@@ -64,7 +64,6 @@ public:
 				attack_counter[side] += 2;
 			}
 		}
-
 		// Pass 2.
 		for (Side side = 0; side < 2; side++) {
 			evalPassedPawnsOneSide(side);

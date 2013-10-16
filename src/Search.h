@@ -203,7 +203,7 @@ protected:
 		}
     }
 
- 	Score searchNotPV(const Depth depth, const Score beta, int expectedNodeType) {
+ 	Score searchNotPV(const Depth depth, const Score beta, const int expectedNodeType) {
 		findTransposition(depth, beta - 1, beta);
 
 		if (pos->transp_score_valid && pos->transp_depth_valid) {
@@ -252,7 +252,8 @@ protected:
 			const Move m = move_data->move;
 
 			if (makeMoveAndEvaluate(m, beta - 1, beta)) {
-				Depth next_depth = getNextDepth(0, false, depth, ++move_count, move_data, beta - 1, best_score, expectedNodeType);
+				Depth next_depth = getNextDepth(0, false, depth, ++move_count, move_data, beta - 1, best_score,
+													expectedNodeType, nextExpectedNodeType);
 
 				if (next_depth == -999) {
 					unmakeMove();
@@ -272,10 +273,7 @@ protected:
 						best_move = m;
 						break;
 					}
-
-					if (move_count > 0 && nextExpectedNodeType != BETA) {
-						nextExpectedNodeType = BETA;
-					}
+					nextExpectedNodeType = BETA;
 				}
 			}
 		}
@@ -468,7 +466,8 @@ protected:
 	}
 
 	__forceinline Depth getNextDepth(Move singular_move, bool is_pv_node, const Depth depth, const int move_count,
-		const MoveData* move_data, const Score alpha, Score& best_score, int expectedNodeType = 128) const
+		const MoveData* move_data, const Score alpha, Score& best_score, int expectedNodeType = 128,
+		int nextExpectedNodeType = 128) const
 	{
 		const Move m = move_data->move;
 
@@ -515,7 +514,7 @@ protected:
 			{
 				return depth - 2;
 			}
-			Depth next_depth = depth - 2 - depth/8 - (move_count-6)/12;
+			Depth next_depth = depth - 3 - depth/8 - (move_count-6)/12;
 
 			if (next_depth <= 3
 				&& -pos->eval_score + futility_margin[std::max(0, next_depth)] < alpha)
@@ -553,20 +552,20 @@ protected:
 		if (best_score > alpha) {
 			alpha = best_score;
 		}
-		pos->generateCapturesAndPromotions(this);
+			pos->generateCapturesAndPromotions(this);
 
 		while (const MoveData* move_data = pos->nextMove()) {
 			const Move m = move_data->move;
 
 			if (!isPromotion(m)) {
-				if (move_data->score < 0) {
-					break;
+					if (move_data->score < 0) {
+						break;
+					}
+					else if (pos->eval_score + piece_value(moveCaptured(m)) + 150 < alpha) {
+						best_score = std::max(best_score, pos->eval_score + piece_value(moveCaptured(m)) + 150);
+						continue;
+					}
 				}
-				else if (pos->eval_score + piece_value(moveCaptured(m)) + 150 < alpha) {
-					best_score = std::max(best_score, pos->eval_score + piece_value(moveCaptured(m)) + 150);
-					continue;
-				}
-			}
 
 			if (makeMoveAndEvaluate(m, alpha, beta)) {
 				++move_count;
@@ -697,7 +696,7 @@ protected:
 	__forceinline void updateHistoryScores(const Move move, const Depth depth) {
         history_scores[movePiece(move)][moveTo(move)] += depth*depth;
 
-        if (history_scores[movePiece(move)][moveTo(move)] > PROMOTIONMOVESCORE) {
+        if (history_scores[movePiece(move)][moveTo(move)] > PROMOTIONMOVESCORE - 100) {
             for (int i = 0; i < 16; i++) for (int k = 0; k < 64; k++) {
                 history_scores[i][k] >>= 2;
             }
@@ -841,7 +840,12 @@ protected:
 			move_data.score = KILLERMOVESCORE + 18;
 		}
 		else {
+//			if (pos->last_move && counter_moves[movePiece(pos->last_move)][moveTo(pos->last_move)] == m) {
+//				move_data.score = KILLERMOVESCORE - 2;
+//			}
+//			else {
 			move_data.score = history_scores[movePiece(m)][moveTo(m)];
+//			}
 		}
 	}
 

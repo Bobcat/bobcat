@@ -76,13 +76,8 @@ public:
 		int pos_eval_eg = (int)((poseval_eg[0]-poseval_eg[1])*(1-stage));
 		int pos_eval = pos_eval_mg + pos_eval_eg + (poseval[0] - poseval[1]);
 
-		if (!pos->use_lazy
-			&& abs(pos_eval_mg) < 150
-			&& abs(pos_eval_eg) < 150
-			&& abs(pos_eval) < 150)
-		{
-			pos->use_lazy = true;
-		}
+		pos->use_lazy = abs(pos_eval_mg) < 150 && abs(pos_eval_eg) < 150 && abs(pos_eval) < 150;
+
 		int eval = pos_eval + mat_eval;
 
 		return pos->material.evaluate(pos->flags, pos->side_to_move == 1 ? -eval : eval,

@@ -477,7 +477,7 @@ protected:
 		bool reduce = true;
 
 		if (pos->in_check) {
-			if (see->seeLastMove(m) >= 0) {
+			if (is_pv_node || see->seeLastMove(m) >= 0) {
 				return depth;
 			}
 			reduce = false;
@@ -514,7 +514,7 @@ protected:
 			{
 				return depth - 2;
 			}
-			Depth next_depth = depth - 3 - depth/8 - (move_count-6)/12;
+			Depth next_depth = depth - 2 - depth/8 - (move_count-6)/12;
 
 			if (next_depth <= 3
 				&& -pos->eval_score + futility_margin[std::max(0, next_depth)] < alpha)
@@ -844,7 +844,7 @@ protected:
 //				move_data.score = KILLERMOVESCORE - 2;
 //			}
 //			else {
-			move_data.score = history_scores[movePiece(m)][moveTo(m)];
+				move_data.score = history_scores[movePiece(m)][moveTo(m)];
 //			}
 		}
 	}

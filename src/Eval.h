@@ -72,6 +72,8 @@ public:
 		double stage = (pos->material.value()-pos->material.pawnValue())/
 			(double)pos->material.max_value_without_pawns;
 
+		poseval[pos->side_to_move] += 10;
+
 		int pos_eval_mg = (int)((poseval_mg[0]-poseval_mg[1])*stage);
 		int pos_eval_eg = (int)((poseval_eg[0]-poseval_eg[1])*(1-stage));
 		int pos_eval = pos_eval_mg + pos_eval_eg + (poseval[0] - poseval[1]);
@@ -134,6 +136,11 @@ protected:
 				score_mg += -15;
 				score_eg += -15;
 			}
+			int r = side == 0 ? rank(sq) - 1 : 6 - rank(sq);
+
+			score_mg += 4*r;
+			score_eg += 2*r;
+
 			pawn_eval_mg[side] += score_mg;
 			pawn_eval_eg[side] += score_eg;
 		}
@@ -150,7 +157,7 @@ protected:
 			const BB& attacks = knight_attacks[sq];
 			int x = popCount(attacks & ~board->occupied_by_side[side] & ~pawn_attacks[side ^ 1]);
 
-			int score = -40 + 5*x;
+			int score = 5*x;
 
 			all_attacks[side] |= attacks;
 			_knight_attacks[side] |= attacks;
@@ -184,10 +191,10 @@ protected:
 			int score_mg = bishop_pcsq_mg[flipsq];
 			int score_eg = bishop_pcsq_eg[flipsq];
 
-			const BB attacks = Bmagic(sq, occupied);
+			const BB attacks = Bmagic(sq, occupied & ~board->queens(side) & ~board->rooks(side ^ 1));
 			int x = popCount(attacks & ~board->occupied_by_side[side]);
 
-			int score = -50 + 6*x;
+			int score = 6*x;
 
 			all_attacks[side] |= attacks;
 			bishop_attacks[side] |= attacks;
@@ -198,11 +205,9 @@ protected:
 					score -= 110;
 				}
 			}
-			const BB attacks2 = Bmagic(sq, occupied & ~board->queens(side) & ~board->rooks(side ^ 1) &
-				~board->queens(side ^ 1));
 
-			if (attacks2 & king_area[side ^ 1]) {
-				attack_counter[side] += popCount(attacks2 & king_area[side ^ 1])*6;
+			if (attacks & king_area[side ^ 1]) {
+				attack_counter[side] += popCount(attacks & king_area[side ^ 1])*6;
 				attack_count[side]++;
 			}
 
@@ -243,20 +248,19 @@ protected:
 			if ((bbsq & rank_7[side]) && (rank_7_and_8[side] & (pawns(side ^ 1) | board->king(side ^ 1)))) {
 				score += 20;
 			}
-			const BB attacks = Rmagic(sq, occupied);
+			const BB attacks = Rmagic(sq, occupied & ~board->rooks(side) & ~board->queens(side) &
+				~board->queens(side ^ 1));
+
 			int x = popCount(attacks & ~board->occupied_by_side[side]);
 
-			score_mg += -20 + 2*x;
-			score_eg += -40 + 5*x;
+			score_mg += 2*x;
+			score_eg += 5*x;
 
 			all_attacks[side] |= attacks;
 			rook_attacks[side] |= attacks;
 
-			const BB attacks2 = Rmagic(sq, occupied & ~board->rooks(side) & ~board->queens(side) &
-				~board->queens(side ^ 1));
-
-			if (attacks2 & king_area[side ^ 1]) {
-				attack_counter[side] += popCount(attacks2 & king_area[side ^ 1])*12;
+			if (attacks & king_area[side ^ 1]) {
+				attack_counter[side] += popCount(attacks & king_area[side ^ 1])*12;
 				attack_count[side]++;
 			}
 
@@ -275,8 +279,8 @@ protected:
 			const BB& bbsq = bbSquare(sq);
 			Square flipsq = flip[side][sq];
 
-			int score_mg = queen_pcsq_mg[flipsq];
-			int score_eg = queen_pcsq_eg[flipsq];
+			int score_mg = 0;//queen_pcsq_mg[flipsq];
+			int score_eg = queen_pcsq_mg[flipsq];
 			int d = 7 - distance[sq][kingSq(side ^ 1)];
 			int score = 5*d;
 
@@ -285,16 +289,14 @@ protected:
 			if ((bbsq & rank_7[side]) && (rank_7_and_8[side] & (pawns(side ^ 1) | board->king(side ^ 1)))) {
 				score += 20;
 			}
-			const BB attacks = Qmagic(sq, occupied);
+			const BB attacks = Bmagic(sq, occupied & ~board->bishops(side) & ~board->queens(side)) |
+				Rmagic(sq, occupied & ~board->rooks(side) & ~board->queens(side));
 
 			all_attacks[side] |= attacks;
 			queen_attacks[side] |= attacks;
 
-			const BB attacks2 = Bmagic(sq, occupied & ~board->bishops(side) & ~board->queens(side)) |
-				Rmagic(sq, occupied & ~board->rooks(side) & ~board->queens(side));
-
-			if (attacks2 & king_area[side ^ 1]) {
-				attack_counter[side] += popCount(attacks2 & king_area[side ^ 1])*24;
+			if (attacks & king_area[side ^ 1]) {
+				attack_counter[side] += popCount(attacks & king_area[side ^ 1])*24;
 				attack_count[side]++;
 			}
 
@@ -334,8 +336,8 @@ protected:
 		if (board->queens(side ^ 1) || popCount(board->rooks(side ^ 1)) > 1) {
 			BB eastwest = bbsq | westOne(bbsq) | eastOne(bbsq);
 
-			score_mg += -25*popCount(open_files & eastwest);
-			score_mg += -20*popCount(half_open_files[side] & eastwest);
+			score_mg += -15*popCount(open_files & eastwest);
+			score_mg += -10*popCount(half_open_files[side] & eastwest);
 		}
 		if (((side == 0) &&
 				(((sq == f1 || sq == g1) && (bbSquare(h1) & board->rooks(0))) ||
@@ -592,4 +594,3 @@ int Eval::king_pcsq_eg[64] = {
  -35, -10,   1,   6,   6,   1, -10, -35,
  -70, -45, -30, -25, -25, -30, -45, -70
 };
-

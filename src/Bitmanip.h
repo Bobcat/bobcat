@@ -21,26 +21,9 @@ __forceinline void resetLSB(uint64& x) {
 }
 
 __forceinline int popCount(uint64 x) {
-	int count = 0;
-	while (x) {
-		count++;
-		resetLSB(x);
-	}
-	return count;
-}
-
-__forceinline int lsb(uint64 x) {
-	DWORD index;
-	_BitScanForward64(&index, x);
-	return index;
-}
-
-#if 0
-__forceinline int popCount(uint64 x) {
 	return __builtin_popcountll(x);
 }
 
 __forceinline int lsb(uint64 x) {
-	return __builtin_ctzll(x);
+  	return __builtin_ctzll(x);
 }
-#endif

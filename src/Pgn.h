@@ -80,6 +80,7 @@ public:
     }
 
     virtual void read() {
+    	try {
 		readToken(token);
 		readPGNDatabase();
 
@@ -87,11 +88,25 @@ public:
 			throw UnexpectedToken("no more tokens", token_str);
 		}
     }
+    	catch (const UnexpectedToken& e) {
+    		fprintf(stderr, "%s\n", e.str());
+    	}
+    }
 
 protected:
 	virtual void readPGNDatabase() {
 		while (startOfPGNGame()) {
+			try {
 			readPGNGame();
+		}
+			catch (...) {
+				do {
+					readToken(token);
+					if (token == None) {
+						break;
+					}
+				} while (!startOfPGNGame());
+			}
 		}
 	}
 
@@ -166,6 +181,7 @@ protected:
 		}
 		else if (startOfSANMove()) {
 			readSANMove();
+			readToken(token);
 		}
 		else if (startOfNumericAnnotationGlyph()) {
 			readNumericAnnotationGlyph();
@@ -177,26 +193,49 @@ protected:
     }
 
     virtual void readMoveNumberIndication() {
+    	move_number = strtol(token_str, NULL, 10);
+
+    	int periods = 0;
+
 		for (;;) {
 			readToken(token);
 
 			if (token != Period) {
 				break;
 			}
+			periods++;
+		}
+
+		if (periods >=3) {
+			side_to_move = 1;
+		}
+		else {
+			side_to_move = 0;
 		}
 	}
 
 	virtual void readSANMove() {
+		pawn_move = false;
+		castle_move = false;
+		piece_move = false;
+		from_file = -1;
+		from_square = -1;
+		to_square = -1;
+
 		char* p = token_str;
 
 		if (startOfPawnMove(p)) {
 			readPawnMove(p);
+			pawn_move = true;
 		}
 		else if (startOfCastleMove(p)) {
 			readCastleMove(p);
+			castle_move = true;
 		}
 		else if (startOfMove(p)) {
 			readMove(p);
+			piece_move = true;
+
 		}
 
 		while (readSANMoveSuffix(p)) ; // may be too relaxed
@@ -204,7 +243,6 @@ protected:
 		if (strlen(token_str) != (size_t)p - (size_t)token_str) {
 			throw UnexpectedToken("<end-of-san-move>", p);
 		}
-		readToken(token);
 	}
 
 	virtual bool readSANMoveSuffix(char*& p) {
@@ -246,8 +284,7 @@ protected:
 				readPawnCaptureOrQuietMove(p);
 			}
 			else {
-				throw UnexpectedToken("start-of-pawn-capture-or-quiet-move",
-										token_str);
+				throw UnexpectedToken("start-of-pawn-capture-or-quiet-move", token_str);
 			}
 		}
 		else if (startOfPawnCaptureOrQuietMove(p)) {
@@ -269,9 +306,11 @@ protected:
 	}
 
 	virtual void readPawnCapture(char*& p) {
+		from_file = p[0] - 'a';
+
 		p += 2;
 
-		if (!isSquare(p)) {
+		if (!isSquare(p, to_square)) {
 			exit(0);
 		}
 		p += 2;
@@ -324,7 +363,7 @@ protected:
 			p += 4;
 		}
 
-		if (isSquare(p)) {
+		if (isSquare(p, to_square)) {
 			p += 2;
 		}
 		else {
@@ -347,13 +386,13 @@ protected:
 	}
 
 	virtual void readQuietMove(char*& p) {
-		if (isSquare(p)) {
+		if (isSquare(p, to_square)) {
 			p += 2;
 		}
 		else if (isRankDigit(p)) {
 			p += 1;
 
-			if (isSquare(p)) {
+			if (isSquare(p, to_square)) {
 				p += 2;
 			}
 			else {
@@ -363,7 +402,7 @@ protected:
 		else if (isFileLetter(p)) {
 			p += 1;
 
-			if (isSquare(p)) {
+			if (isSquare(p, to_square)) {
 				p += 2;
 			}
 			else {
@@ -456,7 +495,7 @@ protected:
 	}
 
 	bool startOfPawnQuietMove(const char* p) {
-		return strlen(p) > 1 && isSquare(p);
+		return strlen(p) > 1 && isSquare(p, to_square);
 	}
 
 	bool isFileLetter(const char* p) {
@@ -467,9 +506,17 @@ protected:
 		return strlen(p) && p[0] >= '1' && p[0] <= '8';
 	}
 
+	bool isSquare(const char* p, int& square ) {
+		if (strlen(p) > 1 && p[0] >= 'a' && p[0] <= 'h' && p[1] >= '0' && p[1] <= '9')	{
+			square = ((p[1] - '0') << 3) + p[0] -'a';
+			return true;
+		}
+		return false;
+	}
+
 	bool isSquare(const char* p) {
-		return strlen(p) > 1 && p[0] >= 'a' && p[0] <= 'h' &&
-			p[1] >= '0' && p[1] <= '9';
+		int square;
+		return isSquare(p, square);
 	}
 
 	bool startOfPromotedTo(const char* p) {
@@ -840,6 +887,17 @@ protected:
 	bool strict;
 	char tag_name[1024];
 	char tag_value[1024];
+	int from_file;
+	int from_rank;
+//	int from_piece;
+	int from_square;
+	int to_square;
+	int side_to_move;
+	int move_number;
+	bool pawn_move;
+	bool castle_move;
+	bool piece_move;
+
 
 private:
 	static const size_t bufsize = 64*1024;
@@ -889,36 +947,36 @@ http://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm
 
 -----------------------------------------------------------------
 
-<SAN-move> ::= <pawn-move>|<castle-move>|<move> [SAN-move-suffix]
+<SAN-move> ::= <pawn-move>|<castle-move>|<piece-move> [SAN-move-suffix]
 
 [SAN-move-suffix] ::= +|#|!|?|!!|!?|?!|!!
 
-<pawn-move> ::= [P] <pawn-capture-or-quiet-move> <promoted-to>
+<pawn-move> ::= [P] <pawn-capture-or-quiet-move> [<promoted-to>]
 
 <pawn-capture-or-quiet-move> ::= <pawn-capture>|<pawn-quiet_move>
 
-<pawn-capture> ::= <file-letter> x <square>
+<pawn-capture> ::= <from-file-letter> x <to-square>
 
 <pawn-quiet-move> ::= <to-square>
 
-<file-letter> ::= a..h
-
-<square> ::= a1..h8
-
-<promoted-to> ::= = <piece-letter>|<empty>
+<promoted-to> ::= = <piece-letter>
 
 <castle-move> ::= O-O|O-O-O
 
-<move> ::= <piece-letter> <capture-or-quiet-move>
+<piece-move> ::= <piece-letter> <capture-or-quiet-move>
 
 <piece-letter> ::= one of N, B, R, Q, K
 
 <capture-or-quiet-move> ::= <capture>|<quiet-move>
 
-<capture> ::= [<file-letter>|<rank-digit>|<square>] x <square>
+<capture> ::= [<from-file-letter>|<from-rank-digit>|<from-square>] x <to-square>
+
+<quiet-move> ::= [<from-file-letter>|<from-rank-digit>|<from-square>] <to-square>
+
+<file-letter> ::= a..h
 
 <rank-digit> ::= one of 1..8
 
-<quiet-move> ::= [<file-letter>|<rank-digit>|<from-square>] <square>
+<square> ::= a1..h8
 
 */

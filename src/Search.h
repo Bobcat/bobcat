@@ -234,12 +234,6 @@ protected:
 				return std::max(score, pos->eval_score + razor_margin[depth]);
 			}
 		}
-/*
-		if (!pos->transp_move && depth >= 8 && expectedNodeType == BETA) {
-			searchNotPV(depth/2, beta, 128);
-			findTranspositionRefineEval(depth, beta - 1, beta);
-		}
-*/
 		generateMoves();
 
 		Move best_move = 0;
@@ -509,10 +503,14 @@ protected:
 			&& !isKillerMove(m, ply - 1)
 			&& move_count >= 3)
 		{
-			if ((pos-1)->last_move != 0
-				&& counter_moves[movePiece((pos-1)->last_move)][moveTo((pos-1)->last_move)] == m)
-			{
-				return depth - 2;
+			if (depth == 1 && move_count > 6) {
+				return -999;
+			}
+			else if (depth == 2 && move_count > 12) {
+				return -999;
+			}
+			else if (depth == 3 && move_count > 24) {
+				return -999;
 			}
 			Depth next_depth = depth - 2 - depth/8 - (move_count-6)/12;
 
@@ -522,13 +520,17 @@ protected:
 				best_score = std::max(best_score, -pos->eval_score + futility_margin[std::max(0, next_depth)]);
 				return -999;
 			}
+
+			if (expectedNodeType == BETA) {
+				next_depth -= 2;
+			}
             return next_depth;
 		}
 		return depth - 1;
 	}
 
 	__forceinline int nullMoveReduction(const Depth depth) const {
-		return 4 + depth/8;
+		return 4 + depth/4;
 	}
 
 	Score searchQuiesce(Score alpha, const Score beta, int qs_ply, bool search_pv) {
@@ -706,10 +708,6 @@ protected:
 	__forceinline void updateKillerMoves(const Move move) {
 		// Same move can be stored twice for a ply.
 		if (!isCapture(move) && !isPromotion(move)) {
-			if (pos->last_move != 0) {
-				counter_moves[movePiece(pos->last_move)][moveTo(pos->last_move)] = move;
-			}
-
 			if (move != killer_moves[0][ply]) {
 				killer_moves[2][ply] = killer_moves[1][ply];
 				killer_moves[1][ply] = killer_moves[0][ply];
@@ -769,7 +767,6 @@ protected:
 		memset(pv, 0, sizeof(pv));
 		memset(killer_moves, 0, sizeof(killer_moves));
 		memset(history_scores, 0, sizeof(history_scores));
-		memset(counter_moves, 0, sizeof(counter_moves));
 		trace = false;
 	}
 
@@ -844,7 +841,7 @@ protected:
 //				move_data.score = KILLERMOVESCORE - 2;
 //			}
 //			else {
-				move_data.score = history_scores[movePiece(m)][moveTo(m)];
+			move_data.score = history_scores[movePiece(m)][moveTo(m)];
 //			}
 		}
 	}
@@ -969,7 +966,6 @@ protected:
 	bool worker;
 	Move killer_moves[4][128];
 	int history_scores[16][64];
-	Move counter_moves[16][64];
 	bool stopped;
 	Protocol* protocol;
 	Game* game;

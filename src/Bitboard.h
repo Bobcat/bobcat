@@ -48,6 +48,7 @@ BB corner_a1;
 BB corner_a8;
 BB corner_h1;
 BB corner_h8;
+BB bb_color[2];
 
 __forceinline const BB& bbSquare(int sq) { return bb_square[sq]; }
 __forceinline const BB& bbRank(int rank) { return bb_rank[rank]; }
@@ -105,11 +106,15 @@ void initBetweenBitboards(const Square from, BB (*stepFunc)(const BB&), int step
 }
 
 void Bitboard_h_initialise() {
+	bb_color[1] = 0;
+
 	for (Square sq = a1; sq <= h8; sq++) {
 		bb_square[sq] = (BB)1 << sq;
 		bb_rank[sq] = RANK1 << (sq & 56);
 		bb_file[sq] = AFILE << (sq & 7);
+		bb_color[1] |= isDark(sq) ? bb_square[sq] : 0;
 	}
+	bb_color[0] = ~bb_color[1];
 
 	for (Square sq = a1; sq <= h8; sq++) {
 		pawn_front_span[0][sq] = northFill(northOne(bbSquare(sq)));

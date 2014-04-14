@@ -81,13 +81,13 @@ public:
 
     virtual void read() {
     	try {
-		readToken(token);
-		readPGNDatabase();
+			readToken(token);
+			readPGNDatabase();
 
-		if (token != None) {
-			throw UnexpectedToken("no more tokens", token_str);
-		}
-    }
+			if (token != None) {
+				throw UnexpectedToken("no more tokens", token_str);
+			}
+    	}
     	catch (const UnexpectedToken& e) {
     		fprintf(stderr, "%s\n", e.str());
     	}
@@ -97,8 +97,8 @@ protected:
 	virtual void readPGNDatabase() {
 		while (startOfPGNGame()) {
 			try {
-			readPGNGame();
-		}
+				readPGNGame();
+			}
 			catch (...) {
 				do {
 					readToken(token);
@@ -219,6 +219,7 @@ protected:
 		castle_move = false;
 		piece_move = false;
 		from_file = -1;
+		from_rank = -1;
 		from_square = -1;
 		to_square = -1;
 
@@ -306,8 +307,6 @@ protected:
 	}
 
 	virtual void readPawnCapture(char*& p) {
-		from_file = p[0] - 'a';
-
 		p += 2;
 
 		if (!isSquare(p, to_square)) {
@@ -353,13 +352,13 @@ protected:
 		if (p[0] == 'x') {
 			p += 1;
 		}
-		else if (isRankDigit(p) && p[1] == 'x') {
+		else if (isRankDigit(p, from_rank) && p[1] == 'x') {
 			p += 2;
 		}
-		else if (isFileLetter(p) && p[1] == 'x') {
+		else if (isFileLetter(p, from_file) && p[1] == 'x') {
 			p += 2;
 		}
-		else if (isSquare(p) && p[2] == 'x')  {
+		else if (isSquare(p, from_square) && p[2] == 'x')  {
 			p += 4;
 		}
 
@@ -389,7 +388,7 @@ protected:
 		if (isSquare(p, to_square)) {
 			p += 2;
 		}
-		else if (isRankDigit(p)) {
+		else if (isRankDigit(p, from_rank)) {
 			p += 1;
 
 			if (isSquare(p, to_square)) {
@@ -399,7 +398,7 @@ protected:
 				throw UnexpectedToken("<to-square>", token_str);
 			}
 		}
-		else if (isFileLetter(p)) {
+		else if (isFileLetter(p, from_file)) {
 			p += 1;
 
 			if (isSquare(p, to_square)) {
@@ -491,19 +490,27 @@ protected:
 	}
 
 	bool startOfPawnCapture(const char* p) {
-		return (strlen(p) > 1 && isFileLetter(p) && p[1] == 'x');
+		return (strlen(p) > 1 && isFileLetter(p, from_file) && p[1] == 'x');
 	}
 
 	bool startOfPawnQuietMove(const char* p) {
 		return strlen(p) > 1 && isSquare(p, to_square);
 	}
 
-	bool isFileLetter(const char* p) {
-		return strlen(p) && p[0] >= 'a' && p[0] <= 'h';
+	bool isFileLetter(const char* p, int& file) {
+		if (strlen(p) && p[0] >= 'a' && p[0] <= 'h') {
+			file = p[0] - 'a';
+			return true;
+		}
+		return false;
 	}
 
-	bool isRankDigit(const char* p) {
-		return strlen(p) && p[0] >= '1' && p[0] <= '8';
+	bool isRankDigit(const char* p, int& rank) {
+		if (strlen(p) && p[0] >= '1' && p[0] <= '8') {
+			rank = p[0] - '0';
+			return true;
+		}
+		return false;
 	}
 
 	bool isSquare(const char* p, int& square ) {
@@ -512,11 +519,6 @@ protected:
 			return true;
 		}
 		return false;
-	}
-
-	bool isSquare(const char* p) {
-		int square;
-		return isSquare(p, square);
 	}
 
 	bool startOfPromotedTo(const char* p) {
@@ -538,15 +540,15 @@ protected:
 
 	bool startOfCapture(const char* p) {
 		return (strlen(p) && p[0] == 'x')
-				|| (strlen(p) > 1 && isRankDigit(p) && p[1] == 'x')
-				|| (strlen(p) > 1 && isFileLetter(p) && p[1] == 'x')
-				|| (strlen(p) > 2 && isSquare(p) && p[2] == 'x');
+				|| (strlen(p) > 1 && isRankDigit(p, from_rank) && p[1] == 'x')
+				|| (strlen(p) > 1 && isFileLetter(p, from_file) && p[1] == 'x')
+				|| (strlen(p) > 2 && isSquare(p, from_square) && p[2] == 'x');
 	}
 
 	bool startOfQuietMove(const char* p) {
-		return (strlen(p) > 1 && isSquare(p))
-				|| (strlen(p)&& isRankDigit(p))
-				|| (strlen(p)&& isFileLetter(p));
+		return (strlen(p) > 1 && isSquare(p, from_square))
+				|| (strlen(p)&& isRankDigit(p, from_rank))
+				|| (strlen(p)&& isFileLetter(p, from_file));
 	}
 
 	bool startOfCastleMove(const char* p) {

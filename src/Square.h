@@ -59,6 +59,7 @@ static uint rook_castles_to[64]; // indexed by position of the king
 static uint rook_castles_from[64]; // also
 static uint castle_rights_mask[64];
 static uint distance[64][64]; // chebyshev distance
+static uint mdistance[64][64]; // manhattan distance
 static uint flip[2][64];
 
 static void Square_h_initialise() {
@@ -71,6 +72,7 @@ static void Square_h_initialise() {
 			uint ranks = abs(rank(sq1) - rank(sq2));
 			uint files = abs(file(sq1) - file(sq2));
 			distance[sq1][sq2] = std::max(ranks, files);
+			mdistance[sq1][sq2] = ranks + files;
 		}
 	}
 	for (int side = 0; side <= 1; side++) {

@@ -503,13 +503,9 @@ protected:
 			&& !isKillerMove(m, ply - 1)
 			&& move_count >= 3)
 		{
-			if (depth == 1 && move_count > 6) {
-				return -999;
-			}
-			else if (depth == 2 && move_count > 12) {
-				return -999;
-			}
-			else if (depth == 3 && move_count > 24) {
+			static Depth lmp_move_count[4] = {-1, 6, 12, 24};
+
+			if (depth <= 3 && move_count > lmp_move_count[depth]) {
 				return -999;
 			}
 			Depth next_depth = depth - 2 - depth/8 - (move_count-6)/12;
@@ -554,20 +550,20 @@ protected:
 		if (best_score > alpha) {
 			alpha = best_score;
 		}
-			pos->generateCapturesAndPromotions(this);
+		pos->generateCapturesAndPromotions(this);
 
 		while (const MoveData* move_data = pos->nextMove()) {
 			const Move m = move_data->move;
 
 			if (!isPromotion(m)) {
-					if (move_data->score < 0) {
-						break;
-					}
-					else if (pos->eval_score + piece_value(moveCaptured(m)) + 150 < alpha) {
-						best_score = std::max(best_score, pos->eval_score + piece_value(moveCaptured(m)) + 150);
-						continue;
-					}
+				if (move_data->score < 0) {
+					break;
 				}
+				else if (pos->eval_score + piece_value(moveCaptured(m)) + 150 < alpha) {
+					best_score = std::max(best_score, pos->eval_score + piece_value(moveCaptured(m)) + 150);
+					continue;
+				}
+			}
 
 			if (makeMoveAndEvaluate(m, alpha, beta)) {
 				++move_count;

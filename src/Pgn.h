@@ -81,13 +81,13 @@ public:
 
     virtual void read() {
     	try {
-			readToken(token);
-			readPGNDatabase();
+		readToken(token);
+		readPGNDatabase();
 
-			if (token != None) {
-				throw UnexpectedToken("no more tokens", token_str);
-			}
-    	}
+		if (token != None) {
+			throw UnexpectedToken("no more tokens", token_str);
+		}
+    }
     	catch (const UnexpectedToken& e) {
     		fprintf(stderr, "%s\n", e.str());
     	}
@@ -97,8 +97,8 @@ protected:
 	virtual void readPGNDatabase() {
 		while (startOfPGNGame()) {
 			try {
-				readPGNGame();
-			}
+			readPGNGame();
+		}
 			catch (...) {
 				do {
 					readToken(token);

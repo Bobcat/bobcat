@@ -147,3 +147,47 @@ private:
 	ProtocolListener* app;
 	int flags;
 };
+
+class PGNParser : public PGNFileReader {
+public:
+	PGNParser(const char* path) :
+	    PGNFileReader(path),
+	    game_count(0) {
+	}
+
+	virtual ~PGNParser() {
+	}
+
+	virtual void readPGNDatabase() {
+		PGNFileReader::readPGNDatabase();
+		printf("games: %" PRIu64 "\n", game_count);
+	}
+
+	virtual void readPGNGame() {
+		PGNFileReader::readPGNGame();
+		game_count++;
+
+		if (game_count % 100000 == 0) {
+			printf("games: %" PRIu64 "\n", game_count);
+		}
+	}
+
+	virtual void readTagSection() {
+		PGNFileReader::readTagSection();
+	}
+
+	virtual void readTagName() {
+		PGNFileReader::readTagName();
+	}
+
+	virtual void readTagValue() {
+		PGNFileReader::readTagValue();
+
+		if (game_count % 100000 == 0) {
+			printf("[%s %s]\n", tag_name, tag_value);
+		}
+	}
+
+private:
+	int64_t game_count;
+};

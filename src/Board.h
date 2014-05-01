@@ -188,6 +188,24 @@ public:
 		return king_attacks[sq];
 	}
 
+	__forceinline BB pieceAttacks(const Piece piece, const Square sq) {
+		switch (piece & 7) {
+		case Knight:
+			return knightAttacks(sq);
+		case Bishop:
+			return bishopAttacks(sq);
+		case Rook:
+			return rookAttacks(sq);
+		case Queen:
+			return queenAttacks(sq);
+		case King:
+			return kingAttacks(sq);
+		default:
+			break;// error
+		}
+		return 0;
+	}
+
 	__forceinline bool isAttackedBySlider(const Square sq, const Side side) {
 		BB r_attacks = rookAttacks(sq);
 		if (piece[Rook + (side << 3)] & r_attacks) {

@@ -26,8 +26,8 @@ public:
 		initialise(NULL, game, eval, see, transt, true);
 	}
 
-    virtual ~Search() {
-    }
+	virtual ~Search() {
+	}
 
 	int go(int wtime, int btime, int movestogo, int winc, int binc, int movetime) {
 		initialiseSearch(wtime, btime, movestogo, winc, binc, movetime);
@@ -112,7 +112,7 @@ protected:
 				const Move m = move_data->move;
 
 				if (makeMoveAndEvaluate(m, alpha, beta)) {
-                    ++move_count;
+					++move_count;
 
 					Depth next_depth = getNextDepth(0, move_count == 1, depth, move_count, move_data, alpha, best_score);
 
@@ -201,7 +201,7 @@ protected:
 		else {
 			pos->generateMoves(this, pos->transp_move, STAGES);
 		}
-    }
+	}
 
  	Score searchNotPV(const Depth depth, const Score beta, const int expectedNodeType) {
 		findTransposition(depth, beta - 1, beta);
@@ -285,22 +285,22 @@ protected:
 		int actualNodeType = nodeType(best_score, beta, best_move);
 
 		if (trace) {
-		if (expectedNodeType == actualNodeType) {
-			if (expectedNodeType == ALPHA) {
-				++expectedAlphaRight;
+			if (expectedNodeType == actualNodeType) {
+				if (expectedNodeType == ALPHA) {
+					++expectedAlphaRight;
+				}
+				else if (expectedNodeType == BETA) {
+					++expectedBetaRight;
+				}
 			}
-			else if (expectedNodeType == BETA) {
-				++expectedBetaRight;
+			else {
+				if (expectedNodeType == ALPHA) {
+					++expectedAlphaWrong;
+				}
+				else if (expectedNodeType == BETA) {
+					++expectedBetaWrong;
+				}
 			}
-		}
-		else {
-			if (expectedNodeType == ALPHA) {
-				++expectedAlphaWrong;
-			}
-			else if (expectedNodeType == BETA) {
-				++expectedBetaWrong;
-			}
-		}
 		}
 		return storeSearchNodeScore(best_score, depth, actualNodeType, best_move);
 	}
@@ -402,14 +402,14 @@ protected:
 
 	__forceinline Move getSingularMove(const Depth depth, const bool is_pv_node) {
 		if (is_pv_node
-			&& (pos->transp_flags & EXACT)
-			&& depth >= 4
-			&& pos->transp_move)
+				&& (pos->transp_flags & EXACT)
+				&& depth >= 4
+				&& pos->transp_move)
 		{
 			if (searchFailLow(depth/2, std::max(-MAXSCORE, pos->eval_score - 75), pos->transp_move)) {
 				return pos->transp_move;
 			}
-        }
+		}
 		return 0;
 	}
 
@@ -477,16 +477,16 @@ protected:
 			reduce = false;
 		}
 
-        if (isPassedPawnMove(m)) {
+		if (isPassedPawnMove(m)) {
 			if (see->seeLastMove(m) >= 0) {
-                int r = rank(moveTo(m));
+				int r = rank(moveTo(m));
 
-                if (r == 1 || r == 6) {
-                    return depth;
-                }
+				if (r == 1 || r == 6) {
+					return depth;
+				}
 				reduce = false;
 			}
-        }
+		}
 
 		if (((pos-1)->in_check && (pos-1)->moveCount() == 1)) {
 			// Single repy extension is a way to find the mate in 9 in
@@ -524,7 +524,7 @@ protected:
 			if (expectedNodeType == BETA) {
 				next_depth -= 2;
 			}
-            return next_depth;
+			return next_depth;
 		}
 		return depth - 1;
 	}
@@ -554,20 +554,20 @@ protected:
 		if (best_score > alpha) {
 			alpha = best_score;
 		}
-			pos->generateCapturesAndPromotions(this);
+		pos->generateCapturesAndPromotions(this);
 
 		while (const MoveData* move_data = pos->nextMove()) {
 			const Move m = move_data->move;
 
 			if (!isPromotion(m)) {
-					if (move_data->score < 0) {
-						break;
-					}
-					else if (pos->eval_score + piece_value(moveCaptured(m)) + 150 < alpha) {
-						best_score = std::max(best_score, pos->eval_score + piece_value(moveCaptured(m)) + 150);
-						continue;
-					}
+				if (move_data->score < 0) {
+					break;
 				}
+				else if (pos->eval_score + piece_value(moveCaptured(m)) + 150 < alpha) {
+					best_score = std::max(best_score, pos->eval_score + piece_value(moveCaptured(m)) + 150);
+					continue;
+				}
+			}
 
 			if (makeMoveAndEvaluate(m, alpha, beta)) {
 				++move_count;
@@ -696,13 +696,13 @@ protected:
 	}
 
 	__forceinline void updateHistoryScores(const Move move, const Depth depth) {
-        history_scores[movePiece(move)][moveTo(move)] += depth*depth;
+		history_scores[movePiece(move)][moveTo(move)] += depth*depth;
 
-        if (history_scores[movePiece(move)][moveTo(move)] > PROMOTIONMOVESCORE - 100) {
-            for (int i = 0; i < 16; i++) for (int k = 0; k < 64; k++) {
-                history_scores[i][k] >>= 2;
-            }
-        }
+		if (history_scores[movePiece(move)][moveTo(move)] > PROMOTIONMOVESCORE - 100) {
+			for (int i = 0; i < 16; i++) for (int k = 0; k < 64; k++) {
+				history_scores[i][k] >>= 2;
+			}
+		}
 	}
 
 	__forceinline void updateKillerMoves(const Move move) {
@@ -717,7 +717,7 @@ protected:
 	}
 
 	__forceinline bool isKillerMove(const Move m, int ply) const {
-        return m == killer_moves[0][ply] || m == killer_moves[1][ply] || m == killer_moves[2][ply];
+		return m == killer_moves[0][ply] || m == killer_moves[1][ply] || m == killer_moves[2][ply];
 	}
 
 	__forceinline Score codecTTableScore(Score score, Score ply) const {
@@ -837,12 +837,7 @@ protected:
 			move_data.score = KILLERMOVESCORE + 18;
 		}
 		else {
-//			if (pos->last_move && counter_moves[movePiece(pos->last_move)][moveTo(pos->last_move)] == m) {
-//				move_data.score = KILLERMOVESCORE - 2;
-//			}
-//			else {
 			move_data.score = history_scores[movePiece(m)][moveTo(m)];
-//			}
 		}
 	}
 
@@ -853,22 +848,22 @@ protected:
 	__forceinline Score transpositionScore(const Score score, int expectedNodeType) const {
 		int actualNodeType = pos->transp_flags & (ALPHA | BETA | EXACT);
 		if (trace) {
-		if (expectedNodeType == actualNodeType) {
-			if (expectedNodeType == ALPHA) {
-				++expectedAlphaRight;
+			if (expectedNodeType == actualNodeType) {
+				if (expectedNodeType == ALPHA) {
+					++expectedAlphaRight;
+				}
+				else if (expectedNodeType == BETA) {
+					++expectedBetaRight;
+				}
 			}
-			else if (expectedNodeType == BETA) {
-				++expectedBetaRight;
+			else {
+				if (expectedNodeType == ALPHA) {
+					++expectedAlphaWrong;
+				}
+				else if (expectedNodeType == BETA) {
+					++expectedBetaWrong;
+				}
 			}
-		}
-		else {
-			if (expectedNodeType == ALPHA) {
-				++expectedAlphaWrong;
-			}
-			else if (expectedNodeType == BETA) {
-				++expectedBetaWrong;
-			}
-		}
 		}
 		return score;
 	}

@@ -47,33 +47,33 @@ const int EPCAPTURE = 8;
 const int PROMOTION = 16;
 const int CAPTURE = 32;
 
-__forceinline int isCapture(const Move m) { 
-	return moveType(m) & (CAPTURE | EPCAPTURE); 
+__forceinline int isCapture(const Move m) {
+	return moveType(m) & (CAPTURE | EPCAPTURE);
 }
 
-__forceinline int isEpCapture(const Move m) { 
-	return moveType(m) & EPCAPTURE; 
+__forceinline int isEpCapture(const Move m) {
+	return moveType(m) & EPCAPTURE;
 }
 
-__forceinline int isCastleMove(const Move m) { 
-	return moveType(m) & CASTLE; 
+__forceinline int isCastleMove(const Move m) {
+	return moveType(m) & CASTLE;
 }
 
-__forceinline int isPromotion(const Move m) { 
-	return moveType(m) & PROMOTION; 
+__forceinline int isPromotion(const Move m) {
+	return moveType(m) & PROMOTION;
 }
 
-__forceinline bool isQueenPromotion(const Move m) { 
-	return isPromotion(m) && (movePromoted(m) & 7) == Queen; 
+__forceinline bool isQueenPromotion(const Move m) {
+	return isPromotion(m) && (movePromoted(m) & 7) == Queen;
 }
 
-__forceinline bool isNullMove(const Move m) { 
+__forceinline bool isNullMove(const Move m) {
 	return m == 0;
 }
 
-__forceinline void initMove(Move& move, const Piece piece, 
-	const Piece captured, const Square from, const Square to, 
-	const int type, const Piece promoted) 
+__forceinline void initMove(Move& move, const Piece piece,
+	const Piece captured, const Square from, const Square to,
+	const int type, const Piece promoted)
 {
 	move = 0;
 	moveSetPiece(move, piece);

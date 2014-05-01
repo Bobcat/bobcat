@@ -23,9 +23,9 @@ uint64 zobrist_ep_file[8];
 
 static void Zobrist_h_initialise() {
 	uint64 init[4] = {0x12345ULL, 0x23456ULL, 0x34567ULL, 0x45678ULL};
-	
-	init_by_array64(init, 4); 
-	
+
+	init_by_array64(init, 4);
+
 	for (int p = Pawn; p <= King; p++) {
 		for (int sq = 0; sq < 64; sq++) {
 			zobrist_pcsq[p][sq] = rand64();

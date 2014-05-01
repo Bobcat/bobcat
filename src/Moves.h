@@ -53,6 +53,33 @@ public:
         generateMoves(sorter, 0, flags | QUIESCENCE1);
 	}
 
+	__forceinline void generateMoves(const Piece piece, const BB& to_squares) {
+		reset(0,0,0);
+		for (BB bb = board->piece[piece]; bb; resetLSB(bb)) {
+			Square from = lsb(bb);
+			addMoves(piece, from, board->pieceAttacks(piece, from) & to_squares);
+		}
+	}
+
+	__forceinline void generatePawnMoves(bool capture, const BB& to_squares) {
+		reset(0,0,0);
+		if (capture) {
+			const BB& pawns = board->pawns(side_to_move);
+			addPawnMoves(pawnPush[side_to_move](pawns & rank_7[side_to_move]) & ~occupied & to_squares, pawn_push_dist, QUIET);
+			addPawnMoves(pawnWestAttacks[side_to_move](pawns) & occupied_by_side[side_to_move ^ 1] & to_squares, pawn_west_attack_dist, CAPTURE);
+			addPawnMoves(pawnEastAttacks[side_to_move](pawns) & occupied_by_side[side_to_move ^ 1] & to_squares, pawn_east_attack_dist, CAPTURE);
+			addPawnMoves(pawnWestAttacks[side_to_move](pawns) & en_passant_square & to_squares, pawn_west_attack_dist, EPCAPTURE);
+			addPawnMoves(pawnEastAttacks[side_to_move](pawns) & en_passant_square & to_squares, pawn_east_attack_dist, EPCAPTURE);
+		}
+		else {
+			const BB& pawns = board->pawns(side_to_move);
+			addPawnMoves(pawnPush[side_to_move](pawns & rank_7[side_to_move]) & ~occupied & to_squares, pawn_push_dist, QUIET);
+			BB pushed = pawnPush[side_to_move](board->pawns(side_to_move) & ~rank_7[side_to_move]) & ~occupied;
+			addPawnMoves(pushed & to_squares, pawn_push_dist, QUIET);
+			addPawnMoves(pawnPush[side_to_move](pushed & rank_3[side_to_move]) & ~occupied & to_squares, pawn_double_push_dist, DOUBLEPUSH);
+		}
+	}
+
 	__forceinline MoveData* nextMove() {
 		while (iteration == number_moves && stage < max_stage) {
 			switch (stage) {
@@ -104,7 +131,7 @@ public:
 
 	__forceinline bool isPseudoLegal(const Move m) {
 		// TO DO en passant moves and castle moves
-		if ((piece[movePiece(m)] & bbSquare(moveFrom(m))) == 0) {
+		if ((bb_piece[movePiece(m)] & bbSquare(moveFrom(m))) == 0) {
 			return false;
 		}
 		if (isCapture(m)) {
@@ -112,7 +139,7 @@ public:
 			if ((occupied_by_side[moveSide(m) ^ 1] & bb_to) == 0) {
 				return false;
 			}
-			if ((piece[moveCaptured(m)] & bb_to) == 0) {
+			if ((bb_piece[moveCaptured(m)] & bb_to) == 0) {
 				return false;
 			}
 		}
@@ -128,6 +155,8 @@ public:
 		return true;
 	}
 
+	MoveData move_list[256];
+
 private:
 	__forceinline void reset(MoveSorter* sorter, const Move move, const int flags) {
 		this->sorter = sorter;
@@ -137,7 +166,7 @@ private:
 		if (move) {
 			if (isCastleMove(this->transp_move) || isEpCapture(this->transp_move)) {
                 // needed because isPseudoLegal() is not complete yet.
-                this->transp_move = 0;
+				this->transp_move = 0;
 				this->flags &= ~STAGES;
 			}
 		}
@@ -149,7 +178,7 @@ private:
 		}
 		occupied = board->occupied;
 		occupied_by_side = board->occupied_by_side;
-		piece = board->piece;
+		bb_piece = board->piece;
 	}
 
 	__forceinline void generateTranspositionMove() {
@@ -229,23 +258,23 @@ private:
 		BB bb;
 		int offset = side_to_move << 3;
 		Square from;
-		for (bb = piece[Queen + offset]; bb; resetLSB(bb)) {
+		for (bb = bb_piece[Queen + offset]; bb; resetLSB(bb)) {
 			from = lsb(bb);
 			addMoves(Queen + offset, from, board->queenAttacks(from) & to_squares);
 		}
-		for (bb = piece[Rook + offset]; bb; resetLSB(bb)) {
+		for (bb = bb_piece[Rook + offset]; bb; resetLSB(bb)) {
 			from = lsb(bb);
 			addMoves(Rook + offset, from, board->rookAttacks(from) & to_squares);
 		}
-		for (bb = piece[Bishop + offset]; bb; resetLSB(bb)) {
+		for (bb = bb_piece[Bishop + offset]; bb; resetLSB(bb)) {
 			from = lsb(bb);
 			addMoves(Bishop + offset, from, board->bishopAttacks(from) & to_squares);
 		}
-		for (bb = piece[Knight + offset]; bb; resetLSB(bb)) {
+		for (bb = bb_piece[Knight + offset]; bb; resetLSB(bb)) {
 			from = lsb(bb);
 			addMoves(Knight + offset, from, board->knightAttacks(from) & to_squares);
 		}
-		for (bb = piece[King + offset]; bb; resetLSB(bb)) {
+		for (bb = bb_piece[King + offset]; bb; resetLSB(bb)) {
 			from = lsb(bb);
 			addMoves(King + offset, from, board->kingAttacks(from) & to_squares);
 		}
@@ -355,7 +384,7 @@ public:
 	Board* board;
 
 private:
-	BB* piece;
+	BB* bb_piece;
 	BB* occupied_by_side;
 	BB occupied;
 	int iteration;
@@ -366,5 +395,4 @@ private:
 	MoveSorter* sorter;
 	Move transp_move;
 	int flags;
-	MoveData move_list[256];
 };

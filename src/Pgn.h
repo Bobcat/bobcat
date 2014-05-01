@@ -29,7 +29,7 @@ public:
 	}
 
 private:
-    int fd;
+	int fd;
 };
 
 enum Token { Symbol, Integer, String, NAG, Asterisk, Period, LParen, RParen,
@@ -72,33 +72,33 @@ public:
 			fprintf(stderr, "PGNFileReader: unable to allocate buffer\n");
 			exit(EXIT_FAILURE);
 		}
-    }
+	}
 
-    ~PGNFileReader() {
-        delete file;
+	~PGNFileReader() {
+		delete file;
 		delete[] buffer;
-    }
+	}
 
-    virtual void read() {
-    	try {
-		readToken(token);
-		readPGNDatabase();
+	virtual void read() {
+		try {
+			readToken(token);
+			readPGNDatabase();
 
-		if (token != None) {
-			throw UnexpectedToken("no more tokens", token_str);
+			if (token != None) {
+				throw UnexpectedToken("no more tokens", token_str);
+			}
 		}
-    }
-    	catch (const UnexpectedToken& e) {
-    		fprintf(stderr, "%s\n", e.str());
-    	}
-    }
+		catch (const UnexpectedToken& e) {
+			fprintf(stderr, "%s\n", e.str());
+		}
+	}
 
 protected:
 	virtual void readPGNDatabase() {
 		while (startOfPGNGame()) {
 			try {
-			readPGNGame();
-		}
+				readPGNGame();
+			}
 			catch (...) {
 				do {
 					readToken(token);
@@ -126,19 +126,19 @@ protected:
 		}
 	}
 
-    virtual void readTagPair() {
+	virtual void readTagPair() {
 		readToken(token);
 
 		if (token != Symbol) {
 			throw UnexpectedToken(Symbol, token_str);
 		}
-        readTagName();
+		readTagName();
 
 		if (token != String) {
 			throw UnexpectedToken(String, token_str);
 		}
 		readTagValue();
-    }
+	}
 
 	virtual void readTagName() {
 		strcpy(tag_name, token_str);
@@ -181,6 +181,7 @@ protected:
 		}
 		else if (startOfSANMove()) {
 			readSANMove();
+			side_to_move ^= 1;
 			readToken(token);
 		}
 		else if (startOfNumericAnnotationGlyph()) {
@@ -188,14 +189,14 @@ protected:
 		}
 	}
 
-    virtual void readGameTermination() {
+	virtual void readGameTermination() {
 		readToken(token);
-    }
+	}
 
-    virtual void readMoveNumberIndication() {
-    	move_number = strtol(token_str, NULL, 10);
+	virtual void readMoveNumberIndication() {
+		move_number = strtol(token_str, NULL, 10);
 
-    	int periods = 0;
+		int periods = 0;
 
 		for (;;) {
 			readToken(token);
@@ -206,7 +207,7 @@ protected:
 			periods++;
 		}
 
-		if (periods >=3) {
+		if (periods >= 3) {
 			side_to_move = 1;
 		}
 		else {
@@ -215,28 +216,23 @@ protected:
 	}
 
 	virtual void readSANMove() {
-		pawn_move = false;
-		castle_move = false;
-		piece_move = false;
+		from_piece = -1;
 		from_file = -1;
 		from_rank = -1;
 		from_square = -1;
 		to_square = -1;
+		promoted_to = -1;
 
 		char* p = token_str;
 
 		if (startOfPawnMove(p)) {
 			readPawnMove(p);
-			pawn_move = true;
 		}
 		else if (startOfCastleMove(p)) {
 			readCastleMove(p);
-			castle_move = true;
 		}
 		else if (startOfMove(p)) {
 			readMove(p);
-			piece_move = true;
-
 		}
 
 		while (readSANMoveSuffix(p)) ; // may be too relaxed
@@ -297,7 +293,7 @@ protected:
 		if (startOfPawnCapture(p)) {
 			readPawnCapture(p);
 		}
-		else if (startOfPawnQuietMove(p)) {
+		else if (startOfPawnQuietMove(p, to_square)) {
 			readPawnQuietMove(p);
 		}
 
@@ -322,7 +318,7 @@ protected:
 	virtual void readPromotedTo(char*& p) {
 		p += 1;
 
-		if (strlen(p) && isNonPawnPieceLetter(p)) {
+		if (strlen(p) && isNonPawnPieceLetter(p, promoted_to)) {
 			p += 1;
 		}
 		else {
@@ -352,13 +348,13 @@ protected:
 		if (p[0] == 'x') {
 			p += 1;
 		}
-		else if (isRankDigit(p, from_rank) && p[1] == 'x') {
+		else if (p[1] == 'x' && isRankDigit(p, from_rank)) {
 			p += 2;
 		}
-		else if (isFileLetter(p, from_file) && p[1] == 'x') {
+		else if (p[1] == 'x' && isFileLetter(p, from_file)) {
 			p += 2;
 		}
-		else if (isSquare(p, from_square) && p[2] == 'x')  {
+		else if (p[2] == 'x' && isSquare(p, from_square)) {
 			p += 4;
 		}
 
@@ -374,14 +370,17 @@ protected:
 		int len = strlen(p);
 
 		if (len > 4 && strncmp(p, "O-O-O", 5) == 0) {
+			to_square = side_to_move == 0 ? 2 : 58;
 			p += 5;
 		}
 		else if (len > 2 && strncmp(p, "O-O", 3) == 0) {
+			to_square = side_to_move == 0 ? 6 : 62;
 			p += 3;
 		}
 		else {
 			//error
 		}
+		from_piece = 'K';
 	}
 
 	virtual void readQuietMove(char*& p) {
@@ -417,7 +416,7 @@ protected:
 		readToken(token);
 	}
 
-    virtual void readRecursiveVariation() {
+	virtual void readRecursiveVariation() {
 		readToken(token);
 		readElementSequence();
 
@@ -486,14 +485,14 @@ protected:
 	}
 
 	bool startOfPawnCaptureOrQuietMove(const char* p) {
-		return startOfPawnCapture(p) || startOfPawnQuietMove(p);
+		return startOfPawnCapture(p) || startOfPawnQuietMove(p, to_square);
 	}
 
 	bool startOfPawnCapture(const char* p) {
-		return (strlen(p) > 1 && isFileLetter(p, from_file) && p[1] == 'x');
+		return (strlen(p) > 1 && p[1] == 'x' && isFileLetter(p, from_file));
 	}
 
-	bool startOfPawnQuietMove(const char* p) {
+	bool startOfPawnQuietMove(const char* p, int& to_square) {
 		return strlen(p) > 1 && isSquare(p, to_square);
 	}
 
@@ -507,7 +506,7 @@ protected:
 
 	bool isRankDigit(const char* p, int& rank) {
 		if (strlen(p) && p[0] >= '1' && p[0] <= '8') {
-			rank = p[0] - '0';
+			rank = p[0] - '1';
 			return true;
 		}
 		return false;
@@ -515,7 +514,7 @@ protected:
 
 	bool isSquare(const char* p, int& square ) {
 		if (strlen(p) > 1 && p[0] >= 'a' && p[0] <= 'h' && p[1] >= '0' && p[1] <= '9')	{
-			square = ((p[1] - '0') << 3) + p[0] -'a';
+			square = ((p[1] - '1') << 3) + p[0] -'a';
 			return true;
 		}
 		return false;
@@ -526,12 +525,18 @@ protected:
 	}
 
 	bool startOfMove(const char* p) {
-		return isNonPawnPieceLetter(p);
+		return isNonPawnPieceLetter(p, from_piece);
 	}
 
-	bool isNonPawnPieceLetter(const char* p) {
-		return token == Symbol && strlen(p) && (p[0] == 'N' || p[0] == 'B'
-				|| p[0] == 'R' || p[0] == 'Q' ||p[0] == 'K');
+	bool isNonPawnPieceLetter(const char* p, int& piece_letter) {
+		if (
+					token == Symbol && strlen(p) && (p[0] == 'N' || p[0] == 'B'
+				|| p[0] == 'R' || p[0] == 'Q' ||p[0] == 'K'))
+		{
+			piece_letter = p[0];
+			return true;
+		}
+		return false;
 	}
 
 	bool startOfCaptureOrQuietMove(const char* p) {
@@ -540,9 +545,9 @@ protected:
 
 	bool startOfCapture(const char* p) {
 		return (strlen(p) && p[0] == 'x')
-				|| (strlen(p) > 1 && isRankDigit(p, from_rank) && p[1] == 'x')
-				|| (strlen(p) > 1 && isFileLetter(p, from_file) && p[1] == 'x')
-				|| (strlen(p) > 2 && isSquare(p, from_square) && p[2] == 'x');
+				|| (strlen(p) > 1 && p[1] == 'x' && isRankDigit(p, from_rank))
+				|| (strlen(p) > 1 && p[1] == 'x' && isFileLetter(p, from_file))
+				|| (strlen(p) > 2 && p[2] == 'x' && isSquare(p, from_square));
 	}
 
 	bool startOfQuietMove(const char* p) {
@@ -630,7 +635,7 @@ protected:
 		}
 		token_str[0] = ch;
 		token_str[1] = '\0';
-    }
+	}
 
 	int getChar(unsigned char& c) {
 		bool escape = false;
@@ -891,18 +896,15 @@ protected:
 	char tag_value[1024];
 	int from_file;
 	int from_rank;
-//	int from_piece;
+	int from_piece;
 	int from_square;
 	int to_square;
+	int promoted_to;
 	int side_to_move;
 	int move_number;
-	bool pawn_move;
-	bool castle_move;
-	bool piece_move;
-
 
 private:
-	static const size_t bufsize = 64*1024;
+	static const size_t bufsize = 128*1024;
 };
 
 /*

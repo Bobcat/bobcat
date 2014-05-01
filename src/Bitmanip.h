@@ -25,5 +25,5 @@ __forceinline int popCount(uint64 x) {
 }
 
 __forceinline int lsb(uint64 x) {
-  	return __builtin_ctzll(x);
+	return __builtin_ctzll(x);
 }

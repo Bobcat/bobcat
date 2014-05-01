@@ -29,7 +29,6 @@ public:
 static const int LEGALMOVES = 1;
 static const int STAGES = 2;
 static const int QUEENPROMOTION = 4;
-static const int QUIESCENCE1 = 8;
 
 class Moves {
 public:
@@ -49,10 +48,6 @@ public:
 		stage = 1;
 	}
 
-	__forceinline void generateQuiescence0(MoveSorter* sorter, const int flags) {
-        generateMoves(sorter, 0, flags | QUIESCENCE1);
-	}
-
 	__forceinline void generateMoves(const Piece piece, const BB& to_squares) {
 		reset(0,0,0);
 		for (BB bb = board->piece[piece]; bb; resetLSB(bb)) {
@@ -62,21 +57,13 @@ public:
 	}
 
 	__forceinline void generatePawnMoves(bool capture, const BB& to_squares) {
-		reset(0,0,0);
+		reset(0, 0, 0);
+
 		if (capture) {
-			const BB& pawns = board->pawns(side_to_move);
-			addPawnMoves(pawnPush[side_to_move](pawns & rank_7[side_to_move]) & ~occupied & to_squares, pawn_push_dist, QUIET);
-			addPawnMoves(pawnWestAttacks[side_to_move](pawns) & occupied_by_side[side_to_move ^ 1] & to_squares, pawn_west_attack_dist, CAPTURE);
-			addPawnMoves(pawnEastAttacks[side_to_move](pawns) & occupied_by_side[side_to_move ^ 1] & to_squares, pawn_east_attack_dist, CAPTURE);
-			addPawnMoves(pawnWestAttacks[side_to_move](pawns) & en_passant_square & to_squares, pawn_west_attack_dist, EPCAPTURE);
-			addPawnMoves(pawnEastAttacks[side_to_move](pawns) & en_passant_square & to_squares, pawn_east_attack_dist, EPCAPTURE);
+			addPawnCaptureMoves(to_squares);
 		}
 		else {
-			const BB& pawns = board->pawns(side_to_move);
-			addPawnMoves(pawnPush[side_to_move](pawns & rank_7[side_to_move]) & ~occupied & to_squares, pawn_push_dist, QUIET);
-			BB pushed = pawnPush[side_to_move](board->pawns(side_to_move) & ~rank_7[side_to_move]) & ~occupied;
-			addPawnMoves(pushed & to_squares, pawn_push_dist, QUIET);
-			addPawnMoves(pawnPush[side_to_move](pushed & rank_3[side_to_move]) & ~occupied & to_squares, pawn_double_push_dist, DOUBLEPUSH);
+			addPawnQuietMoves(to_squares);
 		}
 	}
 
@@ -236,10 +223,6 @@ private:
 			return;
 		}
 
-		if ((flags & QUIESCENCE1) && !(isCapture(move) || isPromotion((move)) || givesCheck(move))) {
-			return;
-		}
-
 		if ((flags & LEGALMOVES) && !isLegal(move, piece, from, type)) {
 			return;
 		}
@@ -285,6 +268,20 @@ private:
 			Square to = lsb(bb);
 			addMove(piece | (side_to_move << 3), from, to, board->getPiece(to) == NoPiece ? QUIET : CAPTURE);
 		}
+	}
+
+	__forceinline void addPawnQuietMoves(const BB& to_squares) {
+			BB pushed = pawnPush[side_to_move](board->pawns(side_to_move)) & ~occupied;
+			addPawnMoves(pushed & to_squares, pawn_push_dist, QUIET);
+			addPawnMoves(pawnPush[side_to_move](pushed & rank_3[side_to_move]) & ~occupied & to_squares, pawn_double_push_dist, DOUBLEPUSH);
+	}
+
+	__forceinline void addPawnCaptureMoves(const BB& to_squares) {
+		const BB& pawns = board->pawns(side_to_move);
+		addPawnMoves(pawnWestAttacks[side_to_move](pawns) & occupied_by_side[side_to_move ^ 1] & to_squares, pawn_west_attack_dist, CAPTURE);
+		addPawnMoves(pawnEastAttacks[side_to_move](pawns) & occupied_by_side[side_to_move ^ 1] & to_squares, pawn_east_attack_dist, CAPTURE);
+		addPawnMoves(pawnWestAttacks[side_to_move](pawns) & en_passant_square & to_squares, pawn_west_attack_dist, EPCAPTURE);
+		addPawnMoves(pawnEastAttacks[side_to_move](pawns) & en_passant_square & to_squares, pawn_east_attack_dist, EPCAPTURE);
 	}
 
 	__forceinline void addPawnMoves(const BB& to_squares, const int* dist, const Move type) {

@@ -541,6 +541,9 @@ protected:
 		}
 
 		if (pos->eval_score >= beta) {
+			if (!pos->transposition) {
+				return storeSearchNodeScore(pos->eval_score, 0, BETA, 0);
+			}
 			return searchNodeScore(pos->eval_score);
 		}
 
@@ -596,10 +599,6 @@ protected:
 					}
 				}
 			}
-		}
-
-		if (move_count == 0) {
-			return searchNodeScore(best_score);
 		}
 		return storeSearchNodeScore(best_score, 0, nodeType(best_score, beta, best_move), best_move);
 	}

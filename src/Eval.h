@@ -158,7 +158,7 @@ protected:
 			int score_eg = knight_pcsq_eg[flipsq];
 
 			const BB& attacks = knight_attacks[sq];
-			int x = popCount(attacks & ~(board->occupied_by_side[us]));
+			int x = popCount(attacks & ~board->occupied_by_side[us] & ~pawn_attacks[them]);
 
 			int score = 5*x;
 
@@ -209,10 +209,9 @@ protected:
 					score -= 110;
 				}
 			}
-			const BB attacks2 = Bmagic(sq, occupied ^ (board->bishops(us) | board->queens(us)));
 
-			if (attacks2 & king_area[them]) {
-				attack_counter[us] += popCount(attacks2 & king_area[them])*6;
+			if (attacks & king_area[them]) {
+				attack_counter[us] += popCount(attacks & king_area[them])*6;
 				attack_count[us]++;
 			}
 
@@ -255,7 +254,7 @@ protected:
 				score += 20;
 			}
 			const BB attacks = Rmagic(sq, occupied);
-			int x = popCount(attacks & ~(board->occupied_by_side[us]));
+			int x = popCount(attacks & ~board->occupied_by_side[us]);
 
 			score_mg += 2*x;
 			score_eg += 5*x;
@@ -263,10 +262,8 @@ protected:
 			all_attacks[us] |= attacks;
 			rook_attacks[us] |= attacks;
 
-			const BB attacks2 = Rmagic(sq, occupied ^ (board->rooks(us) | board->queens(us)));
-
-			if (attacks2 & king_area[them]) {
-				attack_counter[us] += popCount(attacks2 & king_area[them])*12;
+			if (attacks & king_area[them]) {
+				attack_counter[us] += popCount(attacks & king_area[them])*12;
 				attack_count[us]++;
 			}
 
@@ -296,22 +293,17 @@ protected:
 			if ((bbsq & rank_7[us]) && (rank_7_and_8[us] & (pawns(them) | board->king(them)))) {
 				score += 20;
 			}
-			const BB attacks = Bmagic(sq, occupied) | Rmagic(sq, occupied);
+			const BB attacks = Qmagic(sq, occupied);
 
 			all_attacks[us] |= attacks;
 			queen_attacks[us] |= attacks;
 
-			const BB attacks2 = Bmagic(sq, occupied ^ (board->bishops(us) | board->queens(us))) |
-											Rmagic(sq, occupied ^ (board->rooks(us) | board->queens(us)));
-
-			if (attacks2 & king_area[them]) {
-				attack_counter[us] += popCount(attacks2 & king_area[them])*24;
+			if (attacks & king_area[them]) {
+				attack_counter[us] += popCount(attacks & king_area[them])*24;
 				attack_count[us]++;
 			}
 
-			if (bbSquare(sq) & (pawn_attacks[them] | _knight_attacks[them] | bishop_attacks[them]
-					| rook_attacks[them]))
-			{
+			if (bbSquare(sq) & (pawn_attacks[them] | _knight_attacks[them] | bishop_attacks[them] | rook_attacks[them])) {
 				score += -20;
 			}
 			poseval[us] += score;
@@ -345,10 +337,23 @@ protected:
 
 		if (board->queens(them) || popCount(board->rooks(them)) > 1) {
 			BB eastwest = bbsq | westOne(bbsq) | eastOne(bbsq);
+			int x = -15*popCount(open_files & eastwest);
+			int y = -10*popCount(half_open_files[us] & eastwest);
 
-			score_mg += -15*popCount(open_files & eastwest);
-			score_mg += -10*popCount(half_open_files[us] & eastwest);
+			score_mg += x;
+			score_mg += y;
+
+			if (board->queens(them) && popCount(board->rooks(them))) {
+				score_mg += x;
+				score_mg += y;
+
+				if (popCount(board->rooks(them) > 1)) {
+					score_mg += x;
+					score_mg += y;
+				}
+			}
 		}
+
 		if (((us == 0) &&
 				(((sq == f1 || sq == g1) && (bbSquare(h1) & board->rooks(0))) ||
 				((sq == c1 || sq == b1) && (bbSquare(a1) & board->rooks(0))))) ||
@@ -356,8 +361,9 @@ protected:
 				(((sq == f8 || sq == g8) && (bbSquare(h8) & board->rooks(1))) ||
 				((sq == c8 || sq == b8) && (bbSquare(a8) & board->rooks(1))))))
 		{
-			score_mg += -180;
+			score_mg += -80;
 		}
+
 		all_attacks[us] |= king_attacks[kingSq(us)];
 		poseval_mg[us] += score_mg;
 		poseval_eg[us] += score_eg;

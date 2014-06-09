@@ -128,7 +128,7 @@ protected:
 				score_mg += open_file ? -40 : -20;
 				score_eg += -20;
 			}
-			else if (board->isPawnBehind(sq, us)) {
+			else if ((bbSquare(sq) & pawn_attacks[us]) == 0) {
 				score_mg += open_file ? -20 : -8;
 				score_eg += -8;
 			}

@@ -150,9 +150,6 @@ protected:
 							updatePV(best_move, best_score, depth, EXACT);
 							alpha = score;
 						}
-						else {
-							updatePV(m, best_score, depth, ALPHA);
-						}
 					}
 				}
 			}
@@ -371,14 +368,10 @@ protected:
 						best_move = m;
 
 						if (score >= beta) {
-							updatePV(best_move, best_score, depth, BETA);
 							break;
 						}
 						updatePV(best_move, best_score, depth, EXACT);
 						alpha = best_score;
-					}
-					else {
-						updatePV(m, best_score, depth, ALPHA);
 					}
 				}
 			}
@@ -661,6 +654,7 @@ protected:
 		entry->depth = depth;
 		entry->key = pos->key;
 		entry->move = move;
+		entry->node_type = node_type;
 
 		pv_length[ply] = pv_length[ply + 1];
 
@@ -668,6 +662,7 @@ protected:
 			pv[ply][i] = pv[ply + 1][i];
 		}
 		if (ply == 0) {
+			pos->pv_length = pv_length[0];
 			char buf[2048], buf2[16]; buf[0] = 0;
 			for (int i = ply; i < pv_length[ply]; i++) {
 				snprintf(&buf[strlen(buf)], sizeof(buf) - strlen(buf), "%s ",
@@ -681,12 +676,9 @@ protected:
 	}
 
 	__forceinline void storePV() {
-		if (pv_length[0]) {
-			pos->pv_length = pv_length[0];
-			for (int i = 0; i < pos->pv_length; i++) {
-				const PVEntry& entry = pv[0][i];
-				transt->insert(entry.key, entry.depth, entry.score, EXACT, entry.move);
-			}
+		for (int i = 0; i < pos->pv_length; i++) {
+			const PVEntry& entry = pv[0][i];
+			transt->insert(entry.key, entry.depth, entry.score, entry.node_type, entry.move);
 		}
 	}
 
@@ -940,6 +932,7 @@ protected:
 		Depth depth;
 		Score score;
 		Move move;
+		int node_type;
 	};
 
 public:

@@ -93,7 +93,7 @@ const char* FENfromParams(const char* params[], int num_params, int& param, char
 __forceinline uint64 millis() {
 	return GetTickCount();
 }
-
+/*
 struct Runnable {
   virtual void run() = 0;
 };
@@ -128,7 +128,7 @@ protected:
 	HANDLE handle;
 	Runnable* runnable;
 };
-
+*/
 const char* dateAndTimeString(char* buf) {
 	time_t now = time(NULL);
 	struct tm* time = localtime(&now);

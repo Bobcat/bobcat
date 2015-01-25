@@ -15,6 +15,7 @@
   You should have received a copy of the GNU General Public License
   along with Bobcat.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include <thread>
 
 class Worker {
 public:
@@ -24,16 +25,13 @@ public:
 		see = new SEE(game);
 		eval = new Eval(game, pawnt, see);
 		search = new Search(game, eval, see, transt);
-		thread = new Thread(search);
-		thread->start();
+		thread_ = new std::thread(&Search::run, search);
 	}
 
 	void stop() {
 		search->stop();
-		while (!search->isStopped()) {
-			Sleep(1);
-		}
-		delete thread;
+		thread_->join();
+		delete thread_;
 		delete search;
 		delete eval;
 		delete see;
@@ -45,5 +43,5 @@ private:
 	Eval* eval;
 	SEE* see;
 	Search* search;
-	Thread* thread;
+	std::thread* thread_;
 };

@@ -16,14 +16,15 @@
   along with Bobcat.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-class Search : public Runnable, MoveSorter {
+class Search : public MoveSorter {
 public:
 	Search(Protocol* protocol, Game* game, Eval* eval, SEE* see, TranspositionTable* transt) {
-		initialise(protocol, game, eval, see, transt, false);
+		initialise(protocol, game, eval, see, transt);
 	}
 
 	Search(Game* game, Eval* eval, SEE* see, TranspositionTable* transt) {
-		initialise(NULL, game, eval, see, transt, true);
+		initialise(0, game, eval, see, transt);
+		stop_search = false;
 	}
 
 	virtual ~Search() {
@@ -55,19 +56,14 @@ public:
 				while (ply) {
 					unmakeMove();
 				}
-				storePV();
+				//storePV(); // leads to illegal moves/time forfeits with ponder on and/or mt.  but why?
 			}
 		}
-		stopped = true;
 		return 0;
 	}
 
 	void stop() {
 		stop_search = true;
-	}
-
-	bool isStopped() {
-		return stopped;
 	}
 
 	virtual void run() {
@@ -81,25 +77,27 @@ public:
 		return protocol;
 	}
 
+	__forceinline uint64 timeUsed() const {
+		return std::max((uint64)1, millis() - start_time);
+	}
+
 protected:
-	void initialise(Protocol* protocol, Game* game, Eval* eval, SEE* see, TranspositionTable* transt, bool worker) {
+	void initialise(Protocol* protocol, Game* game, Eval* eval, SEE* see, TranspositionTable* transt) {
 		this->protocol = protocol;
 		this->game = game;
 		this->eval = eval;
 		this->see = see;
 		this->transt = transt;
 		board = game->pos->board;
-		this->worker = worker;
-		stopped = false;
 		verbosity = 1;
 	}
-
+/*
 	void postInfo(int depth, int selective_depth, uint64 node_count, uint64 nodes_per_sec, uint64 time, int hash_full) {
 		if (!worker) {
 			protocol->postInfo(search_depth, max_ply_reached, node_count, nodesPerSecond(), timeUsed(),	transt->getLoad());
 		}
 	}
-
+*/
 	Score searchRoot(const Depth depth, Score alpha, Score beta) {
 		do { // Stay in this loop until an exact score is found
 			initialiseSearchRoot(depth, alpha, beta);
@@ -114,11 +112,12 @@ protected:
 				if (makeMoveAndEvaluate(m, alpha, beta)) {
 					++move_count;
 
-					Depth next_depth = getNextDepth(0, move_count == 1, depth, move_count, move_data, alpha, best_score);
+					Depth next_depth = getNextDepth(0, move_count == 1, depth, move_count, move_data, alpha, best_score, EXACT,
+																							move_count == 1 ? EXACT : BETA);
 
-					if (search_depth > 10 && (search_time > 5000 || isAnalysing()) && protocol) {
-						protocol->postInfo(m, move_count);
-					}
+		//			if (search_depth > 10 && (search_time > 5000 || isAnalysing()) && protocol) {
+		//				protocol->postInfo(m, move_count);
+		//			}
 					Score score;
 
 					if (move_count == 1) {
@@ -128,7 +127,7 @@ protected:
 						score = searchNextDepthNotPV(next_depth, -alpha, BETA);
 
 						if (score > alpha && depth > 1 && next_depth < depth - 1) {
-							score = searchNextDepthNotPV(depth - 1, -alpha, 128);
+							score = searchNextDepthNotPV(depth - 1, -alpha, ALPHA);
 						}
 
 						if (score > alpha) {
@@ -214,7 +213,7 @@ protected:
 
 		if (okToTryNullMove(depth, beta)) {
 			makeMoveAndEvaluate(0, beta - 1, beta);
-			score = searchNextDepthNotPV(depth - nullMoveReduction(depth), -beta + 1, 128);
+			score = searchNextDepthNotPV(depth - nullMoveReduction(depth), -beta + 1, ALPHA);
 			unmakeMove();
 
 			if (score >= beta) {
@@ -253,7 +252,7 @@ protected:
 				score = searchNextDepthNotPV(next_depth, -beta + 1, nextExpectedNodeType);
 
 				if (score >= beta && depth > 1 && next_depth < depth - 1) {
-					score = searchNextDepthNotPV(depth - 1, -beta + 1, 128);
+					score = searchNextDepthNotPV(depth - 1, -beta + 1, ALPHA);
 				}
 				unmakeMove();
 
@@ -264,8 +263,10 @@ protected:
 						best_move = m;
 						break;
 					}
-					nextExpectedNodeType = BETA;
 				}
+
+				if (expectedNodeType == BETA) {
+					nextExpectedNodeType = BETA;				}
 			}
 		}
 
@@ -311,8 +312,8 @@ protected:
 		Score score;
 
 		if (okToTryNullMove(depth, beta)) {
-			makeMoveAndEvaluate(0, alpha, beta);
-			score = searchNextDepthNotPV(depth - nullMoveReduction(depth), -beta + 1, 128);
+			makeMoveAndEvaluate(0, beta - 1, beta);
+			score = searchNextDepthNotPV(depth - nullMoveReduction(depth), -beta + 1, ALPHA);
 			unmakeMove();
 
 			if (score >= beta) {
@@ -338,7 +339,7 @@ protected:
 				++move_count;
 
 				Depth next_depth = getNextDepth(singular_move, move_count == 1, depth, move_count, move_data, alpha,
-													best_score);
+													best_score, EXACT, move_count == 1 ? EXACT : BETA);
 
 				if (next_depth == -999) {
 					unmakeMove();
@@ -352,7 +353,7 @@ protected:
 					score = searchNextDepthNotPV(next_depth, -alpha, BETA);
 
 					if (score > alpha && depth > 1 && next_depth < depth - 1) {
-						score = searchNextDepthNotPV(depth - 1, -alpha, 128);
+						score = searchNextDepthNotPV(depth - 1, -alpha, ALPHA);
 					}
 
 					if (score > alpha) {
@@ -420,7 +421,7 @@ protected:
 			}
 
 			if (makeMoveAndEvaluate(m, alpha, alpha + 1)) {
-				Depth next_depth = getNextDepth(0, false, depth, ++move_count, move_data, alpha, best_score);
+				Depth next_depth = getNextDepth(0, false, depth, ++move_count, move_data, alpha, best_score, ALPHA, BETA);
 
 				if (next_depth == -999) {
 					unmakeMove();
@@ -429,7 +430,7 @@ protected:
 				Score score = searchNextDepthNotPV(next_depth, -alpha, BETA);
 
 				if (score > alpha && depth > 1 && next_depth < depth - 1) {
-					score = searchNextDepthNotPV(depth - 1, -alpha, 128);
+					score = searchNextDepthNotPV(depth - 1, -alpha, ALPHA);
 				}
 				unmakeMove();
 
@@ -453,8 +454,8 @@ protected:
 	}
 
 	__forceinline Depth getNextDepth(Move singular_move, bool is_pv_node, const Depth depth, const int move_count,
-		const MoveData* move_data, const Score alpha, Score& best_score, int expectedNodeType = 128,
-		int nextExpectedNodeType = 128) const
+		const MoveData* move_data, const Score alpha, Score& best_score, int expectedNodeType,
+		int nextExpectedNodeType) const
 	{
 		const Move m = move_data->move;
 
@@ -496,15 +497,6 @@ protected:
 			&& !isKillerMove(m, ply - 1)
 			&& move_count >= 3)
 		{
-			if (depth == 1 && move_count > 6) {
-				return -999;
-			}
-			else if (depth == 2 && move_count > 12) {
-				return -999;
-			}
-			else if (depth == 3 && move_count > 24) {
-				return -999;
-			}
 			Depth next_depth = depth - 2 - depth/8 - (move_count-6)/12;
 
 			if (next_depth <= 3
@@ -512,10 +504,6 @@ protected:
 			{
 				best_score = std::max(best_score, -pos->eval_score + futility_margin[std::max(0, next_depth)]);
 				return -999;
-			}
-
-			if (expectedNodeType == BETA) {
-				next_depth -= 2;
 			}
 			return next_depth;
 		}
@@ -601,7 +589,8 @@ protected:
 			pos = game->pos;
 			++ply;
 			pv_length[ply] = ply;
-			node_count++;
+			++total_node_count;
+			++node_count;
 
 			pos->eval_score = eval->evaluate(-beta, -alpha);
 
@@ -621,30 +610,27 @@ protected:
 	}
 
 	__forceinline void checkTime() {
-		if ((node_count & 0x3FFF) == 0) {//!!!!
-			if (!isAnalysing() && !protocol->isFixedDepth()) {
-				stop_search = search_depth > 1 && timeUsed() > search_time;
-			}
-			else {
-				if (protocol) {
+		if ((node_count & 1024) == 0) {
+			if (protocol) {
+				if (!isAnalysing() && !protocol->isFixedDepth()) {
+					stop_search = search_depth > 1 && timeUsed() > search_time;
+				}
+				else {
 					protocol->checkInput();
 				}
 			}
+
 			if (stop_search) {
 				throw 1;
 			}
 		}
-		if ((node_count & 0x3FFFFF) == 0) {
-			postInfo(search_depth, max_ply_reached, node_count, nodesPerSecond(), timeUsed(), transt->getLoad());
-		}
+//		if ((node_count & 0x3FFFFF) == 0) {
+//			postInfo(search_depth, max_ply_reached, node_count, nodesPerSecond(), timeUsed(), transt->getLoad());
+//		}
 	}
 
 	__forceinline int isAnalysing() const {
 		return protocol ? protocol->isAnalysing() : true;
-	}
-
-	__forceinline uint64 timeUsed() const {
-		return std::max((uint64)1, millis() - start_time);
 	}
 
 	__forceinline void updatePV(const Move move, const Score score, const Depth depth, int node_type) {
@@ -668,7 +654,7 @@ protected:
 				snprintf(&buf[strlen(buf)], sizeof(buf) - strlen(buf), "%s ",
 					game->moveToString(pv[ply][i].move, buf2));
 			}
-			if (!worker && verbosity > 0) {
+			if (protocol && verbosity > 0) {
 				protocol->postPV(search_depth, max_ply_reached, node_count, nodesPerSecond(),
 					timeUsed(), transt->getLoad(), score, buf, node_type);
 			}
@@ -721,7 +707,7 @@ protected:
 	void initialiseSearch(int wtime, int btime, int movestogo, int winc, int binc, int movetime) {
 		pos = game->pos; // Updated in makeMove and unmakeMove from here on.
 
-		if (!worker) {
+		if (protocol) {
 			if (protocol->isFixedTime()) {
 				search_time = (int)(0.9*(double)movetime);
 			}
@@ -748,12 +734,13 @@ protected:
 			}
 			start_time = millis();
 			transt->initialiseSearch();
+			total_node_count = 1;
+			stop_search = false;
 		}
 		ply = 0;
 		search_depth = 0;
 		pos->pv_length = 0;
 		node_count = 1;
-		stop_search = false;
 		max_ply_reached = 0;
 		memset(pv, 0, sizeof(pv));
 		memset(killer_moves, 0, sizeof(killer_moves));
@@ -802,6 +789,7 @@ protected:
 		else if (isCapture(m)) {
 			Score value_captured = piece_value(moveCaptured(m));
 			Score value_piece = piece_value(movePiece(m));
+
 			if (value_piece == 0) {
 				value_piece = 1800;
 			}
@@ -912,7 +900,7 @@ protected:
 	}
 
 	bool moveIsEasy(const Score score) const {
-		if (!worker) {
+		if (protocol) {
 			if ((pos->moveCount() == 1 && search_depth > 9)
 				|| (protocol->isFixedDepth() && protocol->getDepth() == search_depth)
 				|| (score == MAXSCORE - 1))
@@ -944,16 +932,14 @@ public:
 	uint64 search_time;
 	uint64 time_left;
 	uint64 time_inc;
-	bool stop_search;
+	volatile bool stop_search;
 	int max_plies;
 	int verbosity;
 
 protected:
 	Depth search_depth;
-	bool worker;
 	Move killer_moves[4][128];
 	int history_scores[16][64];
-	bool stopped;
 	Protocol* protocol;
 	Game* game;
 	Eval* eval;
@@ -966,9 +952,10 @@ protected:
 	mutable int expectedBetaRight;
 	mutable int expectedAlphaWrong;
 	mutable int expectedBetaWrong;
-	bool trace;
 
-	static uint64 node_count;
+	bool trace;
+	uint64 node_count;
+	static uint64 total_node_count;
 
 	static const int EXACT = 1;
 	static const int BETA = 2;
@@ -984,7 +971,8 @@ protected:
 	static int razor_margin[4];
 };
 
-uint64 Search::node_count;
+uint64 Search::total_node_count;
+
 const int Search::EXACT;
 const int Search::ALPHA;
 const int Search::BETA;

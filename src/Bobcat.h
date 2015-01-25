@@ -65,10 +65,10 @@ public:
 			search->start_time = millis();
 		}
 		else {
-			if (search->time_left > 30000 || search->time_inc > 0) {
-				search->search_time = std::min((uint64)(search->search_time*1.5),
-                                                search->search_time + millis() - search->start_time);
+			if (search->timeUsed() < search->search_time) {
+				search->search_time += (search->search_time - search->timeUsed());
 			}
+			search->search_time = search->search_time*0.5 + search->timeUsed(); // not too sophisticated
 		}
 		return 0;
 	}
@@ -154,7 +154,7 @@ public:
 
 	int run(int argc, char* argv[]) {
 		setbuf(stdout, NULL);
-		//setbuf(stdin, NULL);
+		setbuf(stdin, NULL);
 
 		logger = new Logger();
 		config = new Config(argc > 1 ? argv[1] : "bobcat.ini");

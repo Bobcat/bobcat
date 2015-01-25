@@ -8,7 +8,7 @@
 class File {
 public:
 	File(const char* path, int oflag, int pmode) {
-		if ((fd = open(path, oflag, pmode)) == -1) {
+		if ((fd = open(path, oflag|O_BINARY, pmode)) == -1) {
 			perror("File::File: cannot open file");
 			exit(EXIT_FAILURE);
 		}

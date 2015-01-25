@@ -337,19 +337,19 @@ protected:
 
 		if (board->queens(them) || popCount(board->rooks(them)) > 1) {
 			BB eastwest = bbsq | westOne(bbsq) | eastOne(bbsq);
-			int x = -15*popCount(open_files & eastwest);
-			int y = -10*popCount(half_open_files[us] & eastwest);
+			int x = -10*popCount(open_files & eastwest);
+			int y = -5*popCount(half_open_files[us] & eastwest);
 
 			score_mg += x;
 			score_mg += y;
 
 			if (board->queens(them) && popCount(board->rooks(them))) {
-				score_mg += x;
-				score_mg += y;
+				score_mg += 2*x;
+				score_mg += 2*y;
 
 				if (popCount(board->rooks(them) > 1)) {
-					score_mg += x;
-					score_mg += y;
+					score_mg += 3*x;
+					score_mg += 3*y;
 				}
 			}
 		}
@@ -384,7 +384,7 @@ protected:
 				score_eg += rr*(front_span & board->occupied_by_side[us] ? 0 : 1);
 				score_eg += rr*(front_span & board->occupied_by_side[them] ? 0 : 1);
 				score_eg += rr*(front_span & all_attacks[them] ? 0 : 1);
-				score_eg += r*(distance[sq][kingSq(them)]*2-distance[sq][kingSq(us)]*2);
+				score_eg += (r-1)*r*(distance[sq][kingSq(them)]-distance[sq][kingSq(us)]);
 
 				poseval_mg[us] += score_mg;
 				poseval_eg[us] += score_eg;

@@ -56,7 +56,7 @@ public:
 				while (ply) {
 					unmakeMove();
 				}
-				//storePV(); // leads to illegal moves/time forfeits with ponder on and/or mt.  but why?
+				storePV();
 			}
 		}
 		return 0;
@@ -127,11 +127,12 @@ protected:
 						score = searchNextDepthNotPV(next_depth, -alpha, BETA);
 
 						if (score > alpha && depth > 1 && next_depth < depth - 1) {
-							score = searchNextDepthNotPV(depth - 1, -alpha, ALPHA);
+							score = searchNextDepthNotPV(depth - 1, -alpha, BETA);
 						}
 
 						if (score > alpha) {
-							score = searchNextDepthPV(std::max(depth - 1, next_depth), -beta, -alpha);
+							next_depth = getNextDepth(0, true, depth, 1, move_data, alpha, best_score, EXACT, EXACT);
+							score = searchNextDepthPV(next_depth, -beta, -alpha);
 						}
 					}
 					unmakeMove();
@@ -143,7 +144,7 @@ protected:
 							best_move = m;
 
 							if (score >= beta) {
-								updatePV(best_move, best_score, depth, BETA);
+							//	updatePV(best_move, best_score, depth, BETA);
 								break;
 							}
 							updatePV(best_move, best_score, depth, EXACT);
@@ -213,7 +214,7 @@ protected:
 
 		if (okToTryNullMove(depth, beta)) {
 			makeMoveAndEvaluate(0, beta - 1, beta);
-			score = searchNextDepthNotPV(depth - nullMoveReduction(depth), -beta + 1, ALPHA);
+			score = searchNextDepthNotPV(depth - nullMoveReduction(depth), -beta + 1, 128);
 			unmakeMove();
 
 			if (score >= beta) {
@@ -252,7 +253,7 @@ protected:
 				score = searchNextDepthNotPV(next_depth, -beta + 1, nextExpectedNodeType);
 
 				if (score >= beta && depth > 1 && next_depth < depth - 1) {
-					score = searchNextDepthNotPV(depth - 1, -beta + 1, ALPHA);
+					score = searchNextDepthNotPV(depth - 1, -beta + 1, 128);
 				}
 				unmakeMove();
 
@@ -265,8 +266,9 @@ protected:
 					}
 				}
 
-				if (expectedNodeType == BETA) {
-					nextExpectedNodeType = BETA;				}
+				if (expectedNodeType == BETA) { // adding && move_count > n is very bad for percentage 'expected BETA right'
+					nextExpectedNodeType = 128; //BETA; //slightly less accurate than setting to 128 but much more 'hits' afterwards. for 'expected alpha right' percentage this is very bad
+				}
 			}
 		}
 
@@ -313,7 +315,7 @@ protected:
 
 		if (okToTryNullMove(depth, beta)) {
 			makeMoveAndEvaluate(0, beta - 1, beta);
-			score = searchNextDepthNotPV(depth - nullMoveReduction(depth), -beta + 1, ALPHA);
+			score = searchNextDepthNotPV(depth - nullMoveReduction(depth), -beta + 1, 128);
 			unmakeMove();
 
 			if (score >= beta) {
@@ -353,11 +355,12 @@ protected:
 					score = searchNextDepthNotPV(next_depth, -alpha, BETA);
 
 					if (score > alpha && depth > 1 && next_depth < depth - 1) {
-						score = searchNextDepthNotPV(depth - 1, -alpha, ALPHA);
+						score = searchNextDepthNotPV(depth - 1, -alpha, BETA);
 					}
 
 					if (score > alpha) {
-						score = searchNextDepthPV(std::max(depth - 1, next_depth), -beta, -alpha);
+						next_depth = getNextDepth(0, true, depth, 1, move_data, alpha, best_score, EXACT, EXACT);
+						score = searchNextDepthPV(next_depth, -beta, -alpha);
 					}
 				}
 				unmakeMove();
@@ -430,7 +433,7 @@ protected:
 				Score score = searchNextDepthNotPV(next_depth, -alpha, BETA);
 
 				if (score > alpha && depth > 1 && next_depth < depth - 1) {
-					score = searchNextDepthNotPV(depth - 1, -alpha, ALPHA);
+					score = searchNextDepthNotPV(depth - 1, -alpha, 128);
 				}
 				unmakeMove();
 
@@ -610,7 +613,7 @@ protected:
 	}
 
 	__forceinline void checkTime() {
-		if ((node_count & 1024) == 0) {
+		if ((node_count & 0x3FFF) == 0) {
 			if (protocol) {
 				if (!isAnalysing() && !protocol->isFixedDepth()) {
 					stop_search = search_depth > 1 && timeUsed() > search_time;
@@ -655,6 +658,7 @@ protected:
 					game->moveToString(pv[ply][i].move, buf2));
 			}
 			if (protocol && verbosity > 0) {
+//game->pos->board->print();
 				protocol->postPV(search_depth, max_ply_reached, node_count, nodesPerSecond(),
 					timeUsed(), transt->getLoad(), score, buf, node_type);
 			}
@@ -662,7 +666,7 @@ protected:
 	}
 
 	__forceinline void storePV() {
-		for (int i = 0; i < pos->pv_length; i++) {
+		for (int i = 0; i < pv_length[0]; i++) {
 			const PVEntry& entry = pv[0][i];
 			transt->insert(entry.key, entry.depth, entry.score, entry.node_type, entry.move);
 		}
@@ -739,9 +743,9 @@ protected:
 		}
 		ply = 0;
 		search_depth = 0;
-		pos->pv_length = 0;
 		node_count = 1;
 		max_ply_reached = 0;
+		pos->pv_length = 0;
 		memset(pv, 0, sizeof(pv));
 		memset(killer_moves, 0, sizeof(killer_moves));
 		memset(history_scores, 0, sizeof(history_scores));
@@ -753,8 +757,8 @@ protected:
 		expectedBetaRight = 0;
 		expectedAlphaWrong = 0;
 		expectedBetaWrong= 0;
-		pv_length[0] = 0;
 		pos->eval_score = eval->evaluate(alpha, beta);
+		pv_length[0] = 0;
 		findTransposition(depth, alpha, beta);
 		generateMoves();
 	}
@@ -825,7 +829,7 @@ protected:
 	}
 
 	__forceinline Score transpositionScore(const Score score, int expectedNodeType) const {
-		int actualNodeType = pos->transp_flags & (ALPHA | BETA | EXACT);
+		/*int actualNodeType = pos->transp_flags & (ALPHA | BETA | EXACT);
 		if (trace) {
 			if (expectedNodeType == actualNodeType) {
 				if (expectedNodeType == ALPHA) {
@@ -843,7 +847,7 @@ protected:
 					++expectedBetaWrong;
 				}
 			}
-		}
+		}*///measure is very accurate but knowing it without this is more interesting
 		return score;
 	}
 

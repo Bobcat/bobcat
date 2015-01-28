@@ -68,7 +68,7 @@ public:
 			if (search->timeUsed() < search->search_time) {
 				search->search_time += (search->search_time - search->timeUsed());
 			}
-			search->search_time = search->search_time*0.5 + search->timeUsed(); // not too sophisticated
+			search->search_time += search->search_time*0.5; // not too sophisticated
 		}
 		return 0;
 	}

@@ -127,7 +127,7 @@ protected:
 						score = searchNextDepthNotPV(next_depth, -alpha, BETA);
 
 						if (score > alpha && depth > 1 && next_depth < depth - 1) {
-							score = searchNextDepthNotPV(depth - 1, -alpha, BETA);
+							score = searchNextDepthNotPV(depth - 1, -alpha, 128);
 						}
 
 						if (score > alpha) {
@@ -144,7 +144,7 @@ protected:
 							best_move = m;
 
 							if (score >= beta) {
-							//	updatePV(best_move, best_score, depth, BETA);
+								updatePV(best_move, best_score, depth, BETA);
 								break;
 							}
 							updatePV(best_move, best_score, depth, EXACT);
@@ -264,10 +264,7 @@ protected:
 						best_move = m;
 						break;
 					}
-				}
-
-				if (expectedNodeType == BETA) { // adding && move_count > n is very bad for percentage 'expected BETA right'
-					nextExpectedNodeType = 128; //BETA; //slightly less accurate than setting to 128 but much more 'hits' afterwards. for 'expected alpha right' percentage this is very bad
+					nextExpectedNodeType = BETA;
 				}
 			}
 		}
@@ -314,7 +311,7 @@ protected:
 		Score score;
 
 		if (okToTryNullMove(depth, beta)) {
-			makeMoveAndEvaluate(0, beta - 1, beta);
+			makeMoveAndEvaluate(0, alpha, beta);
 			score = searchNextDepthNotPV(depth - nullMoveReduction(depth), -beta + 1, 128);
 			unmakeMove();
 
@@ -355,7 +352,7 @@ protected:
 					score = searchNextDepthNotPV(next_depth, -alpha, BETA);
 
 					if (score > alpha && depth > 1 && next_depth < depth - 1) {
-						score = searchNextDepthNotPV(depth - 1, -alpha, BETA);
+						score = searchNextDepthNotPV(depth - 1, -alpha, 128);
 					}
 
 					if (score > alpha) {
@@ -424,13 +421,13 @@ protected:
 			}
 
 			if (makeMoveAndEvaluate(m, alpha, alpha + 1)) {
-				Depth next_depth = getNextDepth(0, false, depth, ++move_count, move_data, alpha, best_score, ALPHA, BETA);
+				Depth next_depth = getNextDepth(0, false, depth, ++move_count, move_data, alpha, best_score, 128, 128);
 
 				if (next_depth == -999) {
 					unmakeMove();
 					continue;
 				}
-				Score score = searchNextDepthNotPV(next_depth, -alpha, BETA);
+				Score score = searchNextDepthNotPV(next_depth, -alpha, 128);
 
 				if (score > alpha && depth > 1 && next_depth < depth - 1) {
 					score = searchNextDepthNotPV(depth - 1, -alpha, 128);
@@ -500,6 +497,15 @@ protected:
 			&& !isKillerMove(m, ply - 1)
 			&& move_count >= 3)
 		{
+			if (depth == 1 && move_count > 6) {
+				return -999;
+			}
+			else if (depth == 2 && move_count > 12) {
+				return -999;
+			}
+			else if (depth == 3 && move_count > 24) {
+				return -999;
+			}
 			Depth next_depth = depth - 2 - depth/8 - (move_count-6)/12;
 
 			if (next_depth <= 3
@@ -507,6 +513,10 @@ protected:
 			{
 				best_score = std::max(best_score, -pos->eval_score + futility_margin[std::max(0, next_depth)]);
 				return -999;
+			}
+
+			if (expectedNodeType == BETA) {
+				next_depth -= 2;
 			}
 			return next_depth;
 		}

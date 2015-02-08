@@ -24,7 +24,7 @@ struct Transposition {
 	uint8 flags; // 5 bits left
 	int16 score;
 	Move move;
-	uint16 unused;
+	int16 eval;
 };
 #pragma pack()
 
@@ -72,7 +72,9 @@ public:
 		return 0;
 	}
 
-	__forceinline Transposition* insert(const uint64 key, const int depth, const int score, const int type, const int move) {
+	__forceinline Transposition* insert(const uint64 key, const int depth, const int score,
+																			const int type, const int move, int eval)
+	{
 		Transposition* transp = getEntryToReplace(key, depth);
 		if (transp->flags == 0) {
 			occupied++;
@@ -83,6 +85,7 @@ public:
 		transp->depth = (uint8)depth;
 		transp->flags = (uint8)type;
 		transp->age = (uint16)age;
+		transp->eval = (int16)eval;
 		return transp;
 	}
 

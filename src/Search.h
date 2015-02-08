@@ -112,8 +112,7 @@ protected:
 				if (makeMoveAndEvaluate(m, alpha, beta)) {
 					++move_count;
 
-					Depth next_depth = getNextDepth(0, move_count == 1, depth, move_count, move_data, alpha, best_score, EXACT,
-																							move_count == 1 ? EXACT : BETA);
+					Depth next_depth = getNextDepth(0, depth, move_count, move_data, alpha, best_score, EXACT);
 
 		//			if (search_depth > 10 && (search_time > 5000 || isAnalysing()) && protocol) {
 		//				protocol->postInfo(m, move_count);
@@ -131,7 +130,7 @@ protected:
 						}
 
 						if (score > alpha) {
-							next_depth = getNextDepth(0, true, depth, 1, move_data, alpha, best_score, EXACT, EXACT);
+							next_depth = getNextDepth(0, depth, 1, move_data, alpha, best_score, EXACT);
 							score = searchNextDepthPV(next_depth, -beta, -alpha);
 						}
 					}
@@ -243,8 +242,7 @@ protected:
 			const Move m = move_data->move;
 
 			if (makeMoveAndEvaluate(m, beta - 1, beta)) {
-				Depth next_depth = getNextDepth(0, false, depth, ++move_count, move_data, beta - 1, best_score,
-													expectedNodeType, nextExpectedNodeType);
+				Depth next_depth = getNextDepth(0, depth, ++move_count, move_data, beta - 1, best_score, expectedNodeType);
 
 				if (next_depth == -999) {
 					unmakeMove();
@@ -337,8 +335,7 @@ protected:
 			if (makeMoveAndEvaluate(m, alpha, beta)) {
 				++move_count;
 
-				Depth next_depth = getNextDepth(singular_move, move_count == 1, depth, move_count, move_data, alpha,
-													best_score, EXACT, move_count == 1 ? EXACT : BETA);
+				Depth next_depth = getNextDepth(singular_move, depth, move_count, move_data, alpha, best_score, EXACT);
 
 				if (next_depth == -999) {
 					unmakeMove();
@@ -356,7 +353,7 @@ protected:
 					}
 
 					if (score > alpha) {
-						next_depth = getNextDepth(0, true, depth, 1, move_data, alpha, best_score, EXACT, EXACT);
+						next_depth = getNextDepth(0, depth, 1, move_data, alpha, best_score, EXACT);
 						score = searchNextDepthPV(next_depth, -beta, -alpha);
 					}
 				}
@@ -421,7 +418,7 @@ protected:
 			}
 
 			if (makeMoveAndEvaluate(m, alpha, alpha + 1)) {
-				Depth next_depth = getNextDepth(0, false, depth, ++move_count, move_data, alpha, best_score, 128, 128);
+				Depth next_depth = getNextDepth(0, depth, ++move_count, move_data, alpha, best_score, 128);
 
 				if (next_depth == -999) {
 					unmakeMove();
@@ -453,9 +450,8 @@ protected:
 			&& pos->eval_score >= beta;
 	}
 
-	__forceinline Depth getNextDepth(Move singular_move, bool is_pv_node, const Depth depth, const int move_count,
-		const MoveData* move_data, const Score alpha, Score& best_score, int expectedNodeType,
-		int nextExpectedNodeType) const
+	__forceinline Depth getNextDepth(Move singular_move, const Depth depth, const int move_count,
+		const MoveData* move_data, const Score alpha, Score& best_score, int expectedNodeType) const
 	{
 		const Move m = move_data->move;
 
@@ -463,6 +459,7 @@ protected:
 			return depth;
 		}
 		bool reduce = true;
+		bool is_pv_node = expectedNodeType == EXACT && move_count == 1;
 
 		if (pos->in_check) {
 			if (is_pv_node || see->seeLastMove(m) >= 0) {
@@ -605,7 +602,13 @@ protected:
 			++total_node_count;
 			++node_count;
 
-			pos->eval_score = eval->evaluate(-beta, -alpha);
+			if ((pos->transposition = transt->find(pos->key)) && pos->transposition->key == transt->key32(pos->key)) {
+					pos->eval_score = pos->transposition->eval;
+					pos->flags = 0;
+			}
+			else {
+					pos->eval_score = eval->evaluate(-beta, -alpha);
+			}
 
 			if (ply > max_ply_reached) {
 				max_ply_reached = ply;
@@ -654,6 +657,7 @@ protected:
 		entry->key = pos->key;
 		entry->move = move;
 		entry->node_type = node_type;
+		entry->eval = pos->eval_score;
 
 		pv_length[ply] = pv_length[ply + 1];
 
@@ -678,7 +682,7 @@ protected:
 	__forceinline void storePV() {
 		for (int i = 0; i < pv_length[0]; i++) {
 			const PVEntry& entry = pv[0][i];
-			transt->insert(entry.key, entry.depth, entry.score, entry.node_type, entry.move);
+			transt->insert(entry.key, entry.depth, entry.score, entry.node_type, entry.move, entry.eval);
 		}
 	}
 
@@ -767,8 +771,8 @@ protected:
 		expectedBetaRight = 0;
 		expectedAlphaWrong = 0;
 		expectedBetaWrong= 0;
-		pos->eval_score = eval->evaluate(alpha, beta);
 		pv_length[0] = 0;
+		pos->eval_score = eval->evaluate(alpha, beta);
 		findTransposition(depth, alpha, beta);
 		generateMoves();
 	}
@@ -871,7 +875,16 @@ protected:
 	}
 
 	__forceinline void storeTransposition(const Depth depth, const Score score, const int node_type, const Move move) {
-		pos->transposition = transt->insert(pos->key, depth, codecTTableScore(score, ply), node_type, move);
+		if (node_type == BETA) {
+			pos->eval_score = std::max(pos->eval_score, score);
+		}
+		else if (node_type == ALPHA) {
+			pos->eval_score = std::min(pos->eval_score, score);
+		}
+		else if (node_type == EXACT) {
+			pos->eval_score = score;
+		}
+		pos->transposition = transt->insert(pos->key, depth, codecTTableScore(score, ply), node_type, move, pos->eval_score);
 	}
 
 	__forceinline void findTransposition(const Depth depth, const Score alpha, const Score beta) {
@@ -892,15 +905,12 @@ protected:
 		switch (pos->transposition->flags & 7) {
 			case EXACT:
 				pos->transp_score_valid = true;
-				pos->eval_score = pos->transp_score;
 				break;
 			case BETA:
 				pos->transp_score_valid = pos->transp_score >= beta;
-				pos->eval_score = std::max(pos->eval_score, pos->transp_score);
 				break;
 			case ALPHA:
 				pos->transp_score_valid = pos->transp_score <= alpha;
-				pos->eval_score = std::min(pos->eval_score, pos->transp_score);
 				break;
 			default://error
 				pos->transp_score_valid = false;
@@ -935,6 +945,7 @@ protected:
 		Score score;
 		Move move;
 		int node_type;
+		int eval;
 	};
 
 public:

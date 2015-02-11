@@ -200,9 +200,7 @@ protected:
 	}
 
  	Score searchNotPV(const Depth depth, const Score beta, const int expectedNodeType) {
-		findTransposition(depth, beta - 1, beta);
-
-		if (pos->transp_score_valid && pos->transp_depth_valid) {
+		if (isTranspositionScoreValid(depth, beta - 1, beta)) {
 			return transpositionScore(pos->transp_score, expectedNodeType);
 		}
 
@@ -301,8 +299,6 @@ protected:
 	}
 
  	Score searchPV(const Depth depth, Score alpha, const Score beta) {
-		findTransposition(depth, alpha, beta);
-
 		if (ply >= max_plies - 1) {
 			return searchNodeScore(pos->eval_score);
 		}
@@ -321,7 +317,7 @@ protected:
 
 		if (!pos->transp_move && depth >= 4) {
 			searchPV(depth - 2, alpha, beta);
-			findTransposition(depth, alpha, beta);
+			getTransposition();
 		}
 		generateMoves();
 
@@ -525,9 +521,7 @@ protected:
 	}
 
 	Score searchQuiesce(Score alpha, const Score beta, int qs_ply, bool search_pv) {
-		findTransposition(0, alpha, beta);
-
-		if (!search_pv && pos->transp_score_valid && pos->transp_depth_valid) {
+		if (!search_pv && isTranspositionScoreValid(0, alpha, beta)) {
 			return searchNodeScore(pos->transp_score);
 		}
 
@@ -602,12 +596,8 @@ protected:
 			++total_node_count;
 			++node_count;
 
-			if ((pos->transposition = transt->find(pos->key)) && pos->transposition->key == transt->key32(pos->key)) {
-					pos->eval_score = pos->transposition->eval;
-					pos->flags = 0;
-			}
-			else {
-					pos->eval_score = eval->evaluate(-beta, -alpha);
+			if (!getTransposition()) {
+				pos->eval_score = eval->evaluate(-beta, -alpha);
 			}
 
 			if (ply > max_ply_reached) {
@@ -772,8 +762,10 @@ protected:
 		expectedAlphaWrong = 0;
 		expectedBetaWrong= 0;
 		pv_length[0] = 0;
-		pos->eval_score = eval->evaluate(alpha, beta);
-		findTransposition(depth, alpha, beta);
+
+		if (!getTransposition()) {
+			pos->eval_score = eval->evaluate(alpha, beta);
+		}
 		generateMoves();
 	}
 
@@ -887,36 +879,35 @@ protected:
 		pos->transposition = transt->insert(pos->key, depth, codecTTableScore(score, ply), node_type, move, pos->eval_score);
 	}
 
-	__forceinline void findTransposition(const Depth depth, const Score alpha, const Score beta) {
-		if (!pos->transposition || pos->transposition->key != transt->key32(pos->key)) {
-			if ((pos->transposition = transt->find(pos->key)) == 0) {
-				pos->transp_depth_valid = false;
-				pos->transp_score_valid = false;
-				pos->transp_flags = 0;
-				pos->transp_move = 0;
-				return;
-			}
+	__forceinline bool getTransposition() {
+		if ((pos->transposition = transt->find(pos->key)) == 0) {
+			pos->transp_flags = 0;
+			pos->transp_move = 0;
+			return false;
 		}
-		pos->transp_depth_valid = pos->transposition->depth >= depth;
 		pos->transp_score = codecTTableScore(pos->transposition->score, -ply);
+		pos->eval_score = codecTTableScore(pos->transposition->eval, -ply);
 		pos->transp_depth = pos->transposition->depth;
 		pos->transp_flags = pos->transposition->flags;
-
-		switch (pos->transposition->flags & 7) {
-			case EXACT:
-				pos->transp_score_valid = true;
-				break;
-			case BETA:
-				pos->transp_score_valid = pos->transp_score >= beta;
-				break;
-			case ALPHA:
-				pos->transp_score_valid = pos->transp_score <= alpha;
-				break;
-			default://error
-				pos->transp_score_valid = false;
-				break;
-		}
 		pos->transp_move = pos->transposition->move;
+		pos->flags = 0;
+		return true;
+	}
+
+	__forceinline bool isTranspositionScoreValid(const Depth depth, const Score alpha, const Score beta) {
+		if (pos->transposition && pos->transp_depth >= depth) {
+			switch (pos->transp_flags & 7) {
+				case EXACT:
+					return true;
+				case BETA:
+					return pos->transp_score >= beta;
+				case ALPHA:
+					return pos->transp_score <= alpha;
+				default://error
+					break;
+			}
+		}
+		return false;
 	}
 
 	__forceinline int nodeType(const Score score, const Score beta, const Move move) const {

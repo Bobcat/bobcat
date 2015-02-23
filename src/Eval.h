@@ -36,15 +36,12 @@ public:
 
 		int mat_eval = mateval[0] - mateval[1];
 
-		if (pos->use_lazy) {
-			int lazy_margin = 300;
-			int lazy_eval = pos->side_to_move == 0 ? mat_eval : -mat_eval;
+		int lazy_margin = 300;
+		int lazy_eval = pos->side_to_move == 0 ? mat_eval : -mat_eval;
 
-			if (lazy_eval - lazy_margin > beta || lazy_eval + lazy_margin < alpha) {
-				return pos->material.evaluate(pos->flags, lazy_eval, pos->side_to_move, board);
-			}
+		if (lazy_eval - lazy_margin > beta || lazy_eval + lazy_margin < alpha) {
+			return pos->material.evaluate(pos->flags, lazy_eval, pos->side_to_move, board);
 		}
-
 		// Pass 1.
 		evalPawnsBothSides();
 		evalKnightsOneSide(0);
@@ -162,7 +159,6 @@ protected:
 
 			int score = 5*x;
 
-			all_attacks[us] |= attacks;
 			_knight_attacks[us] |= attacks;
 
 			bool outpost = (passed_pawn_front_span[us][sq] & (pawns(them) & ~pawn_front_span[us][sq])) == 0;
@@ -200,7 +196,6 @@ protected:
 
 			int score = 6*x;
 
-			all_attacks[us] |= attacks;
 			bishop_attacks[us] |= attacks;
 
 			if (bishop_trapped_a7h7[us] & bbsq) {
@@ -242,13 +237,6 @@ protected:
 					score += 20;
 				}
 			}
-			else if (bbsq & half_open_files[us]) {
-				score += 10;
-
-				if (~bbsq & bbFile(sq) & board->rooks(us)) {
-					score += 10;
-				}
-			}
 
 			if ((bbsq & rank_7[us]) && (rank_7_and_8[us] & (pawns(them) | board->king(them)))) {
 				score += 20;
@@ -259,7 +247,6 @@ protected:
 			score_mg += 2*x;
 			score_eg += 5*x;
 
-			all_attacks[us] |= attacks;
 			rook_attacks[us] |= attacks;
 
 			if (attacks & king_area[them]) {
@@ -295,7 +282,6 @@ protected:
 			}
 			const BB attacks = Qmagic(sq, occupied);
 
-			all_attacks[us] |= attacks;
 			queen_attacks[us] |= attacks;
 
 			if (attacks & king_area[them]) {
@@ -338,18 +324,14 @@ protected:
 		if (board->queens(them) || popCount(board->rooks(them)) > 1) {
 			BB eastwest = bbsq | westOne(bbsq) | eastOne(bbsq);
 			int x = -15*popCount(open_files & eastwest);
-			int y = -10*popCount(half_open_files[us] & eastwest);
 
 			score_mg += x;
-			score_mg += y;
 
 			if (board->queens(them) && popCount(board->rooks(them))) {
 				score_mg += x;
-				score_mg += y;
 
 				if (popCount(board->rooks(them) > 1)) {
 					score_mg += x;
-					score_mg += y;
 				}
 			}
 		}
@@ -364,7 +346,6 @@ protected:
 			score_mg += -80;
 		}
 
-		all_attacks[us] |= king_attacks[kingSq(us)];
 		poseval_mg[us] += score_mg;
 		poseval_eg[us] += score_eg;
 	}
@@ -383,7 +364,6 @@ protected:
 
 				score_eg += rr*(front_span & board->occupied_by_side[us] ? 0 : 1);
 				score_eg += rr*(front_span & board->occupied_by_side[them] ? 0 : 1);
-				score_eg += rr*(front_span & all_attacks[them] ? 0 : 1);
 				score_eg += r*(distance[sq][kingSq(them)]*2-distance[sq][kingSq(us)]*2);
 
 				poseval_mg[us] += score_mg;
@@ -423,11 +403,9 @@ protected:
 		not_occupied = ~occupied;
 
 		open_files = ~(northFill(southFill(pawns(0))) | northFill(southFill(pawns(1))));
-		half_open_files[0] = ~northFill(southFill(pawns(0))) & ~open_files;
-		half_open_files[1] = ~northFill(southFill(pawns(1))) & ~open_files;
 
-		all_attacks[0] = pawn_attacks[0] = pawnEastAttacks[0](pawns(0)) | pawnWestAttacks[0](pawns(0));
-		all_attacks[1] = pawn_attacks[1] = pawnEastAttacks[1](pawns(1)) | pawnWestAttacks[1](pawns(1));
+		pawn_attacks[0] = pawnEastAttacks[0](pawns(0)) | pawnWestAttacks[0](pawns(0));
+		pawn_attacks[1] = pawnEastAttacks[1](pawns(1)) | pawnWestAttacks[1](pawns(1));
 
 		_knight_attacks[0] = _knight_attacks[1] = 0;
 		bishop_attacks[0] = bishop_attacks[1] = 0;
@@ -464,7 +442,6 @@ protected:
 	int attack_count[2];
 
 	BB pawn_attacks[2];
-	BB all_attacks[2];
 	BB _knight_attacks[2];
 	BB bishop_attacks[2];
 	BB rook_attacks[2];
@@ -473,7 +450,6 @@ protected:
 	BB occupied;
 	BB not_occupied;
 	BB open_files;
-	BB half_open_files[2];
 
 	const BB* pawns_array[2];
 	const Square* king_square[2];

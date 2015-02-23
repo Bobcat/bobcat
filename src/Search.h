@@ -458,7 +458,7 @@ protected:
 		bool is_pv_node = expectedNodeType == EXACT && move_count == 1;
 
 		if (pos->in_check) {
-			if (is_pv_node || see->seeLastMove(m) >= 0) {
+			if (see->seeLastMove(m) >= 0) {
 				return depth;
 			}
 			reduce = false;
@@ -488,7 +488,8 @@ protected:
 			&& !isQueenPromotion(m)
 			&& !isCapture(m)
 			&& !isKillerMove(m, ply - 1)
-			&& move_count >= 3)
+			&& move_count >= 3
+			&& depth > 1)
 		{
 			if (depth == 1 && move_count > 6) {
 				return -999;
@@ -866,7 +867,9 @@ protected:
 		return 0;
 	}
 
-	__forceinline void storeTransposition(const Depth depth, const Score score, const int node_type, const Move move) {
+	__forceinline void storeTransposition(const Depth depth, Score score, const int node_type, const Move move) {
+		score = codecTTableScore(score, ply);
+
 		if (node_type == BETA) {
 			pos->eval_score = std::max(pos->eval_score, score);
 		}
@@ -876,7 +879,7 @@ protected:
 		else if (node_type == EXACT) {
 			pos->eval_score = score;
 		}
-		pos->transposition = transt->insert(pos->key, depth, codecTTableScore(score, ply), node_type, move, pos->eval_score);
+		pos->transposition = transt->insert(pos->key, depth, score, node_type, move, pos->eval_score);
 	}
 
 	__forceinline bool getTransposition() {

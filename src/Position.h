@@ -33,7 +33,6 @@ public:
 		null_moves_in_row = 0;
 		transposition = 0;
 		last_move = 0;
-		use_lazy = false;
 	}
 
 	const Move* stringToMove(const char* m) {
@@ -120,9 +119,8 @@ public:
 	int eval_score;
 	int transp_score;
 	int transp_depth;
-	int transp_flags;
+	int transp_type;
 	Move transp_move;
 	int flags;
 	Transposition* transposition;
-	bool use_lazy;
 };

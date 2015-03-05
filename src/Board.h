@@ -247,6 +247,21 @@ public:
 		printf("   a b c d e f g h\n");
 	}
 
+	void print(char* buf) const {
+		static char piece_letter[] = "PNBRQK. pnbrqk. ";
+		sprintf(buf+strlen(buf), "BOARD: \n");
+		for (int rank = 7; rank >= 0; rank--) {
+			sprintf(buf+strlen(buf), "BOARD: ");
+			sprintf(buf+strlen(buf), "%d  ", rank + 1);
+			for (int file = 0; file <= 7; file++) {
+				Piece p_and_c = getPiece(rank * 8 + file);
+				sprintf(buf+strlen(buf), "%c ", piece_letter[p_and_c]);
+			}
+			sprintf(buf+strlen(buf), "\n");
+		}
+		sprintf(buf+strlen(buf), "BOARD:    a b c d e f g h\n");
+	}
+
 	__forceinline const BB& pawns(int side) const { return piece[Pawn | (side << 3)]; }
 	__forceinline const BB& knights(int side) const { return piece[Knight | (side << 3)]; }
 	__forceinline const BB& bishops(int side) const { return piece[Bishop | (side << 3)]; }

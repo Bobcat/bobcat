@@ -175,7 +175,7 @@ public:
 		pawnt = new PawnStructureTable(8);
 		see = new SEE(game);
 		eval = new Eval(game, pawnt, see);
-		search = new Search(protocol, game, eval, see, transt);
+		search = new Search(protocol, game, eval, see, transt, logger);
 
 //		print_bb(bbSquare(flip[0][a2]), "bbSquare(flip[0][a2])");
 	//	print_bb(bbSquare(flip[1][a2]), "bbSquare(flip[1][a2])");

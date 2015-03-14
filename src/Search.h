@@ -151,17 +151,16 @@ protected:
 				//if (ply == 0 && search_depth > 10 && (search_time > 5000 || isAnalysing()) && protocol) {
 				//	protocol->postInfo(m, move_count);
 				//}
-				Depth next_depth = getNextDepth(singular_move, depth, move_count, move_data, alpha, best_score, EXACT);
-
-				if (next_depth == -999) {
-					unmakeMove();
-					continue;
-				}
-
 				if (move_count == 1) {
-					score = searchNextDepthPV(next_depth, -beta, -alpha);
+					score = searchNextDepthPV(nextDepthPV(singular_move, depth, move_data), -beta, -alpha);
 				}
 				else {
+					Depth next_depth = nextDepthNotPV(depth, move_count, move_data, alpha, best_score, EXACT);
+
+					if (next_depth == -999) {
+						unmakeMove();
+						continue;
+					}
 					score = searchNextDepthNotPV(next_depth, -alpha, BETA);
 
 					if (score > alpha && depth > 1 && next_depth < depth - 1) {
@@ -169,8 +168,7 @@ protected:
 					}
 
 					if (score > alpha) {
-						next_depth = getNextDepth(0, depth, 1, move_data, alpha, best_score, EXACT);
-						score = searchNextDepthPV(next_depth, -beta, -alpha);
+						score = searchNextDepthPV(nextDepthPV(0, depth, move_data), -beta, -alpha);
 					}
 				}
 				unmakeMove();
@@ -258,7 +256,7 @@ protected:
 			const Move m = move_data->move;
 
 			if (makeMoveAndEvaluate(m, beta - 1, beta)) {
-				Depth next_depth = getNextDepth(0, depth, ++move_count, move_data, beta - 1, best_score, expectedNodeType);
+				Depth next_depth = nextDepthNotPV(depth, ++move_count, move_data, beta - 1, best_score, expectedNodeType);
 
 				if (next_depth == -999) {
 					unmakeMove();
@@ -330,7 +328,6 @@ protected:
 	bool searchFailLow(const Depth depth, Score alpha, const Move exclude_move) {
 		generateMoves();
 
-		Score best_score = -MAXSCORE;
 		int move_count = 0;
 
 		while (const MoveData* move_data = pos->nextMove()) {
@@ -339,9 +336,10 @@ protected:
 			if (m == exclude_move) {
 				continue;
 			}
+			int best_score = -MAXSCORE; //dummy
 
 			if (makeMoveAndEvaluate(m, alpha, alpha + 1)) {
-				Depth next_depth = getNextDepth(0, depth, ++move_count, move_data, alpha, best_score, 128);
+				Depth next_depth = nextDepthNotPV(depth, ++move_count, move_data, alpha, best_score, 128);
 
 				if (next_depth == -999) {
 					unmakeMove();
@@ -373,42 +371,17 @@ protected:
 			&& pos->eval_score >= beta;
 	}
 
-	__forceinline Depth getNextDepth(Move singular_move, const Depth depth, const int move_count,
+	__forceinline Depth nextDepthNotPV(const Depth depth, const int move_count,
 		const MoveData* move_data, const Score alpha, Score& best_score, int expectedNodeType) const
 	{
 		const Move m = move_data->move;
-
-		if (m == singular_move && singular_move != 0) {
-			return depth;
-		}
 		bool reduce = true;
-		bool is_pv_node = expectedNodeType == EXACT && move_count == 1;
 
 		if (pos->in_check) {
 			if (see->seeLastMove(m) >= 0) {
 				return depth;
 			}
-			reduce = false;
-		}
-
-		if (isPassedPawnMove(m)) {
-			if (see->seeLastMove(m) >= 0) {
-				int r = rank(moveTo(m));
-
-				if (r == 1 || r == 6) {
-					return depth;
-				}
-				reduce = false;
-			}
-		}
-
-		if (((pos-1)->in_check && (pos-1)->moveCount() == 1)) {
-			// Single repy extension is a way to find the mate in 9 in
-			// 3r1r2/pppb1p1k/2npqP1p/2b1p3/8/2NP2PP/PPPQN1BK/R4R2 w - - 0 1
-			if (is_pv_node) {
-				return depth;
-			}
-			reduce = false;
+			//reduce = false;
 		}
 
 		if (reduce
@@ -432,7 +405,7 @@ protected:
 			if (next_depth <= 3
 				&& -pos->eval_score + futility_margin[std::max(0, next_depth)] < alpha)
 			{
-				best_score = std::max(best_score, -pos->eval_score + futility_margin[std::max(0, next_depth)]);
+				best_score = std::max(best_score, -pos->eval_score + futility_margin[std::max(0, next_depth)]);//without maybe better
 				return -999;
 			}
 
@@ -440,6 +413,25 @@ protected:
 				next_depth -= 2;
 			}
 			return next_depth;
+		}
+		return depth - 1;
+	}
+
+	__forceinline Depth nextDepthPV(Move singular_move, const Depth depth, const MoveData* move_data) const {
+		const Move m = move_data->move;
+
+		if (m == singular_move) {
+			return depth;
+		}
+
+		if (pos->in_check || isPassedPawnMove(m)) {
+			if (see->seeLastMove(m) >= 0) {
+				return depth;
+			}
+		}
+
+		if (((pos-1)->in_check && (pos-1)->moveCount() == 1)) {
+			return depth;
 		}
 		return depth - 1;
 	}

@@ -26,8 +26,8 @@ public:
 	virtual int newGame() = 0;
 	virtual int setFEN(const char* fen) = 0;
 	virtual int go(int wtime, int btime, int movestogo, int winc, int binc, int movetime) = 0;
-	virtual int ponderHit() = 0;
-	virtual int stop() = 0;
+	virtual void ponderHit() = 0;
+	virtual void stop() = 0;
 	virtual int setOption(const char* name, const char* value) = 0;
 };
 

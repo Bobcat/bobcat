@@ -60,22 +60,12 @@ public:
 		return 0;
 	}
 
-	virtual int ponderHit() {
-		if (protocol->isFixedTime()) {
-			search->start_time = millis();
-		}
-		else {
-			if (search->timeUsed() < search->search_time) {
-				search->search_time += (search->search_time - search->timeUsed());
-			}
-			search->search_time += search->search_time*0.5; // not too sophisticated
-		}
-		return 0;
+	virtual void ponderHit() {
+		search->search_time += search->timeUsed();
 	}
 
-	virtual int stop() {
+	virtual void stop() {
 		search->stop_search = true;
-		return 0;
 	}
 
 	virtual bool makeMove(const char* m) {

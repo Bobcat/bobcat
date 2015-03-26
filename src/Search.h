@@ -391,15 +391,6 @@ protected:
 			&& move_count >= 3
 			&& depth > 1)
 		{
-			if (depth == 1 && move_count > 6) {
-				return -999;
-			}
-			else if (depth == 2 && move_count > 12) {
-				return -999;
-			}
-			else if (depth == 3 && move_count > 24) {
-				return -999;
-			}
 			Depth next_depth = depth - 2 - depth/8 - (move_count-6)/12;
 
 			if (next_depth <= 3

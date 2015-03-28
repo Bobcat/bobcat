@@ -437,7 +437,7 @@ protected:
 		}
 
 		if (pos->eval_score >= beta) {
-			if (!pos->transposition) {
+			if (!pos->transposition || pos->transp_depth <= 0) {
 				return storeSearchNodeScore(pos->eval_score, 0, BETA, 0);
 			}
 			return searchNodeScore(pos->eval_score);
@@ -496,7 +496,10 @@ protected:
 				}
 			}
 		}
-		return storeSearchNodeScore(best_score, 0, nodeType(best_score, beta, best_move), best_move);
+		if (!pos->transposition || pos->transp_depth <= 0) {
+			return storeSearchNodeScore(best_score, 0, nodeType(best_score, beta, best_move), best_move);
+		}
+		return searchNodeScore(best_score);
 	}
 
 	__forceinline bool makeMoveAndEvaluate(const Move m, int alpha, int beta) {

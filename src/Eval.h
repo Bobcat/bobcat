@@ -156,7 +156,7 @@ protected:
 			const BB& attacks = knight_attacks[sq];
 			int x = popCount(attacks & ~board->occupied_by_side[us] & ~pawn_attacks[them]);
 
-			score += 7*x;
+			score += 6*x;
 
 			all_attacks[us] |= attacks;
 			_knight_attacks[us] |= attacks;
@@ -198,7 +198,7 @@ protected:
 			const BB attacks = Bmagic(sq, occupied);
 			int x = popCount(attacks & ~(board->occupied_by_side[us]));
 
-			score += 6*x;
+			score += 7*x;
 
 			all_attacks[us] |= attacks;
 			bishop_attacks[us] |= attacks;

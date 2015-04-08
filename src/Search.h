@@ -574,7 +574,7 @@ protected:
 			}
 			if (protocol && verbosity > 0) {
 //game->pos->board->print();
-				protocol->postPV(search_depth, max_ply, node_count, nodesPerSecond(),
+				protocol->postPV(search_depth, max_ply, total_node_count, nodesPerSecond(),
 					timeUsed(), transt->getLoad(), score, buf, node_type);
 			}
 		}
@@ -588,7 +588,7 @@ protected:
 	}
 
 	uint64 nodesPerSecond() const {
-		return (uint64)(node_count*1000/std::max((uint64)1, (millis() - start_time)));
+		return (uint64)(total_node_count*1000/std::max((uint64)1, (millis() - start_time)));
 	}
 
 	__forceinline void updateHistoryScores(const Move move, const Depth depth) {

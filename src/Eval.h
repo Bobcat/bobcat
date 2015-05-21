@@ -127,14 +127,13 @@ protected:
 			}
 			resetLSB(bb);
 
-			if (bbFile(sq) & bb) {
-				score_mg += -15;
-				score_eg += -15;
-			}
 			int r = us == 0 ? rank(sq) - 1 : 6 - rank(sq);
 
-			score_mg += 4*r;
-			score_eg += 2*r;
+			static int advance_bonus_mg[8] = { 0, 0, 3, 5, 5, 3, 0, 0 };
+			static int advance_bonus_eg[8] = { 5, 4, 3, 2, 2, 3, 4, 5 };
+
+			score_mg += advance_bonus_mg[file(sq)]*r;
+			score_eg += advance_bonus_eg[file(sq)]*r;
 		}
 		pawn_eval_mg[us] += score_mg;
 		pawn_eval_eg[us] += score_eg;
@@ -173,7 +172,7 @@ protected:
 			}
 
 			if (bbSquare(sq) & pawn_attacks[them]) {
-				score += -14;
+				score += -28;
 			}
 		}
 		poseval[us] += score;
@@ -216,7 +215,7 @@ protected:
 			}
 
 			if (bbSquare(sq) & pawn_attacks[them]) {
-				score += -14;
+				score += -28;
 			}
 		}
 		poseval[us] += score;
@@ -267,7 +266,7 @@ protected:
 			}
 
 			if (bbSquare(sq) & (pawn_attacks[them] | _knight_attacks[them] | bishop_attacks[them])) {
-				score += -18;
+				score += -36;
 			}
 		}
 		poseval[us] += score;
@@ -299,7 +298,7 @@ protected:
 			}
 
 			if (bbSquare(sq) & (pawn_attacks[them] | _knight_attacks[them] | bishop_attacks[them] | rook_attacks[them])) {
-				score += -20;
+				score += -40;
 			}
 			else {
 				score += 6*(7 - distance[sq][kingSq(them)]);

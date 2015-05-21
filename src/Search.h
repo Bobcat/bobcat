@@ -384,28 +384,36 @@ protected:
 			//reduce = false;
 		}
 
-		if (reduce
+		bool quiet = reduce
 			&& !isQueenPromotion(m)
 			&& !isCapture(m)
-			&& !isKillerMove(m, ply - 1)
+			&& !isKillerMove(m, ply - 1);
+
+		Depth next_depth, goto_research_reduction = 0;
+
+		if (quiet
 			&& move_count >= 3
 			&& depth > 1)
 		{
-			Depth next_depth = depth - 2 - depth/8 - (move_count-6)/12;
+			next_depth = depth - 2 - depth/8 - (move_count-6)/12;
 
+			if (expectedNodeType == BETA) {
+				goto_research_reduction = 1 + move_count/12;
+			}
+		}
+		else {
+				next_depth = depth - 1;
+		}
+
+		if (quiet && move_count >= 3) {
 			if (next_depth <= 3
 				&& -pos->eval_score + futility_margin[std::max(0, next_depth)] < alpha)
 			{
 				best_score = std::max(best_score, -pos->eval_score + futility_margin[std::max(0, next_depth)]);//without maybe better
 				return -999;
 			}
-
-			if (expectedNodeType == BETA) {
-				next_depth -= 2;
-			}
-			return next_depth;
 		}
-		return depth - 1;
+		return next_depth - goto_research_reduction;
 	}
 
 	__forceinline Depth nextDepthPV(Move singular_move, const Depth depth, const MoveData* move_data) const {
@@ -850,7 +858,7 @@ const int Search::ALPHA;
 const int Search::BETA;
 const int Search::MAXSCORE;
 
-int Search::futility_margin[4] = { 150, 150, 150 ,400 };
+int Search::futility_margin[4] = { 150, 150, 150, 400 };
 int Search::razor_margin[4] = { 0, 125, 125, 400 };
 
 //vanaf depth 36 vreemde matscores (32298 of zo)

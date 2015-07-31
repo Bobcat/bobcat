@@ -67,7 +67,7 @@ public:
 		}
 	}
 
-	__forceinline MoveData* nextMove() {
+	__forceinline auto nextMove() {
 		while (iteration == number_moves && stage < max_stage) {
 			switch (stage) {
 				case 0:
@@ -80,11 +80,11 @@ public:
 					generateQuietMoves();
 					break;
 				default: // error
-					return 0;
+					return (MoveData*)nullptr;
 			}
 		}
 		if (iteration == number_moves) {
-			return 0;
+			return (MoveData*)nullptr;
 		}
 		do {
 			int best_idx = iteration;
@@ -108,7 +108,7 @@ public:
 		} while (1);
 	}
 
-	__forceinline int moveCount() {
+	__forceinline auto moveCount() {
 		return number_moves;
 	}
 

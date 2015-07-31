@@ -37,6 +37,7 @@ typedef unsigned int uint;
 #include <math.h>
 #include <direct.h>
 #include <sys/time.h>
+#include <assert.h>
 
 #ifdef __forceinline
 #undef __forceinline

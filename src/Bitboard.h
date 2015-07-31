@@ -84,9 +84,9 @@ __forceinline BB southFill(const BB& bb) {
 
 void print_bb(const BB bb, const char* s = 0) {
 	printf("\n%s\n", (s ? s : ""));
-	for (int rank = 7; rank >=0; rank--) {
+	for (auto rank = 7; rank >=0; rank--) {
 		printf("%d ", rank + 1);
-		for (int file = 0; file <= 7; file++) {
+		for (auto file = 0; file <= 7; file++) {
 			printf("%s", (bb & bbSquare((rank << 3) + file) ? "1 " : ". "));
 		}
 		printf("\n");

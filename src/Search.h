@@ -141,7 +141,7 @@ protected:
 					score = searchNextDepthPV(nextDepthPV(singular_move, depth, move_data), -beta, -alpha);
 				}
 				else {
-					auto next_depth = nextDepthNotPV(depth, move_count, move_data, alpha, best_score, BETA);
+					auto next_depth = nextDepthNotPV(depth, move_count, move_data, alpha, best_score);
 
 					if (next_depth == -999) {
 						unmakeMove();
@@ -226,7 +226,7 @@ protected:
 			auto score = searchQuiesce(beta - 1, beta, 0);
 
 			if (score < beta) {
-				return std::max(score, pos->eval_score + razor_margin[depth]);
+				return score;
 			}
 		}
 		generateMoves();
@@ -239,7 +239,7 @@ protected:
 
 		while (const auto move_data = pos->nextMove()) {
 			if (makeMoveAndEvaluate(move_data->move, beta - 1, beta)) {
-				auto next_depth = nextDepthNotPV(depth, ++move_count, move_data, beta - 1, best_score, expectedNodeType);
+				auto next_depth = nextDepthNotPV(depth, ++move_count, move_data, beta - 1, best_score);
 
 				if (next_depth == -999) {
 					unmakeMove();
@@ -319,7 +319,7 @@ protected:
 			auto best_score = -MAXSCORE; //dummy
 
 			if (makeMoveAndEvaluate(move_data->move, alpha, alpha + 1)) {
-				Depth next_depth = nextDepthNotPV(depth, ++move_count, move_data, alpha, best_score, ALPHA);
+				Depth next_depth = nextDepthNotPV(depth, ++move_count, move_data, alpha, best_score);
 
 				if (next_depth == -999) {
 					unmakeMove();
@@ -352,7 +352,7 @@ protected:
 	}
 
 	__forceinline Depth nextDepthNotPV(const Depth depth, const int move_count,
-		const MoveData* move_data, const Score alpha, Score& best_score, int expectedNodeType) const
+		const MoveData* move_data, const Score alpha, Score& best_score) const
 	{
 		const auto m = move_data->move;
 		auto reduce = true;
@@ -376,7 +376,6 @@ protected:
 			if (next_depth <= 3
 				&& -pos->eval_score + futility_margin[std::max(0, next_depth)] < alpha)
 			{
-				best_score = std::max(best_score, -pos->eval_score + futility_margin[std::max(0, next_depth)]);//without maybe better
 				return -999;
 			}
 			return next_depth;
@@ -437,7 +436,6 @@ protected:
 					break;
 				}
 				else if (pos->eval_score + piece_value(moveCaptured(move_data->move)) + 150 < alpha) {
-					best_score = std::max(best_score, pos->eval_score + piece_value(moveCaptured(move_data->move)) + 150);
 					continue;
 				}
 			}
@@ -634,7 +632,7 @@ protected:
 			total_node_count = 1;
 			stop_search = false;
 		}
-		ply = 0;//also in search root
+		ply = 0;
 		search_depth = 0;
 		node_count = 1;
 		max_ply = 0;

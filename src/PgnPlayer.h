@@ -75,22 +75,22 @@ public:
 		Piece promoted = (side_to_move << 3);
 
 		if (promoted_to != -1) {
-				switch (promoted_to) {
-				case 'N':
-					promoted |= Knight;
-					break;
-				case 'B':
-					promoted |= Bishop;
-					break;
-				case 'R':
-					promoted |= Rook;
-					break;
-				case 'Q':
-					promoted |= Queen;
-					break;
-				default:
-					cout<<"promoted_to error ["<<token_str << "]"<<endl;
-					exit(0);
+			switch (promoted_to) {
+			case 'N':
+				promoted |= Knight;
+				break;
+			case 'B':
+				promoted |= Bishop;
+				break;
+			case 'R':
+				promoted |= Rook;
+				break;
+			case 'Q':
+				promoted |= Queen;
+				break;
+			default:
+				cout<<"promoted_to error ["<<token_str << "]"<<endl;
+				exit(0);
 			}
 		}
 		bool found = false;

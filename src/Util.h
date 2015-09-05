@@ -16,6 +16,10 @@
   along with Bobcat.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+inline double sigmoid(double x, double K) {
+	return 1 / (1 + pow(10, -K*x/400));
+}
+
 bool iswhitespace(char c) {
 	return c == ' ' || c == '\t' || (int)c == 10 || (int)c == 13;
 }
@@ -53,7 +57,7 @@ static uint64_t rand64() {
 	return genrand64_int64();
 }
 
-static int log2(unsigned int x) {
+static int log2(uint32_t x) {
 	return (int)(log((double)x)/log(2.0));
 }
 
@@ -90,45 +94,10 @@ const char* FENfromParams(const char* params[], int num_params, int& param, char
 
 //#if defined(_MSC_VER)
 
-__forceinline uint64 millis() {
+__forceinline uint64_t millis() {
 	return GetTickCount();
 }
-/*
-struct Runnable {
-  virtual void run() = 0;
-};
 
-class Thread {
-public:
-	Thread(Runnable* runnable) : handle(NULL) {
-		this->runnable = runnable;
-	}
-
-	~Thread() {
-		close();
-	}
-
-	void start() {
-		DWORD threadId;
-		handle = ::CreateThread(0, 0, threadProc, runnable, 0, &threadId);
-	}
-
-	void close() {
-		if (handle) {
-			::CloseHandle(handle);
-		}
-	}
-
-protected:
-	static DWORD __stdcall threadProc(LPVOID param) {
-		((Runnable*)param)->run();
-		return 0;
-	}
-
-	HANDLE handle;
-	Runnable* runnable;
-};
-*/
 const char* dateAndTimeString(char* buf) {
 	time_t now = time(NULL);
 	struct tm* time = localtime(&now);

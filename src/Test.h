@@ -20,11 +20,11 @@ struct perft_result {
 	perft_result() {
 		nodes = enpassants = castles = captures = promotions = 0;
 	}
-	uint64 nodes;
-	uint enpassants;
-	uint castles;
-	uint captures;
-	uint promotions;
+	uint64_t nodes;
+	uint32_t enpassants;
+	uint32_t castles;
+	uint32_t captures;
+	uint32_t promotions;
 };
 
 class Test {
@@ -62,7 +62,7 @@ public:
 			if (!game->makeMove(*m, flags == 0 ? true : false, true) ) {
 				continue;
 			}
-			uint64 nodes_start = result.nodes;
+			uint64_t nodes_start = result.nodes;
 			perft_(depth - 1, result);
 			game->unmakeMove();
 			printf("%7s %" PRIu64 "\n", game->moveToString(*m, buf), result.nodes - nodes_start);
@@ -146,156 +146,4 @@ private:
 	Search* search;
 	ProtocolListener* app;
 	int flags;
-};
-
-class PGNParser : public PGNFileReader {
-public:
-	PGNParser(const char* path) : PGNFileReader(path), game_(nullptr) {
-		game_ = new Game(0);
-		game_count = 0;
-	}
-
-	virtual ~PGNParser() {
-	}
-
-	virtual void readPGNGame() {
-		game_->newGame(Game::START_POSITION);
-		game_count++;
-		PGNFileReader::readPGNGame();
-	}
-
-	virtual void readSANMove() {
-		pawn_move = false;
-		castle_move = false;
-		piece_move = false;
-		capture = false;
-
-		PGNFileReader::readSANMove();
-
-		int piece = (side_to_move << 3);
-
-		if (pawn_move) {
-			piece |= Pawn;
-			game_->pos->generatePawnMoves(capture, bbSquare(to_square));
-		}
-		else if (castle_move) {
-			piece |= King;
-			game_->pos->generateMoves();
-		}
-		else if (piece_move) {
-				switch (from_piece) {
-				case 'N':
-					piece |= Knight;
-					break;
-				case 'B':
-					piece |= Bishop;
-					break;
-				case 'R':
-					piece |= Rook;
-					break;
-				case 'Q':
-					piece |= Queen;
-					break;
-				case 'K':
-					piece |= King;
-					break;
-				default:
-					exit(0);
-			}
-			game_->pos->generateMoves(piece, bbSquare(to_square));
-		}
-		else {
-			exit(0);
-		}
-		Piece promoted = (side_to_move << 3);
-
-		if (promoted_to != -1) {
-				switch (promoted_to) {
-				case 'N':
-					promoted |= Knight;
-					break;
-				case 'B':
-					promoted |= Bishop;
-					break;
-				case 'R':
-					promoted |= Rook;
-					break;
-				case 'Q':
-					promoted |= Queen;
-					break;
-				default:
-					exit(0);
-			}
-		}
-		bool found = false;
-		Move m;
-
-		int move_count = game_->pos->moveCount();
-
-		for (int i = 0; i < move_count; ++i) {
-			m = game_->pos->move_list[i].move;
-
-			if ((movePiece(m) != piece)
-				|| (moveTo(m) != (Move)to_square)
-				|| (promoted_to != -1 && movePromoted(m) != promoted)
-				|| (capture && !isCapture(m))
-				|| (from_file != -1 && ::file(moveFrom(m)) != from_file)
-				|| (from_rank != -1 && ::rank(moveFrom(m)) != from_rank))
-			{
-				continue;
-			}
-
-			if (!game_->makeMove(m, true, false)) {
-					continue;
-			}
-			found = true;
-			break;
-		}
-
-		if (!found) {
-			/*cout<<"!found ["<<token_str << "]  to_square="<<to_square<<endl;
-			cout<<"piece="<<piece<<endl;
-			cout<<"from_file="<<from_file<<endl;
-			cout<<"from_rank="<<from_rank<<endl;
-			cout<<"pawn_move="<<pawn_move<<endl;
-			cout<<"side_to_move="<<side_to_move<<endl;
-			cout<<"game_count="<<game_count<<endl;
-			game_->board.print();*/
-			exit(0);
-		}
-	}
-
-	virtual void readPawnMove(char*& p) {
-		PGNFileReader::readPawnMove(p);
-		pawn_move = true;
-	}
-
-	virtual void readCastleMove(char*& p) {
-		PGNFileReader::readCastleMove(p);
-		castle_move = true;
-	}
-
-	virtual void readMove(char*& p) {
-		PGNFileReader::readMove(p);
-		piece_move = true;
-	}
-
-	virtual void readPawnCapture(char*& p) {
-		PGNFileReader::readPawnCapture(p);
-		capture = true;
-	}
-
-	virtual void readCapture(char*& p) {
-		PGNFileReader::readCapture(p);
-		capture = true;
-	}
-
-private:
-	bool pawn_move;
-	bool castle_move;
-	bool piece_move;
-	bool capture;
-	Move move;
-	Game* game_;
-	int game_count;
 };

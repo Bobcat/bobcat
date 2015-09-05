@@ -18,7 +18,7 @@
 
 namespace bitboard {
 
-typedef uint64 BB;
+typedef uint64_t BB;
 
 const BB AFILE = 0x0101010101010101;
 const BB HFILE = 0x8080808080808080;

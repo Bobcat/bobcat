@@ -21,7 +21,7 @@ public:
 	void clear() {
 		memset(piece, 0, sizeof(piece));
 		memset(occupied_by_side, 0, sizeof(occupied_by_side));
-		for (uint sq = 0; sq < 64; sq++) board[sq] = NoPiece;
+		for (uint32_t sq = 0; sq < 64; sq++) board[sq] = NoPiece;
 		king_square[0] = king_square[1] = 64;
 		occupied = 0;
 	}
@@ -260,6 +260,32 @@ public:
 			sprintf(buf+strlen(buf), "\n");
 		}
 		sprintf(buf+strlen(buf), "BOARD:    a b c d e f g h\n");
+	}
+
+	// get the fields for a piece where it checks the opponen king
+	__forceinline BB getCheckGivingSquaresFor(Piece piece, Side side) {
+		BB checkGivingSquares;
+		switch (piece & 7) {
+		case Pawn:
+			checkGivingSquares = pawnEastAttacks[side^1](king_square[side^1]) | pawnWestAttacks[side^1](king_square[side^1]);
+			break;
+		case Knight:
+			checkGivingSquares = knightAttacks(king_square[side^1]);
+			break;
+		case Bishop:
+			checkGivingSquares = Bmagic(king_square[side^1], occupied);
+			break;
+		case Rook:
+			checkGivingSquares = Rmagic(king_square[side^1], occupied);
+			break;
+		case Queen:
+			checkGivingSquares = Qmagic(king_square[side^1], occupied);
+			break;
+		default:
+			assert(0);
+			break;
+		}//switch
+		return checkGivingSquares;
 	}
 
 	__forceinline const BB& pawns(int side) const { return piece[Pawn | (side << 3)]; }

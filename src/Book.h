@@ -10,7 +10,7 @@
 #pragma warning(disable : 4244)
 #endif
 
-uint64 Random64[781] = {
+uint64_t Random64[781] = {
    0x9D39247E33776D41, 0x2AF7398005AAA5C7, 0x44DB015024623547, 0x9C15F73E62A76AE2,
    0x75834465489C0C89, 0x3290AC3A203001BF, 0x0FBBAD1F61042279, 0xE83A908FF2FB60CA,
    0x0D7E765D58755C10, 0x1A083822CEAFE02D, 0x9605D5F0E25EC3B0, 0xD021FF5CD13A2ED5,
@@ -209,18 +209,18 @@ uint64 Random64[781] = {
    0xF8D626AAAF278509
 };
 
-uint64 *RandomPiece = Random64;
-uint64 *RandomCastle = Random64 + 768;
-uint64 *RandomEnPassant = Random64 + 772;
-uint64 *RandomTurn = Random64 + 780;
+uint64_t *RandomPiece = Random64;
+uint64_t *RandomCastle = Random64 + 768;
+uint64_t *RandomEnPassant = Random64 + 772;
+uint64_t *RandomTurn = Random64 + 780;
 
 const char *piece_names = "pPnNbBrRqQkK";
 
 typedef struct {
-    uint64 key;
-    uint16 move;
-    uint16 weight;
-    uint32 learn;
+    uint64_t key;
+    uint16_t move;
+    uint16_t weight;
+    uint32_t learn;
 } entry_t;
 
 entry_t entry_none = {
@@ -254,7 +254,7 @@ public:
 		}
 	}
 
-	int find(uint64 key, char* move) {
+	int find(uint64_t key, char* move) {
 		if (!file) {
 			return 0;
 		}
@@ -299,7 +299,7 @@ public:
 		return 0;
 	}
 
-	uint64 hash(char *fen){
+	uint64_t hash(char *fen){
 		char board_s[72+1];
 		char to_move_c;
 		char castle_flags_s[4+1];
@@ -307,7 +307,7 @@ public:
 		char board[8][8];
 		char c;
 		int p,r,f,i,p_enc;
-		uint64 key = 0;
+		uint64_t key = 0;
 		sscanf(fen,"%72s %c %4s %2s",
 			   board_s,
 			   &to_move_c,
@@ -385,7 +385,7 @@ public:
 	}
 
 private:
-	int int_from_file(FILE *f, int l, uint64 *r){
+	int int_from_file(FILE *f, int l, uint64_t *r){
 		int i,c;
 		for(i = 0;i<l;i++){
 			c = fgetc(f);
@@ -399,23 +399,23 @@ private:
 
 	int entry_from_file(FILE *f, entry_t *entry){
 		int ret;
-		uint64 r=0; // assignemnt only to surpress warning [gh]
+		uint64_t r=0; // assignemnt only to surpress warning [gh]
 		ret = int_from_file(f,8,&r);
 		if(ret) return 1;
 		entry->key = r;
 		ret = int_from_file(f,2,&r);
 		if(ret) return 1;
-		entry->move = (uint16)r;
+		entry->move = (uint16_t)r;
 		ret = int_from_file(f,2,&r);
 		if(ret) return 1;
-		entry->weight = (uint16)r;
+		entry->weight = (uint16_t)r;
 		ret = int_from_file(f,4,&r);
 		if(ret) return 1;
-		entry->learn = (uint16)r;
+		entry->learn = (uint16_t)r;
 		return 0;
 	}
 
-	int find_key(FILE *f, uint64 key, entry_t *entry){
+	int find_key(FILE *f, uint64_t key, entry_t *entry){
 		int first, last, middle;
 		entry_t first_entry = entry_none, last_entry,middle_entry;
 		first = -1;
@@ -444,7 +444,7 @@ private:
 		}
 	}
 
-	void moveToString(char move_s[6], uint16 move){
+	void moveToString(char move_s[6], uint16_t move){
 		int f, fr, ff, t, tr, tf, p;
 		f = (move >> 6)&077;
 		fr = (f >> 3)&0x7;

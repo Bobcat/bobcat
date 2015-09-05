@@ -18,13 +18,13 @@
 
 #pragma pack(1)
 struct Transposition {
-	uint32 key;
-	uint16 age; // 7 bits left
-	uint8 depth;
-	uint8 flags; // 5 bits left
-	int16 score;
+	uint32_t key;
+	uint16_t age; // 7 bits left
+	uint8_t depth;
+	uint8_t flags; // 5 bits left
+	int16_t score;
 	Move move;
-	int16 eval;
+	int16_t eval;
 };
 #pragma pack()
 
@@ -39,7 +39,7 @@ public:
 	}
 
 	void initialise(int new_size_mb) {
-		new_size_mb = pow2(log2((uint)new_size_mb));
+		new_size_mb = pow2(log2((uint32_t)new_size_mb));
 		if (new_size_mb == size_mb) {
 			return;
 		}
@@ -62,7 +62,7 @@ public:
 		age++;
 	}
 
-	__forceinline Transposition* find(const uint64 key) {
+	__forceinline Transposition* find(const uint64_t key) {
 		Transposition* transp = table + (key & mask);
 		for (int i = 0; i < NUMBER_SLOTS; i++, transp++) {
 			if (transp->key == key32(key) && transp->flags) {
@@ -72,7 +72,7 @@ public:
 		return 0;
 	}
 
-	__forceinline Transposition* insert(const uint64 key, const int depth, const int score,
+	__forceinline Transposition* insert(const uint64_t key, const int depth, const int score,
 																			const int type, const int move, int eval)
 	{
 		Transposition* transp = getEntryToReplace(key, depth);
@@ -81,15 +81,15 @@ public:
 		}
 		transp->move = transp->key != key32(key) || move != 0 ? move : transp->move;
 		transp->key = key32(key);
-		transp->score = (int16)score;
-		transp->depth = (uint8)depth;
-		transp->flags = (uint8)type;
-		transp->age = (uint16)age;
-		transp->eval = (int16)eval;
+		transp->score = (int16_t)score;
+		transp->depth = (uint8_t)depth;
+		transp->flags = (uint8_t)type;
+		transp->age = (uint16_t)age;
+		transp->eval = (int16_t)eval;
 		return transp;
 	}
 
-	__forceinline Transposition* getEntryToReplace(uint64 key, int depth) {
+	__forceinline Transposition* getEntryToReplace(uint64_t key, int depth) {
 		Transposition* transp = table + (key & mask);
 		if (transp->flags == 0 || transp->key == key32(key)) {
 			return transp;
@@ -117,7 +117,7 @@ public:
 		return size_mb;
 	}
 
-	__forceinline static uint32 key32(const uint64 key) {
+	__forceinline static uint32_t key32(const uint64_t key) {
 		return key >> 32;
 	}
 
@@ -134,11 +134,11 @@ protected:
 
 #pragma pack(1)
 struct PawnEntry {
-	uint64 zkey;
-	int16 eval_mg;
-	int16 eval_eg;
-	uint8 passed_pawn_files[2];
-	int16 unused;
+	uint64_t zkey;
+	int16_t eval_mg;
+	int16_t eval_eg;
+	uint8_t passed_pawn_files[2];
+	int16_t unused;
 };
 #pragma pack()
 
@@ -153,7 +153,7 @@ public:
 	}
 
 	void initialise(int size_mb) {
-		size = 1024*1024*pow2(log2((uint)size_mb))/sizeof(PawnEntry);
+		size = 1024*1024*pow2(log2((uint32_t)size_mb))/sizeof(PawnEntry);
 		mask = size - 1;
 		delete [] table;
 		table = new PawnEntry[size];
@@ -164,7 +164,7 @@ public:
 		memset(table, 0, size*sizeof(PawnEntry));
 	}
 
-	__forceinline PawnEntry* find(const uint64 key) {
+	__forceinline PawnEntry* find(const uint64_t key) {
 		PawnEntry* pawnp = table + (key & mask);
 		if (pawnp->zkey != key || pawnp->zkey == 0) {
 			return 0;
@@ -172,13 +172,13 @@ public:
 		return pawnp;
 	}
 
-	__forceinline PawnEntry* insert(const uint64 key, int score_mg, int score_eg, int* passed_pawn_files) {
+	__forceinline PawnEntry* insert(const uint64_t key, int score_mg, int score_eg, int* passed_pawn_files) {
 		PawnEntry* pawnp = table + (key & mask);
 		pawnp->zkey = key;
-		pawnp->eval_mg = (int16)score_mg;
-		pawnp->eval_eg = (int16)score_eg;
-		pawnp->passed_pawn_files[0] = (uint8)passed_pawn_files[0];
-		pawnp->passed_pawn_files[1] = (uint8)passed_pawn_files[1];
+		pawnp->eval_mg = (int16_t)score_mg;
+		pawnp->eval_eg = (int16_t)score_eg;
+		pawnp->passed_pawn_files[0] = (uint8_t)passed_pawn_files[0];
+		pawnp->passed_pawn_files[1] = (uint8_t)passed_pawn_files[1];
 		return pawnp;
 	}
 

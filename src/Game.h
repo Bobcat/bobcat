@@ -18,6 +18,16 @@
 
 class Game {
 public:
+	Game() : position_list(new Position[2000]), pos(position_list), chess960(false), xfen(false) {
+		for (int i = 0; i < 2000; i++) {
+			position_list[i].board = &board;
+		}
+	}
+
+	virtual ~Game() {
+		delete[] position_list;
+	}
+
 	__forceinline bool makeMove(const Move m, bool check_legal, bool calculate_in_check) {
 		if (m == 0) {
 			return makeNullMove();
@@ -80,8 +90,8 @@ public:
 		return true;
 	}
 
-	uint64 calculateKey() {
-		uint64 key = 0;
+	uint64_t calculateKey() {
+		uint64_t key = 0;
 		for (int piece = Pawn; piece <= King; piece++) {
 			for (int side = 0; side <= 1; side++) {
 				for (BB bb = board.piece[piece | (side << 3)]; bb != 0; resetLSB(bb)) {
@@ -283,63 +293,81 @@ public:
 		return 0;
 	}
 
-	int getFEN(char* fen) {
-		char piece_letter[] = { "PNBRQK  pnbrqk" };
-		fen[0] = 0;
+	char* getFen()
+	{
+		static char piece_letter[] = { "PNBRQK  pnbrqk" };
+		static char fen[128];
+		char* p = fen;
+		char buf[12];
+
+		memset(p, 0, 128);
 
 		for (char r = 7; r >= 0; r--) {
 			int empty = 0;
+
 			for (char f = 0; f <= 7; f++) {
 				Square sq = r * 8 + f;
-				Piece p = board.getPiece(sq);
-				if (p != NoPiece) {
+				Piece pc = board.getPiece(sq);
+
+				if (pc != NoPiece) {
 					if (empty) {
-						sprintf(fen + strlen(fen), "%d", empty);
+						*(p++) = empty + '0';
 						empty = 0;
 					}
-					sprintf(fen + strlen(fen), "%c", piece_letter[p]);
+					*(p++) = piece_letter[pc];
 				}
 				else {
 					empty++;
 				}
 			}
+
 			if (empty) {
-				sprintf(fen + strlen(fen), "%d", empty);
+				*(p++) = empty + '0';
 			}
+
 			if (r > 0) {
-				sprintf(fen + strlen(fen), "/");
+				*(p++) = '/';
 			}
 		}
-		sprintf(fen + strlen(fen), " %c ", pos->side_to_move == 0 ? 'w' : 'b');
+		memcpy(p, pos->side_to_move == 0 ? " w " : " b ", 3);
+		p += 3;
+
 		if (pos->castle_rights == 0) {
-			sprintf(fen + strlen(fen), "- ");
+			memcpy(p, "- ", 2);
+			p += 2;
 		}
 		else {
 			if (pos->castle_rights & 1) {
-				sprintf(fen + strlen(fen), "K");
+				*(p++) = 'K';
 			}
 			if (pos->castle_rights & 2) {
-				sprintf(fen + strlen(fen), "Q");
+				*(p++) = 'Q';
 			}
 			if (pos->castle_rights & 4) {
-				sprintf(fen + strlen(fen), "k");
+				*(p++) = 'k';
 			}
 			if (pos->castle_rights & 8) {
-				sprintf(fen + strlen(fen), "q");
+				*(p++) = 'q';
 			}
-			sprintf(fen + strlen(fen), " ");
+			*(p++) = ' ';
 		}
+
 		if (pos->en_passant_square) {
 			Square ep = lsb(pos->en_passant_square);
-			char buf[12];
-			sprintf(fen + strlen(fen), "%s ", squareToString(ep, buf));
+			memcpy(p, squareToString(ep, buf), 2);
+			p += 2;
+			*(p++) = ' ';
 		}
 		else {
-			sprintf(fen + strlen(fen), "- ");
+			memcpy(p, "- ", 2);
+			p += 2;
 		}
-		sprintf(fen + strlen(fen), "%d ", pos->reversible_half_move_count);
-		sprintf(fen + strlen(fen), "%d", static_cast<int>((pos - position_list)/2 + 1));
-		return 0;
+		memset(buf, 0, 12);
+		memcpy(p, itoa(pos->reversible_half_move_count, buf, 10), 12);
+		p[strlen(p)] = ' ';
+		memset(buf, 0, 12);
+		memcpy(p + strlen(p), itoa(static_cast<int>((pos - position_list)/2 + 1), buf, 10), 12);
+		return fen;
 	}
 
 	char getEPsquare(const char** p) {
@@ -488,15 +516,6 @@ public:
 		return true;
 	}
 
-	Game(Config* config) : config(config) {
-		for (int i = 0; i < 2000; i++) {
-			position_list[i].board = &board;
-		}
-		pos = position_list;
-		chess960 = false;
-		xfen = false;
-	}
-
 	void copy(Game* other) {
 		board = other->board;
 		chess960 = other->chess960;
@@ -548,9 +567,8 @@ public:
 	}
 
 public:
-	Config* config;
+	Position* position_list;
 	Position* pos;
-	Position position_list[2000];
 	Board board;
 	bool chess960;
 	bool xfen;

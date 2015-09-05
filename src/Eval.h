@@ -18,7 +18,7 @@
 
 class Eval {
 public:
-	Eval(Game* game, PawnStructureTable* pawnt, SEE* see) {
+	Eval(Game* game, PawnStructureTable* pawnt, See* see) {
 		initialise(game, pawnt, see);
 	}
 
@@ -159,7 +159,8 @@ protected:
 			const BB& attacks = knight_attacks[sq];
 			int x = popCount(attacks & ~board->occupied_by_side[us] & ~pawn_attacks[them]);
 
-			score += 6*x;
+			score_mg += knightMobMg_*x;
+			score_eg += knightMobEg_*x;
 
 			all_attacks[us] |= attacks;
 			_knight_attacks[us] |= attacks;
@@ -201,7 +202,8 @@ protected:
 			const BB attacks = Bmagic(sq, occupied);
 			int x = popCount(attacks & ~(board->occupied_by_side[us]));
 
-			score += 7*x;
+			score_mg += bishopMobMg_*x;
+			score_eg += bishopMobEg_*x;
 
 			all_attacks[us] |= attacks;
 			bishop_attacks[us] |= attacks;
@@ -436,7 +438,7 @@ protected:
 		queen_attacks[0] = queen_attacks[1] = 0;
 	}
 
-	void initialise(Game* game, PawnStructureTable* pawnt, SEE* see) {
+	void initialise(Game* game, PawnStructureTable* pawnt, See* see) {
 		this->game = game;
 		board = game->pos->board;
 		this->pawnt = pawnt;
@@ -451,7 +453,7 @@ protected:
 	Position* pos;
 	Game* game;
 	PawnStructureTable* pawnt;
-	SEE* see;
+	See* see;
 	PawnEntry* pawnp;
 
 	int poseval_mg[2];
@@ -479,6 +481,10 @@ protected:
 	const BB* pawns_array[2];
 	const Square* king_square[2];
 
+	static BB bishop_trapped_a7h7[2];
+	static BB pawns_trap_bishop_a7h7[2][2];
+
+public:
 	static int knight_pcsq_mg[64];
 	static int knight_pcsq_eg[64];
 	static int bishop_pcsq_mg[64];
@@ -486,8 +492,10 @@ protected:
 	static int king_pcsq_mg[64];
 	static int king_pcsq_eg[64];
 
-	static BB bishop_trapped_a7h7[2];
-	static BB pawns_trap_bishop_a7h7[2][2];
+	static int knightMobMg_;
+	static int knightMobEg_;
+	static int bishopMobMg_;
+	static int bishopMobEg_;
 };
 
 BB Eval::bishop_trapped_a7h7[2] = {
@@ -564,6 +572,11 @@ int Eval::king_pcsq_eg[64] = {
  -45, -15,  -5,   5,   5,  -5, -15, -45,
  -75, -55, -35, -35, -35, -35, -55, -75
 };
+
+int Eval::knightMobMg_ = 7;
+int Eval::knightMobEg_ = 5;
+int Eval::bishopMobMg_ = 6;
+int Eval::bishopMobEg_ = 2;
 
 /*
 int Eval::_pcsq_eg[64] = {

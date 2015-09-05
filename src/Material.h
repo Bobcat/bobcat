@@ -98,8 +98,8 @@ public:
 
 	__forceinline int evaluate(int& flags, int eval, int side_to_move, Board* board) {
 		this->flags = 0;
-		uint32 key1;
-		uint32 key2;
+		uint32_t key1;
+		uint32_t key2;
 		int score;
 		Side side1;
 
@@ -175,7 +175,7 @@ public:
 		return side1 != side_to_move ? -score : score;
 	}
 
-	__forceinline int KQBKX(int eval, uint32 key2) {
+	__forceinline int KQBKX(int eval, uint32_t key2) {
 		switch (key2 & ~all_pawns) {
 			case kq:
 				drawish = 16;
@@ -186,7 +186,7 @@ public:
 		return eval;
 	}
 
-	__forceinline int KQNKX(int eval, uint32 key2) {
+	__forceinline int KQNKX(int eval, uint32_t key2) {
 		switch (key2 & ~all_pawns) {
 			case kq:
 				drawish = 16;
@@ -197,7 +197,7 @@ public:
 		return eval;
 	}
 
-	__forceinline int KRBKX(int eval, uint32 key2) {
+	__forceinline int KRBKX(int eval, uint32_t key2) {
 		switch (key2 & ~all_pawns) {
 			case kr:
 				drawish = 16;
@@ -213,7 +213,7 @@ public:
 		return eval;
 	}
 
-	__forceinline int KRNKX(int eval, uint32 key2) {
+	__forceinline int KRNKX(int eval, uint32_t key2) {
 		switch (key2 & ~all_pawns) {
 			case kr:
 				drawish = 32;
@@ -229,7 +229,7 @@ public:
 		return eval;
 	}
 
-	__forceinline int KRKX(int eval, uint32 key2) {
+	__forceinline int KRKX(int eval, uint32_t key2) {
 		switch (key2 & ~all_pawns) {
 			case kbb:
 			case kbn:
@@ -246,7 +246,7 @@ public:
 		return eval;
 	}
 
-	__forceinline int KBBKX(int eval, uint32 key2) {
+	__forceinline int KBBKX(int eval, uint32_t key2) {
 		switch (key2 & ~all_pawns) {
 			case kb:
 				drawish = 16;
@@ -259,7 +259,7 @@ public:
 		return eval;
 	}
 
-	__forceinline int KBNKX(int eval, uint32 key2, int pc1, int pc2, int side1) {
+	__forceinline int KBNKX(int eval, uint32_t key2, int pc1, int pc2, int side1) {
 		switch (key2 & ~all_pawns) {
 			case k:
 				if (pc1 + pc2 == 0) {
@@ -290,7 +290,7 @@ public:
 			25*distance[another_winning_cornersq][loosing_kingsq]);
 	}
 
-	__forceinline int KBKX(int eval, uint32 key1, uint32 key2, int pc1, int pc2, const Side side1, const Side side2,
+	__forceinline int KBKX(int eval, uint32_t key1, uint32_t key2, int pc1, int pc2, const Side side1, const Side side2,
 		int side_to_move)
 	{
 		if (pc1 > 0) {
@@ -324,7 +324,7 @@ public:
 		return std::min(0, eval);
 	}
 
-	__forceinline int KNKX(int eval, uint32 key2, int pc1, int pc2, const Side side1, const Side side2, int side_to_move) {
+	__forceinline int KNKX(int eval, uint32_t key2, int pc1, int pc2, const Side side1, const Side side2, int side_to_move) {
 		switch (key2 & ~all_pawns) {
 			case k: {
 				if (pc1 + pc2 == 0) {
@@ -351,7 +351,7 @@ public:
 		return pc1 == 0 ? std::min(0, eval) : eval;
 	}
 
-	__forceinline int KNNKX(int eval, uint32 key2, int pc1) {
+	__forceinline int KNNKX(int eval, uint32_t key2, int pc1) {
 		switch (key2 & ~all_pawns) {
 			case k:
 			case kn:
@@ -363,7 +363,7 @@ public:
 		return pc1 == 0 ? std::min(0, eval) : eval;
 	}
 
-	__forceinline int KKx(int eval, uint32 key1, uint32 key2, int pc1, int pc2, int side1) {
+	__forceinline int KKx(int eval, uint32_t key1, uint32_t key2, int pc1, int pc2, int side1) {
 		if (pc1 + pc2 == 0) {
 			return drawScore();
 		}
@@ -373,7 +373,7 @@ public:
 		return eval;
 	}
 
-	__forceinline int KBxKX(int eval, uint32 key1, uint32 key2, int side1) {
+	__forceinline int KBxKX(int eval, uint32_t key1, uint32_t key2, int side1) {
 		switch (key2 & ~all_pawns) {
 			case kb:
 				if (!sameColor(lsb(board->bishops(0)), lsb(board->bishops(1))) &&
@@ -390,7 +390,7 @@ public:
 		return eval;
 	}
 
-	__forceinline int KBxKx(int eval, uint32 key1, uint32 key2, int side1) {
+	__forceinline int KBxKx(int eval, uint32_t key1, uint32_t key2, int side1) {
 		if ((key1 & all_pawns) == 1 && (key2 & all_pawns) == 0) {
 			return KBpK(eval, side1);
 		}
@@ -414,7 +414,7 @@ public:
 		return eval;
 	}
 
-	__forceinline int KxKx(int eval, uint32 key1, uint32 key2, int pc1, int pc2, int side1) {
+	__forceinline int KxKx(int eval, uint32_t key1, uint32_t key2, int pc1, int pc2, int side1) {
 		if (pc1 == 1 && pc2 == 0) {
 			return KpK(eval, side1);
 		}
@@ -442,7 +442,7 @@ public:
 
 	int drawish;
 	int flags;
-	uint32 key[2];
+	uint32_t key[2];
 	int material_value[2];
 	Board* board;
 	int max_value_without_pawns;
@@ -452,22 +452,22 @@ public:
 	static int piece_bit_shift[7];
 	static int piece_value[6];
 
-	static const uint32 k   = 0x00000;
-	static const uint32 kp  = 0x00001;
-	static const uint32 kn  = 0x00010;
-	static const uint32 kb  = 0x00100;
-	static const uint32 kr  = 0x01000;
-	static const uint32 kq  = 0x10000;
-	static const uint32 krr = 0x02000;
-	static const uint32 kbb = 0x00200;
-	static const uint32 kbn = 0x00110;
-	static const uint32 knn = 0x00020;
-	static const uint32 krn = 0x01010;
-	static const uint32 krb = 0x01100;
-	static const uint32 kqb = 0x10100;
-	static const uint32 kqn = 0x10010;
+	static const uint32_t k   = 0x00000;
+	static const uint32_t kp  = 0x00001;
+	static const uint32_t kn  = 0x00010;
+	static const uint32_t kb  = 0x00100;
+	static const uint32_t kr  = 0x01000;
+	static const uint32_t kq  = 0x10000;
+	static const uint32_t krr = 0x02000;
+	static const uint32_t kbb = 0x00200;
+	static const uint32_t kbn = 0x00110;
+	static const uint32_t knn = 0x00020;
+	static const uint32_t krn = 0x01010;
+	static const uint32_t krb = 0x01100;
+	static const uint32_t kqb = 0x10100;
+	static const uint32_t kqn = 0x10010;
 
-	static const uint32 all_pawns = 0xf;
+	static const uint32_t all_pawns = 0xf;
 };
 
 int Material::piece_bit_shift[7] = {0, 4, 8, 12, 16, 20};

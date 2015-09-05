@@ -40,6 +40,8 @@
 #include "Protocol.h"
 #include "Search.h"
 #include "Book.h"
+#include "PgnPlayer.h"
+#include "Tune.h"
 #include "Test.h"
 #include "Worker.h"
 #include "Bobcat.h"

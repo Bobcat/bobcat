@@ -16,14 +16,14 @@
   along with Bobcat.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-__forceinline void resetLSB(uint64& x) {
+__forceinline void resetLSB(uint64_t& x) {
 	x &= (x - 1);
 }
 
-__forceinline int popCount(uint64 x) {
+__forceinline int popCount(uint64_t x) {
 	return __builtin_popcountll(x);
 }
 
-__forceinline int lsb(uint64 x) {
+__forceinline int lsb(uint64_t x) {
 	return __builtin_ctzll(x);
 }

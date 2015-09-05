@@ -110,8 +110,8 @@ public:
 	}
 
 	int reversible_half_move_count;
-	uint64 pawn_structure_key;
-	uint64 key;
+	uint64_t pawn_structure_key;
+	uint64_t key;
 	Material material;
 	int null_moves_in_row;
 	int pv_length;

@@ -22,28 +22,20 @@
 #include <inttypes.h>
 #define __USE_MINGW_ANSI_STDIO 1
 
-typedef uint64_t uint64;
-typedef uint32_t uint32;
-typedef uint16_t uint16;
-typedef uint8_t uint8;
-typedef int16_t int16;
-typedef unsigned int uint;
+//typedef uint64_t uint64;
+//typedef uint32_t uint32;
+//typedef uint16_t uint16;
+//typedef uint8_t uint8;
+//typedef int16_t int16;
+//typedef unsigned int uint;
 
-#include <stdio.h>
-#include <iomanip>
-#include <time.h>
-#include <string.h>
+#include <algorithm> // std::min/max
 #include <conio.h>
 #include <math.h>
-#include <direct.h>
-#include <sys/time.h>
 #include <assert.h>
 
 #ifdef __forceinline
 #undef __forceinline
 #endif
 #define __forceinline __attribute__((always_inline)) inline
-
-typedef int Score;
-typedef int Depth;
 

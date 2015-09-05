@@ -16,9 +16,9 @@
   along with Bobcat.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-class SEE {
+class See {
 public:
-	SEE(Game* game) {
+	See(Game* game) {
 		board = &game->board;
 	}
 
@@ -43,7 +43,7 @@ public:
 
 private:
 	__forceinline int materialChange(const Move move) {
-		return (isCapture(move) ? piece_value(moveCaptured(move)) : 0) + (isPromotion(move) ? 
+		return (isCapture(move) ? piece_value(moveCaptured(move)) : 0) + (isPromotion(move) ?
 			(piece_value(movePromoted(move)) - piece_value(Pawn)) : 0);
 	}
 
@@ -60,11 +60,11 @@ private:
 				return material_change;
 			}
 			if ((current_piece[side_to_move] == Pawn) && (rank(to) == 0 || rank(to) == 7)) {
-				initMove(move, current_piece[side_to_move] | (side_to_move << 3), next_to_capture, 
+				initMove(move, current_piece[side_to_move] | (side_to_move << 3), next_to_capture,
 					from, to, PROMOTION | CAPTURE, Queen | (side_to_move << 3));
 			}
 			else {
-				initMove(move, current_piece[side_to_move] | (side_to_move << 3), next_to_capture, 
+				initMove(move, current_piece[side_to_move] | (side_to_move << 3), next_to_capture,
 					from, to, CAPTURE, 0);
 			}
 			board->makeMove(move);
@@ -76,13 +76,13 @@ private:
 		while (1);
 
 		int score = -seeRec(materialChange(move), nextToCapture(move), moveTo(move), moveSide(move) ^ 1);
-		
+
 		board->unmakeMove(move);
 
 		return (score < 0) ? material_change + score : material_change;
 	}
 
-	__forceinline bool lookupBestAttacker(const Square to, const Side side, Square& from) { // "Best" == "Lowest piece value" 
+	__forceinline bool lookupBestAttacker(const Square to, const Side side, Square& from) { // "Best" == "Lowest piece value"
 		switch (current_piece[side]) {
 			case Pawn:
 				if (current_piece_bitboard[side] & pawn_captures[to | ((side ^ 1) << 6)]) {
@@ -130,7 +130,7 @@ private:
 					current_piece_bitboard[side] &= ~bbSquare(from);
 					return true;
 				}
-			default: 
+			default:
 				return false;
 		}
 	}
@@ -143,7 +143,7 @@ protected:
 		current_piece_bitboard[1] = board->piece[Pawn | 8];
 	}
 
-	BB current_piece_bitboard[2]; 
+	BB current_piece_bitboard[2];
 	int current_piece[2];
 	Board* board;
 

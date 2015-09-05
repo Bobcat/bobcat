@@ -78,9 +78,8 @@ public:
 	}
 
 	void goBook() {
-		char fen[128];
-		game->getFEN(fen);
-		uint64 key = book->hash(fen);
+		char* fen = game->getFen();
+		uint64_t key = book->hash(fen);
 		char m[6];
 		if (book->find(key, m) == 0) {
 			if (const Move* move = game->pos->stringToMove(m)) {
@@ -99,7 +98,7 @@ public:
 
 	void startWorkers() {
 		for (int i = 0; i < num_threads - 1; i++) {
-			workers[i].start(config,  game, transt, pawnt);
+			workers[i].start(game, transt, pawnt);
 		}
 	}
 
@@ -156,14 +155,14 @@ public:
 		Zobrist_h_initialise();
 		Square_h_initialise();
 
-		game = new Game(config);
+		game = new Game();
 		input = new StdIn(logger);
 		output = new StdOut(logger);
 		protocol = new UCIProtocol(this, game, input, output);
 		book = new Book(config, logger);
 		transt = new TranspositionTable(256);
 		pawnt = new PawnStructureTable(8);
-		see = new SEE(game);
+		see = new See(game);
 		eval = new Eval(game, pawnt, see);
 		search = new Search(protocol, game, eval, see, transt, logger);
 
@@ -233,8 +232,7 @@ public:
 			}
 			else if (strieq(tokens[0], "fen")) {
 				if (num_tokens == 1) {
-					char fen[128];
-					game->getFEN(fen);
+					char* fen = game->getFen();
 					printf("%s\n", fen);
 				}
 				else {
@@ -246,8 +244,8 @@ public:
 				}
 			}
 			else if (strieq(tokens[0], "book")) {
-				char fen[128];
-				game->getFEN(fen);
+				char* fen;
+				game->getFen();
 				BB key = book->hash(fen);
 				char move[6];
 				if (book->find(key, move) == 0) {
@@ -262,6 +260,19 @@ public:
 				if (m) {
 					printf("SEE score for %s is %d\n", tokens[1], see->seeMove(*m));
 				}
+			}
+			else if (strieq(tokens[0], "see") && num_tokens > 0) {
+				const Move* m = game->pos->stringToMove(tokens[1]);
+				if (m) {
+					printf("SEE score for %s is %d\n", tokens[1], see->seeMove(*m));
+				}
+			}
+			else if (strieq(tokens[0], "tune")) {
+				clock_t t1 = millis();
+				et::Tune(*game, *see, *eval);
+				clock_t t2 = millis();
+				double seconds = (t2 - t1)/1000.;
+				printf("%f\n", seconds);
 			}
 			else if (makeMove(tokens[0])) {
 			}
@@ -307,7 +318,7 @@ public:
 	Logger* logger;
 	Game* game;
 	Eval* eval;
-	SEE* see;
+	See* see;
 	Search* search;
 	Protocol* protocol;
 	Book* book;

@@ -15,14 +15,16 @@
   You should have received a copy of the GNU General Public License
   along with Bobcat.  If not, see <http://www.gnu.org/licenses/>.
 */
+typedef int Depth;
+typedef int Score;
 
 class Search : public MoveSorter {
 public:
-	Search(Protocol* protocol, Game* game, Eval* eval, SEE* see, TranspositionTable* transt, Logger* logger) {
+	Search(Protocol* protocol, Game* game, Eval* eval, See* see, TranspositionTable* transt, Logger* logger) {
 		initialise(protocol, game, eval, see, transt, logger);
 	}
 
-	Search(Game* game, Eval* eval, SEE* see, TranspositionTable* transt) {
+	Search(Game* game, Eval* eval, See* see, TranspositionTable* transt) {
 		initialise(0, game, eval, see, transt, 0);
 		stop_search = false;
 	}
@@ -91,12 +93,12 @@ public:
 		return protocol;
 	}
 
-	__forceinline uint64 timeUsed() const {
+	__forceinline uint64_t timeUsed() const {
 		return std::max(static_cast<uint64_t>(1), millis() - start_time);
 	}
 
 protected:
-	void initialise(Protocol* protocol, Game* game, Eval* eval, SEE* see, TranspositionTable* transt, Logger* logger) {
+	void initialise(Protocol* protocol, Game* game, Eval* eval, See* see, TranspositionTable* transt, Logger* logger) {
 		this->protocol = protocol;
 		this->game = game;
 		this->eval = eval;
@@ -106,13 +108,12 @@ protected:
 		board = game->pos->board;
 		verbosity = 1;
 	}
-/*
-	void postInfo(int depth, int selective_depth, uint64 node_count, uint64 nodes_per_sec, uint64 time, int hash_full) {
+
+	/*void postInfo(int depth, int selective_depth, uint64 node_count, uint64 nodes_per_sec, uint64 time, int hash_full) {
 		if (!worker) {
 			protocol->postInfo(search_depth, max_ply_reached, node_count, nodesPerSecond(), timeUsed(),	transt->getLoad());
 		}
-	}
-*/
+	}*/
 
  	Score searchPV(const Depth depth, Score alpha, const Score beta) {
 		if (ply >= MAXDEPTH - 1) {
@@ -562,8 +563,8 @@ protected:
 		}
 	}
 
-	uint64 nodesPerSecond() const {
-		return (uint64)(total_node_count*1000/std::max((uint64)1, (millis() - start_time)));
+	uint64_t nodesPerSecond() const {
+		return (uint64_t)(total_node_count*1000/std::max((uint64_t)1, (millis() - start_time)));
 	}
 
 	__forceinline void updateHistoryScores(const Move move, const Depth depth) {
@@ -769,7 +770,7 @@ protected:
 	}
 
 	struct PVEntry {
-		uint64 key;
+		uint64_t key;
 		Depth depth;
 		Score score;
 		Move move;
@@ -782,10 +783,10 @@ public:
 	Depth max_ply;
 	PVEntry pv[128][128];
 	int pv_length[128];
-	uint64 start_time;
-	uint64 search_time;
-	uint64 time_left;
-	uint64 time_inc;
+	uint64_t start_time;
+	uint64_t search_time;
+	uint64_t time_left;
+	uint64_t time_inc;
 	volatile bool stop_search;
 	int verbosity;
 
@@ -797,13 +798,13 @@ protected:
 	Game* game;
 	Eval* eval;
 	Board* board;
-	SEE* see;
+	See* see;
 	Position* pos;
 	TTable* transt;
 	Logger* logger;
 
-	uint64 node_count;
-	static uint64 total_node_count;
+	uint64_t node_count;
+	static uint64_t total_node_count;
 
 	static const int EXACT = 1;
 	static const int BETA = 2;
@@ -819,7 +820,7 @@ protected:
 	static int razor_margin[4];
 };
 
-uint64 Search::total_node_count;
+uint64_t Search::total_node_count;
 
 const int Search::EXACT;
 const int Search::ALPHA;

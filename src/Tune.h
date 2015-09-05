@@ -62,7 +62,7 @@ public:
 
 		pgn.read();
 
-		// Tune as described in from https://chessprogramming.wikispaces.com/Texel%27s+Tuning+Method
+		// Tune as described in https://chessprogramming.wikispaces.com/Texel%27s+Tuning+Method
 
 		std::vector<Param> initial_param_values;
 

@@ -850,6 +850,7 @@ protected:
 
 	virtual int readComment1() {
 		unsigned char c;
+		char* p = comment_;
 
 		for (;;) {
 			int n = getChar(c);
@@ -861,7 +862,13 @@ protected:
 			if (c == '}') {
 				break;
 			}
+
+			if  (p - comment_ <= 2047) {
+				*p = c;
+				++p;
+			}
 		}
+		*p = '\0';
 		return 1;
 	}
 
@@ -920,6 +927,7 @@ protected:
 	bool strict_;
 	char tag_name[1024];
 	char tag_value[1024];
+	char comment_[2048];
 	int from_file;
 	int from_rank;
 	int from_piece;

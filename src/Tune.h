@@ -33,6 +33,12 @@ public:
 		game_nodes_.clear();
 	}
 
+	virtual int readComment1() {
+		int ret = pgn::PGNPlayer::readComment1();
+		//cout << comment_ << endl;
+		return ret;
+	}
+
 	std::vector<Node> all_nodes_;
 
 private:
@@ -59,6 +65,7 @@ class Tune : public MoveSorter {
 public:
 	Tune(Game& game, See& see, Eval& eval) : game_(game), see_(see), eval_(eval) {
 		PGNPlayer pgn("C:\\chess\\lb\\test.pgn");
+		//PGNPlayer pgn("C:\\Users\\Gunnar\\Downloads\\ccrl4040all.pgn");
 
 		pgn.read();
 

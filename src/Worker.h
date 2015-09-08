@@ -19,29 +19,29 @@
 
 class Worker {
 public:
-	void start(Game* master, TTable* transt, PSTable* pawnt) {
-		game = new Game();
-		game->copy(master);
-		see = new See(game);
-		eval = new Eval(game, pawnt, see);
-		search = new Search(game, eval, see, transt);
-		thread_ = new std::thread(&Search::run, search);
-	}
+  void start(Game* master, TTable* transt, PSTable* pawnt) {
+    game = new Game();
+    game->copy(master);
+    see = new See(game);
+    eval = new Eval(game, pawnt, see);
+    search = new Search(game, eval, see, transt);
+    thread_ = new std::thread(&Search::run, search);
+  }
 
-	void stop() {
-		search->stop();
-		thread_->join();
-		delete thread_;
-		delete search;
-		delete eval;
-		delete see;
-		delete game;
-	}
+  void stop() {
+    search->stop();
+    thread_->join();
+    delete thread_;
+    delete search;
+    delete eval;
+    delete see;
+    delete game;
+  }
 
 private:
-	Game* game;
-	Eval* eval;
-	See* see;
-	Search* search;
-	std::thread* thread_;
+  Game* game;
+  Eval* eval;
+  See* see;
+  Search* search;
+  std::thread* thread_;
 };

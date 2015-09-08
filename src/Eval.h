@@ -18,493 +18,502 @@
 
 class Eval {
 public:
-	Eval(Game* game, PawnStructureTable* pawnt, See* see) {
-		initialise(game, pawnt, see);
-	}
+  Eval(Game* game, PawnStructureTable* pawnt, See* see) {
+    initialise(game, pawnt, see);
+  }
 
-	virtual ~Eval() {
-	}
+  virtual ~Eval() {
+  }
 
-	virtual void newGame() {
-	}
+  virtual void newGame() {
+  }
 
-	int evaluate(int alpha, int beta) {
-		initialiseEvaluate();
+  int evaluate(int alpha, int beta) {
+    initialiseEvaluate();
 
-		evalMaterialOneSide(0);
-		evalMaterialOneSide(1);
+    evalMaterialOneSide(0);
+    evalMaterialOneSide(1);
 
-		int mat_eval = mateval[0] - mateval[1];
+    int mat_eval = mateval[0] - mateval[1];
 
-		int lazy_margin = 300;
-		int lazy_eval = pos->side_to_move == 0 ? mat_eval : -mat_eval;
+    int lazy_margin = 300;
+    int lazy_eval = pos->side_to_move == 0 ? mat_eval : -mat_eval;
 
-		if (lazy_eval - lazy_margin > beta || lazy_eval + lazy_margin < alpha) {
-			return pos->material.evaluate(pos->flags, lazy_eval, pos->side_to_move, board);
-		}
-		// Pass 1.
-		evalPawnsBothSides();
-		evalKnightsOneSide(0);
-		evalKnightsOneSide(1);
-		evalBishopsOneSide(0);
-		evalBishopsOneSide(1);
-		evalRooksOneSide(0);
-		evalRooksOneSide(1);
-		evalQueensOneSide(0);
-		evalQueensOneSide(1);
-		evalKingOneSide(0);
-		evalKingOneSide(1);
+    if (lazy_eval - lazy_margin > beta || lazy_eval + lazy_margin < alpha) {
+      return pos->material.evaluate(pos->flags, lazy_eval, pos->side_to_move, board);
+    }
+    // Pass 1.
+    evalPawnsBothSides();
+    evalKnightsOneSide(0);
+    evalKnightsOneSide(1);
+    evalBishopsOneSide(0);
+    evalBishopsOneSide(1);
+    evalRooksOneSide(0);
+    evalRooksOneSide(1);
+    evalQueensOneSide(0);
+    evalQueensOneSide(1);
+    evalKingOneSide(0);
+    evalKingOneSide(1);
 
-		for (Side side = 0; side < 2; side++) {
-			if (pawn_attacks[side] & king_area[side^1]) {
-				attack_count[side]++;
-				attack_counter[side] += 2;
-			}
-		}
-		// Pass 2.
-		for (Side side = 0; side < 2; side++) {
-			evalPassedPawnsOneSide(side);
-			evalKingAttackOneSide(side);
-		}
-		double stage = (pos->material.value()-pos->material.pawnValue())/
-			(double)pos->material.max_value_without_pawns;
+    for (Side side = 0; side < 2; side++) {
+      if (pawn_attacks[side] & king_area[side^1]) {
+        attack_count[side]++;
+        attack_counter[side] += 2;
+      }
+    }
+    // Pass 2.
+    for (Side side = 0; side < 2; side++) {
+      evalPassedPawnsOneSide(side);
+      evalKingAttackOneSide(side);
+    }
+    double stage = (pos->material.value()-pos->material.pawnValue())/
+                   (double)pos->material.max_value_without_pawns;
 
-		poseval[pos->side_to_move] += 10;
+    poseval[pos->side_to_move] += 10;
 
-		int pos_eval_mg = (int)((poseval_mg[0]-poseval_mg[1])*stage);
-		int pos_eval_eg = (int)((poseval_eg[0]-poseval_eg[1])*(1-stage));
-		int pos_eval = pos_eval_mg + pos_eval_eg + (poseval[0] - poseval[1]);
-		int eval = pos_eval + mat_eval;
+    int pos_eval_mg = (int)((poseval_mg[0]-poseval_mg[1])*stage);
+    int pos_eval_eg = (int)((poseval_eg[0]-poseval_eg[1])*(1-stage));
+    int pos_eval = pos_eval_mg + pos_eval_eg + (poseval[0] - poseval[1]);
+    int eval = pos_eval + mat_eval;
 
-		return pos->material.evaluate(pos->flags, pos->side_to_move == 1 ? -eval : eval,
-			pos->side_to_move, board);
-	}
+    return pos->material.evaluate(pos->flags, pos->side_to_move == 1 ? -eval : eval,
+                                  pos->side_to_move, board);
+  }
 
 protected:
-	__forceinline void evalPawnsBothSides() {
-		pawnp = 0;
-
-		if (pos->material.pawnCount()) {
-			pawnp = pawnt->find(pos->pawn_structure_key);
-
-			if (!pawnp) {
-				pawn_eval_mg[0] = pawn_eval_mg[1] = 0;
-				pawn_eval_eg[0] = pawn_eval_eg[1] = 0;
-
-				passed_pawn_files[0] = passed_pawn_files[1] = 0;
-
-				evalPawnsOneSide(0);
-				evalPawnsOneSide(1);
-
-				pawnp = pawnt->insert(pos->pawn_structure_key, (int)(pawn_eval_mg[0] - pawn_eval_mg[1]),
-					(int)(pawn_eval_eg[0] - pawn_eval_eg[1]), passed_pawn_files);
-			}
-			poseval_mg[0] += pawnp->eval_mg;
-			poseval_eg[0] += pawnp->eval_eg;
-		}
-	}
-
-	__forceinline void evalPawnsOneSide(const Side us) {
-		const Side them = us ^ 1;
-		int score_mg = 0;
-		int score_eg = 0;
-
-		for (BB bb = pawns(us); bb; ) {
-			Square sq = lsb(bb);
-
-			if (board->isPawnPassed(sq, us)) {
-				passed_pawn_files[us] |= 1 << file(sq);
-			}
-			bool open_file = !board->isPieceOnFile(Pawn, sq, them);
-
-			if (board->isPawnIsolated(sq, us)) {
-				score_mg += open_file ? -40 : -20;
-				score_eg += -20;
-			}
-			else if ((bbSquare(sq) & pawn_attacks[us]) == 0) {
-				score_mg += open_file ? -20 : -8;
-				score_eg += -8;
-			}
-			resetLSB(bb);
-
-			if (bbFile(sq) & bb) {
-				score_mg += -15;
-				score_eg += -15;
-			}
-			int r = us == 0 ? rank(sq) - 1 : 6 - rank(sq);
-
-			static int advance_bonus_mg[8] = { 0, 0, 3, 5, 5, 3, 0, 0 };
-			static int advance_bonus_eg[8] = { 5, 4, 3, 2, 2, 3, 4, 5 };
-
-			score_mg += advance_bonus_mg[file(sq)]*r;
-			score_eg += advance_bonus_eg[file(sq)]*r;
-		}
-		pawn_eval_mg[us] += score_mg;
-		pawn_eval_eg[us] += score_eg;
-	}
-
-	__forceinline void evalKnightsOneSide(const Side us) {
-		const Side them = us ^ 1;
-		int score_mg = 0;
-		int score_eg = 0;
-		int score = 0;
-
-		for (BB knights = board->knights(us); knights; resetLSB(knights)) {
-			Square sq = lsb(knights);
-			Square flipsq = flip[us][sq];
-
-			score_mg += knight_pcsq_mg[flipsq];
-			score_eg += knight_pcsq_eg[flipsq];
-
-			const BB& attacks = knight_attacks[sq];
-			int x = popCount(attacks & ~board->occupied_by_side[us] & ~pawn_attacks[them]);
-
-			score_mg += knightMobMg_*x;
-			score_eg += knightMobEg_*x;
-
-			all_attacks[us] |= attacks;
-			_knight_attacks[us] |= attacks;
-
-			bool outpost = (passed_pawn_front_span[us][sq] & (pawns(them) & ~pawn_front_span[us][sq])) == 0;
-
-			if (outpost && (pawn_attacks[us] & bbSquare(sq))) {
-				score += std::max(0, knight_pcsq_eg[flipsq]);
-			}
-
-			if (attacks & king_area[them]) {
-				attack_counter[us] += popCount(attacks & king_area[them])*8;
-				attack_count[us]++;
-			}
-
-			if (bbSquare(sq) & pawn_attacks[them]) {
-				score += -28;
-			}
-		}
-		poseval[us] += score;
-		poseval_mg[us] += score_mg;
-		poseval_eg[us] += score_eg;
-	}
-
-	__forceinline void evalBishopsOneSide(const Side us) {
-		const Side them = us ^ 1;
-		int score_mg = 0;
-		int score_eg = 0;
-		int score = 0;
-
-		for (BB bishops = board->bishops(us); bishops; resetLSB(bishops)) {
-			Square sq = lsb(bishops);
-			const BB& bbsq = bbSquare(sq);
-			Square flipsq = flip[us][sq];
-
-			score_mg += bishop_pcsq_mg[flipsq];
-			score_eg += bishop_pcsq_eg[flipsq];
-
-			const BB attacks = Bmagic(sq, occupied);
-			int x = popCount(attacks & ~(board->occupied_by_side[us]));
-
-			score_mg += bishopMobMg_*x;
-			score_eg += bishopMobEg_*x;
-
-			all_attacks[us] |= attacks;
-			bishop_attacks[us] |= attacks;
-
-			if (bishop_trapped_a7h7[us] & bbsq) {
-				int x = file(sq)/7;
-				if ((pawns(them) & pawns_trap_bishop_a7h7[x][us]) == pawns_trap_bishop_a7h7[x][us]) {
-					score -= 110;
-				}
-			}
-
-			if (attacks & king_area[them]) {
-				attack_counter[us] += popCount(attacks & king_area[them])*6;
-				attack_count[us]++;
-			}
-
-			if (bbSquare(sq) & pawn_attacks[them]) {
-				score += -28;
-			}
-		}
-		poseval[us] += score;
-		poseval_mg[us] += score_mg;
-		poseval_eg[us] += score_eg;
-	}
-
-	__forceinline void evalRooksOneSide(const Side us) {
-		const Side them = us ^ 1;
-		int score_mg = 0;
-		int score_eg = 0;
-		int score = 0;
-
-		for (BB rooks = board->rooks(us); rooks; resetLSB(rooks)) {
-			Square sq = lsb(rooks);
-			const BB& bbsq = bbSquare(sq);
-
-			if (bbsq & open_files) {
-				score += 20;
-
-				if (~bbsq & bbFile(sq) & board->rooks(us)) {
-					score += 20;
-				}
-			}
-			else if (bbsq & half_open_files[us]) {
-				score += 10;
-
-				if (~bbsq & bbFile(sq) & board->rooks(us)) {
-					score += 10;
-				}
-			}
-
-			if ((bbsq & rank_7[us]) && (rank_7_and_8[us] & (pawns(them) | board->king(them)))) {
-				score += 20;
-			}
-			const BB attacks = Rmagic(sq, occupied);
-			int x = popCount(attacks & ~board->occupied_by_side[us]);
-
-			score_mg += 2*x;
-			score_eg += 4*x;
-
-			all_attacks[us] |= attacks;
-			rook_attacks[us] |= attacks;
-
-			if (attacks & king_area[them]) {
-				attack_counter[us] += popCount(attacks & king_area[them])*12;
-				attack_count[us]++;
-			}
-
-			if (bbSquare(sq) & (pawn_attacks[them] | _knight_attacks[them] | bishop_attacks[them])) {
-				score += -36;
-			}
-		}
-		poseval[us] += score;
-		poseval_mg[us] += score_mg;
-		poseval_eg[us] += score_eg;
-	}
-
-	__forceinline void evalQueensOneSide(const Side us) {
-		const Side them = us ^ 1;
-		int score_mg = 0;
-		int score_eg = 0;
-		int score = 0;
-
-		for (BB queens = board->queens(us); queens; resetLSB(queens)) {
-			Square sq = lsb(queens);
-			const BB& bbsq = bbSquare(sq);
-
-			if ((bbsq & rank_7[us]) && (rank_7_and_8[us] & (pawns(them) | board->king(them)))) {
-				score += 20;
-			}
-			const BB attacks = Qmagic(sq, occupied);
-
-			all_attacks[us] |= attacks;
-			queen_attacks[us] |= attacks;
-
-			if (attacks & king_area[them]) {
-				attack_counter[us] += popCount(attacks & king_area[them])*24;
-				attack_count[us]++;
-			}
-
-			if (bbSquare(sq) & (pawn_attacks[them] | _knight_attacks[them] | bishop_attacks[them] | rook_attacks[them])) {
-				score += -40;
-			}
-			else {
-				score += 6*(7 - distance[sq][kingSq(them)]);
-			}
-		}
-		poseval[us] += score;
-		poseval_mg[us] += score_mg;
-		poseval_eg[us] += score_eg;
-	}
-
-	__forceinline void evalMaterialOneSide(const Side side) {
-		mateval[side] = pos->material.material_value[side];
-
-		if (pos->material.count(side, Bishop) == 2) {
-			mateval[side] += 30;
-
-			if (pos->material.pawnCount() <= 12) {
-				mateval[side] += 20;
-			}
-		}
-	}
-
-	__forceinline void evalKingOneSide(const Side us) {
-		const Side them = us ^ 1;
-		Square sq = lsb(board->king(us));
-		const BB& bbsq = bbSquare(sq);
-
-		int score_mg = king_pcsq_mg[flip[us][sq]];
-		int score_eg = king_pcsq_eg[flip[us][sq]];
-
-		score_mg += -45 + 15*popCount((pawnPush[us](bbsq) | pawnWestAttacks[us](bbsq) |
-			pawnEastAttacks[us](bbsq)) & pawns(us));
-
-		if (board->queens(them) || popCount(board->rooks(them)) > 1) {
-			BB eastwest = bbsq | westOne(bbsq) | eastOne(bbsq);
-			int x = -15*popCount(open_files & eastwest);
-			int y = -10*popCount(half_open_files[us] & eastwest);
-
-			score_mg += x;
-			score_mg += y;
-
-			if (board->queens(them) && popCount(board->rooks(them))) {
-				score_mg += x;
-				score_mg += y;
-
-				if (popCount(board->rooks(them) > 1)) {
-					score_mg += x;
-					score_mg += y;
-				}
-			}
-		}
-
-		if (((us == 0) &&
-				(((sq == f1 || sq == g1) && (bbSquare(h1) & board->rooks(0))) ||
-				((sq == c1 || sq == b1) && (bbSquare(a1) & board->rooks(0))))) ||
-			((us == 1) &&
-				(((sq == f8 || sq == g8) && (bbSquare(h8) & board->rooks(1))) ||
-				((sq == c8 || sq == b8) && (bbSquare(a8) & board->rooks(1))))))
-		{
-			score_mg += -80;
-		}
-
-		all_attacks[us] |= king_attacks[kingSq(us)];
-		poseval_mg[us] += score_mg;
-		poseval_eg[us] += score_eg;
-	}
-
-	__forceinline void evalPassedPawnsOneSide(const Side us) {
-		const Side them = us ^ 1;
-		for (BB files = pawnp ? pawnp->passed_pawn_files[us] : 0; files; resetLSB(files)) {
-			for (BB bb = bbFile(lsb(files)) & pawns(us); bb; resetLSB(bb)) {
-				int sq = lsb(bb);
-				const BB& front_span = pawn_front_span[us][sq];
-				int r = us == 0 ? rank(sq) : 7 - rank(sq);
-				int rr = r*r;
-
-				int score_mg = rr*4;
-				int score_eg = rr*3;
-
-				score_eg += rr*(front_span & board->occupied_by_side[us] ? 0 : 1);
-				score_eg += rr*(front_span & board->occupied_by_side[them] ? 0 : 1);
-				score_eg += rr*(front_span & all_attacks[them] ? 0 : 1);
-				score_eg += r*(distance[sq][kingSq(them)]*2-distance[sq][kingSq(us)]*2);
-
-				poseval_mg[us] += score_mg;
-				poseval_eg[us] += score_eg;
-			}
-		}
-	}
-
-	__forceinline void evalKingAttackOneSide(const Side side) {
-		if (attack_count[side] > 1) {
-			poseval_mg[side] += attack_counter[side]*(attack_count[side]-1);
-		}
-	}
-
-	__forceinline const BB& pawns(Side side) {
-		return *pawns_array[side];
-	}
-
-	__forceinline Square kingSq(Side side) {
-		return *king_square[side];
-	}
-
-	__forceinline void initialiseEvaluate() {
-		pos = game->pos;
-		pos->flags = 0;
-
-		poseval_mg[0] = poseval_eg[0] = poseval[0] = 0;
-		poseval_mg[1] = poseval_eg[1] = poseval[1] = 0;
-
-		attack_counter[0] = attack_counter[1] = 0;
-		attack_count[0] = attack_count[1] = 0;
-
-		king_area[0] = king_attacks[kingSq(0)] | board->king(0);
-		king_area[1] = king_attacks[kingSq(1)] | board->king(1);
-
-		occupied = board->occupied;
-		not_occupied = ~occupied;
-
-		open_files = ~(northFill(southFill(pawns(0))) | northFill(southFill(pawns(1))));
-		half_open_files[0] = ~northFill(southFill(pawns(0))) & ~open_files;
-		half_open_files[1] = ~northFill(southFill(pawns(1))) & ~open_files;
-
-		all_attacks[0] = pawn_attacks[0] = pawnEastAttacks[0](pawns(0)) | pawnWestAttacks[0](pawns(0));
-		all_attacks[1] = pawn_attacks[1] = pawnEastAttacks[1](pawns(1)) | pawnWestAttacks[1](pawns(1));
-
-		_knight_attacks[0] = _knight_attacks[1] = 0;
-		bishop_attacks[0] = bishop_attacks[1] = 0;
-		rook_attacks[0] = rook_attacks[1] = 0;
-		queen_attacks[0] = queen_attacks[1] = 0;
-	}
-
-	void initialise(Game* game, PawnStructureTable* pawnt, See* see) {
-		this->game = game;
-		board = game->pos->board;
-		this->pawnt = pawnt;
-		this->see = see;
-		pawns_array[0] = &board->pawns(0);
-		pawns_array[1] = &board->pawns(1);
-		king_square[0] = &board->king_square[0];
-		king_square[1] = &board->king_square[1];
-	}
-
-	Board* board;
-	Position* pos;
-	Game* game;
-	PawnStructureTable* pawnt;
-	See* see;
-	PawnEntry* pawnp;
-
-	int poseval_mg[2];
-	int poseval_eg[2];
-	int poseval[2];
-	int mateval[2];
-	int pawn_eval_mg[2];
-	int pawn_eval_eg[2];
-	int passed_pawn_files[2];
-	int attack_counter[2];
-	int attack_count[2];
-
-	BB pawn_attacks[2];
-	BB all_attacks[2];
-	BB _knight_attacks[2];
-	BB bishop_attacks[2];
-	BB rook_attacks[2];
-	BB queen_attacks[2];
-	BB king_area[2];
-	BB occupied;
-	BB not_occupied;
-	BB open_files;
-	BB half_open_files[2];
-
-	const BB* pawns_array[2];
-	const Square* king_square[2];
-
-	static BB bishop_trapped_a7h7[2];
-	static BB pawns_trap_bishop_a7h7[2][2];
+  __forceinline void evalPawnsBothSides() {
+    pawnp = 0;
+
+    if (pos->material.pawnCount()) {
+      pawnp = pawnt->find(pos->pawn_structure_key);
+
+      if (!pawnp) {
+        pawn_eval_mg[0] = pawn_eval_mg[1] = 0;
+        pawn_eval_eg[0] = pawn_eval_eg[1] = 0;
+
+        passed_pawn_files[0] = passed_pawn_files[1] = 0;
+
+        evalPawnsOneSide(0);
+        evalPawnsOneSide(1);
+
+        pawnp = pawnt->insert(pos->pawn_structure_key, (int)(pawn_eval_mg[0] - pawn_eval_mg[1]),
+                              (int)(pawn_eval_eg[0] - pawn_eval_eg[1]), passed_pawn_files);
+      }
+      poseval_mg[0] += pawnp->eval_mg;
+      poseval_eg[0] += pawnp->eval_eg;
+    }
+  }
+
+  __forceinline void evalPawnsOneSide(const Side us) {
+    const Side them = us ^ 1;
+    int score_mg = 0;
+    int score_eg = 0;
+
+    for (BB bb = pawns(us); bb; ) {
+      Square sq = lsb(bb);
+
+      if (board->isPawnPassed(sq, us)) {
+        passed_pawn_files[us] |= 1 << file(sq);
+      }
+      bool open_file = !board->isPieceOnFile(Pawn, sq, them);
+
+      if (board->isPawnIsolated(sq, us)) {
+        int score = open_file ? -isolatedPawnOpen_ : -isolatedPawn_;
+        score_mg += score;
+        score_eg += -20;
+      }
+      else if ((bbSquare(sq) & pawn_attacks[us]) == 0) {
+        score_mg += open_file ? -20 : -8;
+        score_eg += -8;
+      }
+      resetLSB(bb);
+
+      if (bbFile(sq) & bb) {
+        score_mg += -15;
+        score_eg += -15;
+      }
+      int r = us == 0 ? rank(sq) - 1 : 6 - rank(sq);
+      score_mg += advance_bonus_mg[file(sq)]*r;
+      score_eg += advance_bonus_eg[file(sq)]*r;
+    }
+    pawn_eval_mg[us] += score_mg;
+    pawn_eval_eg[us] += score_eg;
+  }
+
+  __forceinline void evalKnightsOneSide(const Side us) {
+    const Side them = us ^ 1;
+    int score_mg = 0;
+    int score_eg = 0;
+    int score = 0;
+
+    for (BB knights = board->knights(us); knights; resetLSB(knights)) {
+      Square sq = lsb(knights);
+      Square flipsq = flip[us][sq];
+
+      score_mg += knight_pcsq_mg[flipsq];
+      score_eg += knight_pcsq_eg[flipsq];
+
+      const BB& attacks = knight_attacks[sq];
+      int x = popCount(attacks & ~board->occupied_by_side[us] & ~pawn_attacks[them]);
+
+      score_mg += knightMobMg_*x;
+      score_eg += knightMobEg_*x;
+
+      all_attacks[us] |= attacks;
+      _knight_attacks[us] |= attacks;
+
+      bool outpost = (passed_pawn_front_span[us][sq] & (pawns(them) & ~pawn_front_span[us][sq])) == 0;
+
+      if (outpost && (pawn_attacks[us] & bbSquare(sq))) {
+        score += std::max(0, knight_pcsq_eg[flipsq]);
+      }
+
+      if (attacks & king_area[them]) {
+        attack_counter[us] += popCount(attacks & king_area[them])*8;
+        attack_count[us]++;
+      }
+
+      if (bbSquare(sq) & pawn_attacks[them]) {
+        score += -28;
+      }
+    }
+    poseval[us] += score;
+    poseval_mg[us] += score_mg;
+    poseval_eg[us] += score_eg;
+  }
+
+  __forceinline void evalBishopsOneSide(const Side us) {
+    const Side them = us ^ 1;
+    int score_mg = 0;
+    int score_eg = 0;
+    int score = 0;
+
+    for (BB bishops = board->bishops(us); bishops; resetLSB(bishops)) {
+      Square sq = lsb(bishops);
+      const BB& bbsq = bbSquare(sq);
+      Square flipsq = flip[us][sq];
+
+      score_mg += bishop_pcsq_mg[flipsq];
+      score_eg += bishop_pcsq_eg[flipsq];
+
+      const BB attacks = Bmagic(sq, occupied);
+      int x = popCount(attacks & ~(board->occupied_by_side[us]));
+
+      score_mg += bishopMobMg_*x;
+      score_eg += bishopMobEg_*x;
+
+      all_attacks[us] |= attacks;
+      bishop_attacks[us] |= attacks;
+
+      if (bishop_trapped_a7h7[us] & bbsq) {
+        int x = file(sq)/7;
+        if ((pawns(them) & pawns_trap_bishop_a7h7[x][us]) == pawns_trap_bishop_a7h7[x][us]) {
+          score -= 110;
+        }
+      }
+
+      if (attacks & king_area[them]) {
+        attack_counter[us] += popCount(attacks & king_area[them])*6;
+        attack_count[us]++;
+      }
+
+      if (bbSquare(sq) & pawn_attacks[them]) {
+        score += -28;
+      }
+    }
+    poseval[us] += score;
+    poseval_mg[us] += score_mg;
+    poseval_eg[us] += score_eg;
+  }
+
+  __forceinline void evalRooksOneSide(const Side us) {
+    const Side them = us ^ 1;
+    int score_mg = 0;
+    int score_eg = 0;
+    int score = 0;
+
+    for (BB rooks = board->rooks(us); rooks; resetLSB(rooks)) {
+      Square sq = lsb(rooks);
+      const BB& bbsq = bbSquare(sq);
+
+      if (bbsq & open_files) {
+        score += 20;
+
+        if (~bbsq & bbFile(sq) & board->rooks(us)) {
+          score += 20;
+        }
+      }
+      else if (bbsq & half_open_files[us]) {
+        score += 10;
+
+        if (~bbsq & bbFile(sq) & board->rooks(us)) {
+          score += 10;
+        }
+      }
+
+      if ((bbsq & rank_7[us]) && (rank_7_and_8[us] & (pawns(them) | board->king(them)))) {
+        score += 20;
+      }
+      const BB attacks = Rmagic(sq, occupied);
+      int x = popCount(attacks & ~board->occupied_by_side[us]);
+
+      score_mg += rookMobMg_*x;
+      score_eg += rookMobEg_*x;
+
+      all_attacks[us] |= attacks;
+      rook_attacks[us] |= attacks;
+
+      if (attacks & king_area[them]) {
+        attack_counter[us] += popCount(attacks & king_area[them])*12;
+        attack_count[us]++;
+      }
+
+      if (bbSquare(sq) & (pawn_attacks[them] | _knight_attacks[them] | bishop_attacks[them])) {
+        score += -36;
+      }
+    }
+    poseval[us] += score;
+    poseval_mg[us] += score_mg;
+    poseval_eg[us] += score_eg;
+  }
+
+  __forceinline void evalQueensOneSide(const Side us) {
+    const Side them = us ^ 1;
+    int score_mg = 0;
+    int score_eg = 0;
+    int score = 0;
+
+    for (BB queens = board->queens(us); queens; resetLSB(queens)) {
+      Square sq = lsb(queens);
+      const BB& bbsq = bbSquare(sq);
+
+      if ((bbsq & rank_7[us]) && (rank_7_and_8[us] & (pawns(them) | board->king(them)))) {
+        score += 20;
+      }
+      const BB attacks = Qmagic(sq, occupied);
+      int x = popCount(attacks & ~board->occupied_by_side[us]);
+
+      score_mg += queenMobMg_*x;
+      score_eg += queenMobEg_*x;
+
+      all_attacks[us] |= attacks;
+      queen_attacks[us] |= attacks;
+
+      if (attacks & king_area[them]) {
+        attack_counter[us] += popCount(attacks & king_area[them])*24;
+        attack_count[us]++;
+      }
+
+      if (bbSquare(sq) & (pawn_attacks[them] | _knight_attacks[them] | bishop_attacks[them] | rook_attacks[them])) {
+        score += -40;
+      }
+      else {
+        score += 6*(7 - distance[sq][kingSq(them)]);
+      }
+    }
+    poseval[us] += score;
+    poseval_mg[us] += score_mg;
+    poseval_eg[us] += score_eg;
+  }
+
+  __forceinline void evalMaterialOneSide(const Side side) {
+    mateval[side] = pos->material.material_value[side];
+
+    if (pos->material.count(side, Bishop) == 2) {
+      mateval[side] += 30;
+
+      if (pos->material.pawnCount() <= 12) {
+        mateval[side] += 20;
+      }
+    }
+  }
+
+  __forceinline void evalKingOneSide(const Side us) {
+    const Side them = us ^ 1;
+    Square sq = lsb(board->king(us));
+    const BB& bbsq = bbSquare(sq);
+
+    int score_mg = king_pcsq_mg[flip[us][sq]];
+    int score_eg = king_pcsq_eg[flip[us][sq]];
+
+    score_mg += -45 + 15*popCount((pawnPush[us](bbsq) | pawnWestAttacks[us](bbsq) |
+                                   pawnEastAttacks[us](bbsq)) & pawns(us));
+
+    if (board->queens(them) || popCount(board->rooks(them)) > 1) {
+      BB eastwest = bbsq | westOne(bbsq) | eastOne(bbsq);
+      int x = -15*popCount(open_files & eastwest);
+      int y = -10*popCount(half_open_files[us] & eastwest);
+
+      score_mg += x;
+      score_mg += y;
+
+      if (board->queens(them) && popCount(board->rooks(them))) {
+        score_mg += x;
+        score_mg += y;
+
+        if (popCount(board->rooks(them) > 1)) {
+          score_mg += x;
+          score_mg += y;
+        }
+      }
+    }
+
+    if (((us == 0) &&
+         (((sq == f1 || sq == g1) && (bbSquare(h1) & board->rooks(0))) ||
+          ((sq == c1 || sq == b1) && (bbSquare(a1) & board->rooks(0))))) ||
+        ((us == 1) &&
+         (((sq == f8 || sq == g8) && (bbSquare(h8) & board->rooks(1))) ||
+          ((sq == c8 || sq == b8) && (bbSquare(a8) & board->rooks(1))))))
+    {
+      score_mg += -80;
+    }
+
+    all_attacks[us] |= king_attacks[kingSq(us)];
+    poseval_mg[us] += score_mg;
+    poseval_eg[us] += score_eg;
+  }
+
+  __forceinline void evalPassedPawnsOneSide(const Side us) {
+    const Side them = us ^ 1;
+    for (BB files = pawnp ? pawnp->passed_pawn_files[us] : 0; files; resetLSB(files)) {
+      for (BB bb = bbFile(lsb(files)) & pawns(us); bb; resetLSB(bb)) {
+        int sq = lsb(bb);
+        const BB& front_span = pawn_front_span[us][sq];
+        int r = us == 0 ? rank(sq) : 7 - rank(sq);
+        int rr = r*r;
+
+        int score_mg = rr*4;
+        int score_eg = rr*3;
+
+        score_eg += rr*(front_span & board->occupied_by_side[us] ? 0 : 1);
+        score_eg += rr*(front_span & board->occupied_by_side[them] ? 0 : 1);
+        score_eg += rr*(front_span & all_attacks[them] ? 0 : 1);
+        score_eg += r*(distance[sq][kingSq(them)]*2-distance[sq][kingSq(us)]*2);
+
+        poseval_mg[us] += score_mg;
+        poseval_eg[us] += score_eg;
+      }
+    }
+  }
+
+  __forceinline void evalKingAttackOneSide(const Side side) {
+    if (attack_count[side] > 1) {
+      poseval_mg[side] += attack_counter[side]*(attack_count[side]-1);
+    }
+  }
+
+  __forceinline const BB& pawns(Side side) {
+    return *pawns_array[side];
+  }
+
+  __forceinline Square kingSq(Side side) {
+    return *king_square[side];
+  }
+
+  __forceinline void initialiseEvaluate() {
+    pos = game->pos;
+    pos->flags = 0;
+
+    poseval_mg[0] = poseval_eg[0] = poseval[0] = 0;
+    poseval_mg[1] = poseval_eg[1] = poseval[1] = 0;
+
+    attack_counter[0] = attack_counter[1] = 0;
+    attack_count[0] = attack_count[1] = 0;
+
+    king_area[0] = king_attacks[kingSq(0)] | board->king(0);
+    king_area[1] = king_attacks[kingSq(1)] | board->king(1);
+
+    occupied = board->occupied;
+    not_occupied = ~occupied;
+
+    open_files = ~(northFill(southFill(pawns(0))) | northFill(southFill(pawns(1))));
+    half_open_files[0] = ~northFill(southFill(pawns(0))) & ~open_files;
+    half_open_files[1] = ~northFill(southFill(pawns(1))) & ~open_files;
+
+    all_attacks[0] = pawn_attacks[0] = pawnEastAttacks[0](pawns(0)) | pawnWestAttacks[0](pawns(0));
+    all_attacks[1] = pawn_attacks[1] = pawnEastAttacks[1](pawns(1)) | pawnWestAttacks[1](pawns(1));
+
+    _knight_attacks[0] = _knight_attacks[1] = 0;
+    bishop_attacks[0] = bishop_attacks[1] = 0;
+    rook_attacks[0] = rook_attacks[1] = 0;
+    queen_attacks[0] = queen_attacks[1] = 0;
+  }
+
+  void initialise(Game* game, PawnStructureTable* pawnt, See* see) {
+    this->game = game;
+    board = game->pos->board;
+    this->pawnt = pawnt;
+    this->see = see;
+    pawns_array[0] = &board->pawns(0);
+    pawns_array[1] = &board->pawns(1);
+    king_square[0] = &board->king_square[0];
+    king_square[1] = &board->king_square[1];
+  }
+
+  Board* board;
+  Position* pos;
+  Game* game;
+  PawnStructureTable* pawnt;
+  See* see;
+  PawnEntry* pawnp;
+
+  int poseval_mg[2];
+  int poseval_eg[2];
+  int poseval[2];
+  int mateval[2];
+  int pawn_eval_mg[2];
+  int pawn_eval_eg[2];
+  int passed_pawn_files[2];
+  int attack_counter[2];
+  int attack_count[2];
+
+  BB pawn_attacks[2];
+  BB all_attacks[2];
+  BB _knight_attacks[2];
+  BB bishop_attacks[2];
+  BB rook_attacks[2];
+  BB queen_attacks[2];
+  BB king_area[2];
+  BB occupied;
+  BB not_occupied;
+  BB open_files;
+  BB half_open_files[2];
+
+  const BB* pawns_array[2];
+  const Square* king_square[2];
+
+  static BB bishop_trapped_a7h7[2];
+  static BB pawns_trap_bishop_a7h7[2][2];
 
 public:
-	static int knight_pcsq_mg[64];
-	static int knight_pcsq_eg[64];
-	static int bishop_pcsq_mg[64];
-	static int bishop_pcsq_eg[64];
-	static int king_pcsq_mg[64];
-	static int king_pcsq_eg[64];
+  static int knight_pcsq_mg[64];
+  static int knight_pcsq_eg[64];
+  static int bishop_pcsq_mg[64];
+  static int bishop_pcsq_eg[64];
+  static int king_pcsq_mg[64];
+  static int king_pcsq_eg[64];
 
-	static int knightMobMg_;
-	static int knightMobEg_;
-	static int bishopMobMg_;
-	static int bishopMobEg_;
+  static int knightMobMg_;
+  static int knightMobEg_;
+  static int bishopMobMg_;
+  static int bishopMobEg_;
+  static int rookMobMg_;
+  static int rookMobEg_;
+  static int queenMobMg_;
+  static int queenMobEg_;
+  static int isolatedPawnOpen_;
+  static int isolatedPawn_;
+  static int advance_bonus_mg[8];
+  static int advance_bonus_eg[8];
 };
 
 BB Eval::bishop_trapped_a7h7[2] = {
-	(BB)1 << a7 | (BB)1 << h7, (BB)1 << a2 | (BB)1 << h2
+  (BB)1 << a7 | (BB)1 << h7, (BB)1 << a2 | (BB)1 << h2
 };
 
 BB Eval::pawns_trap_bishop_a7h7[2][2] = {
-	{ (BB)1 << b6 | (BB)1 << c7, (BB)1 << b3 | (BB)1 << c2 },
-	{ (BB)1 << g6 | (BB)1 << f7, (BB)1 << g3 | (BB)1 << f2 }
+  { (BB)1 << b6 | (BB)1 << c7, (BB)1 << b3 | (BB)1 << c2 },
+  { (BB)1 << g6 | (BB)1 << f7, (BB)1 << g3 | (BB)1 << f2 }
 };
 
 int Eval::knight_pcsq_mg[64] = {
@@ -574,10 +583,15 @@ int Eval::king_pcsq_eg[64] = {
 };
 
 int Eval::knightMobMg_ = 7;
-int Eval::knightMobEg_ = 5;
+int Eval::knightMobEg_ = 7;
 int Eval::bishopMobMg_ = 6;
-int Eval::bishopMobEg_ = 2;
-
+int Eval::bishopMobEg_ = 6;
+int Eval::rookMobMg_ = 3;
+int Eval::rookMobEg_ = 6;
+int Eval::queenMobMg_ = 0;
+int Eval::queenMobEg_ = 0;
+int Eval::isolatedPawnOpen_ = 44;
+int Eval::isolatedPawn_ = 23;
 /*
 int Eval::_pcsq_eg[64] = {
    0,   0,   0,   0,   0,   0,   0,   0,
@@ -589,3 +603,6 @@ int Eval::_pcsq_eg[64] = {
    0,   0,   0,   0,   0,   0,   0,   0,
    0,   0,   0,   0,   0,   0,   0,   0
 };*/
+
+int Eval::advance_bonus_mg[8] = { 0, 0, 3, 5, 5, 3, 0, 0 };
+int Eval::advance_bonus_eg[8] = { 5, 4, 3, 2, 2, 3, 4, 5 };

@@ -19,23 +19,23 @@
 typedef uint32_t Square;
 
 __forceinline int rank(const Square sq) {
-	return sq >> 3;
+  return sq >> 3;
 }
 
 __forceinline int file(const Square sq) {
-	return sq & 7;
+  return sq & 7;
 }
 
 __forceinline Square square(const Square f, const Square r) {
-	return (r << 3) + f;
+  return (r << 3) + f;
 }
 
 __forceinline bool isDark(const Square sq) {
-	return ((9 * sq) & 8) == 0;
+  return ((9 * sq) & 8) == 0;
 }
 
 __forceinline bool sameColor(const Square sq1, const Square sq2) {
-	return isDark(sq1) == isDark(sq2);
+  return isDark(sq1) == isDark(sq2);
 }
 
 enum SquareEnum {
@@ -62,26 +62,26 @@ static uint32_t distance[64][64]; // chebyshev distance
 static uint32_t flip[2][64];
 
 static void Square_h_initialise() {
-	for (uint32_t sq = 0; sq < 64; sq++) {
-		flip[0][sq] = file(sq) + ((7 - rank(sq)) << 3);
-		flip[1][sq] = file(sq) + (rank(sq) << 3);
-	}
-	for (uint32_t sq1 = 0; sq1 < 64; sq1++) {
-		for (uint32_t sq2 = 0; sq2 < 64; sq2++) {
-			uint32_t ranks = abs(rank(sq1) - rank(sq2));
-			uint32_t files = abs(file(sq1) - file(sq2));
-			distance[sq1][sq2] = std::max(ranks, files);
-		}
-	}
-	for (int side = 0; side <= 1; side++) {
-		rook_castles_to[flip[side][g1]] = flip[side][f1];
-		rook_castles_to[flip[side][c1]] = flip[side][d1];
-	}
-	// Arrays castle_right_mask, rook_castles_from, ooo_king_from and oo_king_from
-	// are initialised in method setupCastling of class Game.
+  for (uint32_t sq = 0; sq < 64; sq++) {
+    flip[0][sq] = file(sq) + ((7 - rank(sq)) << 3);
+    flip[1][sq] = file(sq) + (rank(sq) << 3);
+  }
+  for (uint32_t sq1 = 0; sq1 < 64; sq1++) {
+    for (uint32_t sq2 = 0; sq2 < 64; sq2++) {
+      uint32_t ranks = abs(rank(sq1) - rank(sq2));
+      uint32_t files = abs(file(sq1) - file(sq2));
+      distance[sq1][sq2] = std::max(ranks, files);
+    }
+  }
+  for (int side = 0; side <= 1; side++) {
+    rook_castles_to[flip[side][g1]] = flip[side][f1];
+    rook_castles_to[flip[side][c1]] = flip[side][d1];
+  }
+  // Arrays castle_right_mask, rook_castles_from, ooo_king_from and oo_king_from
+  // are initialised in method setupCastling of class Game.
 }
 
 const char* squareToString(const Square sq, char* buf) {
-	sprintf(buf, "%c%d", (char)(file(sq) + 'a'), rank(sq) + 1);
-	return buf;
+  sprintf(buf, "%c%d", (char)(file(sq) + 'a'), rank(sq) + 1);
+  return buf;
 }

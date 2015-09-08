@@ -26,11 +26,11 @@ const Piece Queen = 4;
 const Piece King = 5;
 const Piece NoPiece = 6;
 
-const static char piece_notation[] = " nbrqk"; 
+const static char piece_notation[] = " nbrqk";
 
 const char* pieceToString(int piece, char* buf) {
-	sprintf(buf, "%c", piece_notation[piece]);
-	return buf;
+  sprintf(buf, "%c", piece_notation[piece]);
+  return buf;
 }
 
 typedef int Side;

@@ -17,109 +17,109 @@
 */
 
 inline double sigmoid(double x, double K) {
-	return 1 / (1 + pow(10, -K*x/400));
+  return 1 / (1 + pow(10, -K*x/400));
 }
 
 bool iswhitespace(char c) {
-	return c == ' ' || c == '\t' || (int)c == 10 || (int)c == 13;
+  return c == ' ' || c == '\t' || (int)c == 10 || (int)c == 13;
 }
 
 char* rtrim(char* buf) {
-	while (strlen(buf) && iswhitespace(buf[strlen(buf) - 1])) {
-		buf[strlen(buf) - 1] = 0;
-	}
-	return buf;
+  while (strlen(buf) && iswhitespace(buf[strlen(buf) - 1])) {
+    buf[strlen(buf) - 1] = 0;
+  }
+  return buf;
 }
 
 char* ltrim(char* buf) {
-	while (iswhitespace(buf[0])) {
-		memcpy(buf, buf + 1, strlen(buf));
-	}
-	return buf;
+  while (iswhitespace(buf[0])) {
+    memcpy(buf, buf + 1, strlen(buf));
+  }
+  return buf;
 }
 
 char* trim(char* buf) {
-	return ltrim(rtrim(buf));
+  return ltrim(rtrim(buf));
 }
 
 int tokenize(char* input, char* tokens[], int max_tokens) {
-	int num_tokens = 0;
-	char* token = strtok(input, " ");
-	while (token != NULL && num_tokens < max_tokens) {
-		tokens[num_tokens] = new char[strlen(token) + 1];
-		strcpy(tokens[num_tokens++], token);
-		token = strtok(NULL, " ");
-	}
-	return num_tokens;
+  int num_tokens = 0;
+  char* token = strtok(input, " ");
+  while (token != NULL && num_tokens < max_tokens) {
+    tokens[num_tokens] = new char[strlen(token) + 1];
+    strcpy(tokens[num_tokens++], token);
+    token = strtok(NULL, " ");
+  }
+  return num_tokens;
 }
 
 static uint64_t rand64() {
-	return genrand64_int64();
+  return genrand64_int64();
 }
 
 static int log2(uint32_t x) {
-	return (int)(log((double)x)/log(2.0));
+  return (int)(log((double)x)/log(2.0));
 }
 
 static int pow2(int x) {
-	return (int)pow(2.0, x);
+  return (int)pow(2.0, x);
 }
 
 bool strieq(const char* s1, const char* s2) {
-    if (strlen(s1) != strlen(s2)) {
-        return false;
-    }
+  if (strlen(s1) != strlen(s2)) {
+    return false;
+  }
 
-    for (size_t i = 0; i < strlen(s1); i++) {
-        if (::tolower(*(s1 + i)) != ::tolower(*(s2 + i))) {
-            return false;
-        }
+  for (size_t i = 0; i < strlen(s1); i++) {
+    if (::tolower(*(s1 + i)) != ::tolower(*(s2 + i))) {
+      return false;
     }
-    return true;
+  }
+  return true;
 }
 
 const char* FENfromParams(const char* params[], int num_params, int& param, char* fen) {
-	if ((num_params - param - 1) < 6) {
-		return NULL;
-	}
-	fen[0] = 0;
-	for (int i = 0; i < 6; i++) {
-		if (strlen(fen) + strlen(params[++param]) + 1 >= 128) {
-			return NULL;
-		}
-		sprintf(&fen[strlen(fen)], "%s ", params[param]);
-	}
-	return fen;
+  if ((num_params - param - 1) < 6) {
+    return NULL;
+  }
+  fen[0] = 0;
+  for (int i = 0; i < 6; i++) {
+    if (strlen(fen) + strlen(params[++param]) + 1 >= 128) {
+      return NULL;
+    }
+    sprintf(&fen[strlen(fen)], "%s ", params[param]);
+  }
+  return fen;
 }
 
 //#if defined(_MSC_VER)
 
 __forceinline uint64_t millis() {
-	return GetTickCount();
+  return GetTickCount();
 }
 
 const char* dateAndTimeString(char* buf) {
-	time_t now = time(NULL);
-	struct tm* time = localtime(&now);
-	sprintf(buf, "%04d-%02d-%02d %02d:%02d:%02d", time->tm_year + 1900, time->tm_mon + 1,
-		time->tm_mday, time->tm_hour, time->tm_min, time->tm_sec);
-	return buf;
+  time_t now = time(NULL);
+  struct tm* time = localtime(&now);
+  sprintf(buf, "%04d-%02d-%02d %02d:%02d:%02d", time->tm_year + 1900, time->tm_mon + 1,
+          time->tm_mday, time->tm_hour, time->tm_min, time->tm_sec);
+  return buf;
 }
 
 const char* timeString(char* buf) {
-	struct _timeb tb;
-	_ftime (&tb);
-	struct tm* time = localtime(&tb.time);
-	sprintf(buf, "%02d:%02d:%02d.%03d", time->tm_hour, time->tm_min, time->tm_sec, tb.millitm);
-	return buf;
+  struct _timeb tb;
+  _ftime (&tb);
+  struct tm* time = localtime(&tb.time);
+  sprintf(buf, "%02d:%02d:%02d.%03d", time->tm_hour, time->tm_min, time->tm_sec, tb.millitm);
+  return buf;
 }
 
 /*
 const char* timeString(char* buf) {
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-	struct tm* time = localtime((const time_t*)&tv.tv_sec);
-	sprintf(buf, "%02d:%02d:%02d.%03ld", time->tm_hour, time->tm_min, time->tm_sec, tv.tv_usec);
-	return buf;
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  struct tm* time = localtime((const time_t*)&tv.tv_sec);
+  sprintf(buf, "%02d:%02d:%02d.%03ld", time->tm_hour, time->tm_min, time->tm_sec, tv.tv_usec);
+  return buf;
 }
 */

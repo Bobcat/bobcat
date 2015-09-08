@@ -17,13 +17,13 @@
 */
 
 __forceinline void resetLSB(uint64_t& x) {
-	x &= (x - 1);
+  x &= (x - 1);
 }
 
 __forceinline int popCount(uint64_t x) {
-	return __builtin_popcountll(x);
+  return __builtin_popcountll(x);
 }
 
 __forceinline int lsb(uint64_t x) {
-	return __builtin_ctzll(x);
+  return __builtin_ctzll(x);
 }

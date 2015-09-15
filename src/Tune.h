@@ -22,7 +22,8 @@ public:
 
   virtual void readSANMove() {
     pgn::PGNPlayer::readSANMove();
-    if ((game_->pos - game_->position_list) > 10 && (game_->pos - game_->position_list) < 60) {
+
+    if ((game_->pos - game_->position_list) >= 20 && (game_->pos - game_->position_list) <= 60) {
       node_.fen_ = game_->getFen();
       game_nodes_.push_back(node_);
     }
@@ -37,6 +38,7 @@ public:
     }
     all_nodes_.insert(all_nodes_.end(), game_nodes_.begin(), game_nodes_.end());
     game_nodes_.clear();
+
     printProgress(false);
   }
 
@@ -81,60 +83,59 @@ struct Param {
 class Tune : public MoveSorter {
 public:
   Tune(Game& game, See& see, Eval& eval) : game_(game), see_(see), eval_(eval) {
-    PGNPlayer pgn("C:\\chess\\lb\\test3.pgn");
+    PGNPlayer pgn("C:\\chess\\lb\\test.pgn");
     //PGNPlayer pgn("C:\\Users\\Gunnar\\Downloads\\ccrl4040all.pgn");
 
     pgn.read();
 
     // Tune as described in https://chessprogramming.wikispaces.com/Texel%27s+Tuning+Method
 
-    std::vector<Param> initial_param_values;
+    std::vector<Param> params;
 
-    //initial_param_values.push_back(Param("knightMobMg_", &eval_.knightMobMg_, 1));
-    //initial_param_values.push_back(Param("knightMobEg_", &eval_.knightMobEg_, 1));
-    //initial_param_values.push_back(Param("bishopMobMg_", &eval_.bishopMobMg_, 1));
-    //initial_param_values.push_back(Param("bishopMobEg_", &eval_.bishopMobEg_, 1));
-    //initial_param_values.push_back(Param("rookMobMg_", &eval_.rookMobMg_, 1));
-    //initial_param_values.push_back(Param("rookMobEg_", &eval_.rookMobEg_, 1));
-    initial_param_values.push_back(Param("isolatedPawnOpen_", &eval_.isolatedPawnOpen_, 1));
-    initial_param_values.push_back(Param("isolatedPawn_", &eval_.isolatedPawn_, 1));
-    //for (auto i = 0; i < 8; ++i) initial_param_values.push_back(Param("advance_bonus_mg", &eval_.advance_bonus_mg[i], 1));
-    //for (auto i = 0; i < 8; ++i) initial_param_values.push_back(Param("advance_bonus_eg", &eval_.advance_bonus_eg[i], 1));
+    params.push_back(Param("pawn_advance_mg", &eval_.pawn_advance_mg, 1));
+    params.push_back(Param("pawn_advance_eg", &eval_.pawn_advance_eg, 1));
+    //for (auto i = 0; i < 15; ++i) params.push_back(Param("bishop_mob_mg", &eval_.bishop_mob_mg[i], 2));
+    //for (auto i = 0; i < 9; ++i) params.push_back(Param("knight_mob_mg", &eval_.knight_mob_mg[i], 2));
 
     double K = bestK();
-    double bestE = E(pgn.all_nodes_, initial_param_values, K);
-    std::vector<Param> best_param_values = initial_param_values;
+    double bestE = E(pgn.all_nodes_, params, K);
     bool improved = true;
 
     while (improved) {
-      printBestValues(bestE, best_param_values);
+      printBestValues(bestE, params);
       improved = false;
 
-      for (size_t i = 0; i < initial_param_values.size(); ++i) {
-        std::vector<Param> new_param_values = best_param_values;
+      for (size_t i = 0; i < params.size(); ++i) {
+      	auto& step = params[i].step_;
 
-        *new_param_values[i].value_ += new_param_values[i].step_;
+				if (step == 0) {
+						continue;
+				}
+	      *params[i].value_ += step;
 
-        double newE = E(pgn.all_nodes_, new_param_values, K);
+        double newE = E(pgn.all_nodes_, params, K);
 
         if (newE < bestE) {
           bestE = newE;
-          best_param_values = new_param_values;
           improved = true;
         }
-
-        else {
-          *new_param_values[i].value_ -= 2*new_param_values[i].step_;
-          newE = E(pgn.all_nodes_, new_param_values, K);
+        else if (step > 0) {
+					step = -step;
+          *params[i].value_ += 2*step;
+          newE = E(pgn.all_nodes_, params, K);
 
           if (newE < bestE) {
             bestE = newE;
-            best_param_values = new_param_values;
             improved = true;
           }
           else {
-            *new_param_values[i].value_ += new_param_values[i].step_;
+            *params[i].value_ -= step;
+            step = 0;
           }
+        }
+        else {
+            *params[i].value_ -= step;
+						step = 0;
         }
       }
     }
@@ -243,7 +244,7 @@ public:
     /*double smallestE;
     double bestK = -1;
     for (double K = 1.10; K < 1.15; K += 0.01) {
-        double _E = E(pgn.all_nodes_, initial_param_values, K);
+        double _E = E(pgn.all_nodes_, params, K);
         if (bestK < 0 || _E < smallestE) {
           bestK = K;
           smallestE = _E;

@@ -23,7 +23,12 @@ public:
   virtual void readSANMove() {
     pgn::PGNPlayer::readSANMove();
 
-    if ((game_->pos - game_->position_list) >= 20 && (game_->pos - game_->position_list) <= 60) {
+    auto half_move_count = game_->pos - game_->position_list;
+
+    auto stage = (game_->pos->material.value()-game_->pos->material.pawnValue())/
+                  (double)game_->pos->material.max_value_without_pawns;
+
+    if (stage <= .901 && half_move_count <= 60 && stage >= 0.199) {
       node_.fen_ = game_->getFen();
       game_nodes_.push_back(node_);
     }
@@ -52,9 +57,9 @@ public:
       return;
     }
     cout << "game_count_:" << game_count_
-         << " position_count_:" << position_count_
-         << " all_nodes_.size:" << all_nodes_.size()
-         << endl;
+    << " position_count_:" << position_count_
+    << " all_nodes_.size:" << all_nodes_.size()
+    << endl;
   }
 
   std::vector<Node> all_nodes_;
@@ -66,25 +71,24 @@ private:
 };
 
 struct Param {
-  Param(std::string name, int* value, int initial_value, int step) :
+  Param(std::string name, int& value, int initial_value, int step) :
     name_(name), value_(value), step_(step)
   {
-    *value = initial_value;
+    value = initial_value;
   }
-  Param(std::string name, int* value, int step) :
+  Param(std::string name, int& value, int step) :
     name_(name), value_(value), step_(step)
   {
   }
   std::string name_;
-  int* value_;
+  int& value_;
   int step_;
 };
 
 class Tune : public MoveSorter {
 public:
   Tune(Game& game, See& see, Eval& eval) : game_(game), see_(see), eval_(eval) {
-    PGNPlayer pgn("C:\\chess\\lb\\test.pgn");
-    //PGNPlayer pgn("C:\\Users\\Gunnar\\Downloads\\ccrl4040all.pgn");
+    PGNPlayer pgn("C:\\chess\\lb\\test3.pgn");
 
     pgn.read();
 
@@ -92,11 +96,32 @@ public:
 
     std::vector<Param> params;
 
-    params.push_back(Param("pawn_advance_mg", &eval_.pawn_advance_mg, 1));
-    params.push_back(Param("pawn_advance_eg", &eval_.pawn_advance_eg, 1));
-    //for (auto i = 0; i < 15; ++i) params.push_back(Param("bishop_mob_mg", &eval_.bishop_mob_mg[i], 2));
-    //for (auto i = 0; i < 9; ++i) params.push_back(Param("knight_mob_mg", &eval_.knight_mob_mg[i], 2));
-
+    params.push_back(Param("pawn_isolated_open_mg", eval_.pawn_isolated_open_mg, 3));
+    params.push_back(Param("pawn_isolated_mg", eval_.pawn_isolated_mg, 3));
+    params.push_back(Param("pawn_isolated_open_eg", eval_.pawn_isolated_open_eg, 3));
+    params.push_back(Param("pawn_isolated_eg", eval_.pawn_isolated_eg, 3));
+    params.push_back(Param("pawn_unsupported_open_mg", eval_.pawn_unsupported_open_mg, 3));
+    params.push_back(Param("pawn_unsupported_mg", eval_.pawn_unsupported_mg, 3));
+    params.push_back(Param("pawn_unsupported_open_eg", eval_.pawn_unsupported_open_eg, 3));
+    params.push_back(Param("pawn_unsupported_eg", eval_.pawn_unsupported_eg, 3));
+    params.push_back(Param("pawn_doubled_mg", eval_.pawn_doubled_mg, 3));
+    params.push_back(Param("pawn_doubled_eg", eval_.pawn_doubled_eg, 3));
+    /*
+    params.push_back(Param("bishop_pair_mg", eval_.bishop_pair_mg, 3));
+    params.push_back(Param("bishop_pair_eg", eval_.bishop_pair_eg, 3));
+    params.push_back(Param("rook_on_open_mg", eval_.rook_on_open_mg, 3));
+    params.push_back(Param("rook_on_open_eg", eval_.rook_on_open_eg, 3));
+    params.push_back(Param("rook_on_half_open_mg", eval_.rook_on_half_open_mg, 3));
+    params.push_back(Param("rook_on_half_open_eg", eval_.rook_on_half_open_eg, 3));
+    params.push_back(Param("side_to_move_mg", eval_.side_to_move_mg, 3));
+    params.push_back(Param("side_to_move_eg", eval_.side_to_move_eg, 3));
+    params.push_back(Param("pawn_advance_mg", eval_.pawn_advance_mg, 1));
+    params.push_back(Param("pawn_advance_eg", eval_.pawn_advance_eg, 1));
+    for (auto i = 0; i < 14; ++i) params.push_back(Param("bishop_mob_mg", eval_.bishop_mob_mg[i], 1));
+    for (auto i = 0; i < 9; ++i) params.push_back(Param("knight_mob_mg", eval_.knight_mob_mg[i], 1));
+    for (auto i = 0; i < 15; ++i) params.push_back(Param("rook_mob_mg", eval_.rook_mob_mg[i], 2));
+    for (auto i = 0; i < 15; ++i) params.push_back(Param("rook_mob_eg", eval_.rook_mob_eg[i], 2));
+    */
     double K = bestK();
     double bestE = E(pgn.all_nodes_, params, K);
     bool improved = true;
@@ -106,12 +131,13 @@ public:
       improved = false;
 
       for (size_t i = 0; i < params.size(); ++i) {
-      	auto& step = params[i].step_;
+        auto& step = params[i].step_;
+        auto& value = params[i].value_;
 
-				if (step == 0) {
-						continue;
-				}
-	      *params[i].value_ += step;
+        if (step == 0) {
+          continue;
+        }
+        value += step;
 
         double newE = E(pgn.all_nodes_, params, K);
 
@@ -120,8 +146,8 @@ public:
           improved = true;
         }
         else if (step > 0) {
-					step = -step;
-          *params[i].value_ += 2*step;
+          step = -step;
+          value += 2*step;
           newE = E(pgn.all_nodes_, params, K);
 
           if (newE < bestE) {
@@ -129,16 +155,17 @@ public:
             improved = true;
           }
           else {
-            *params[i].value_ -= step;
+            value -= step;
             step = 0;
           }
         }
         else {
-            *params[i].value_ -= step;
-						step = 0;
+            value -= step;
+            step = 0;
         }
       }
     }
+    printBestValues(bestE, params);
   }
 
   virtual ~Tune() {}
@@ -154,7 +181,9 @@ public:
 
     cout << "x:" << x;
     for (size_t i = 0; i < param_values.size(); ++i) {
-      cout << " pv[" << i << "]:" << *param_values[i].value_;
+      if (param_values[i].step_) {
+        cout << " prm[" << i << "]:" << param_values[i].value_;
+      }
     }
     cout << endl;
     return x;
@@ -233,15 +262,24 @@ public:
     }
   }
 
-  void printBestValues(double E, const std::vector<Param> param_values) {
-    cout << "E:" << E << "  " << endl;
-    for (size_t i = 0; i < param_values.size(); ++i) {
-      cout << i << ":" << param_values[i].name_ << " = " << *param_values[i].value_ << endl;
+  void printBestValues(double E, const std::vector<Param> params) {
+    auto finished = 0;
+    for (size_t i = 0; i < params.size(); ++i) {
+      if (params[i].step_ == 0) {
+          finished++;
+      }
+      cout << i << ":"
+      << params[i].name_ << ":" << params[i].value_
+      << "  step:" << params[i].step_
+      << endl;
     }
+    cout << "Best E:" << E << "  " << endl;
+    cout << "Finished:" << finished*100.0/params.size() << "%" << endl;
   }
 
   double bestK() {
-    /*double smallestE;
+    /*
+    double smallestE;
     double bestK = -1;
     for (double K = 1.10; K < 1.15; K += 0.01) {
         double _E = E(pgn.all_nodes_, params, K);
@@ -251,7 +289,8 @@ public:
         }
         std::cout << "K:" << K << "  _E:" << _E << endl;
     }
-    std::cout << "bestK:" << bestK << "smallestE:" << smallestE << endl;*/
+    std::cout << "bestK:" << bestK << "smallestE:" << smallestE << endl;
+    */
     return 1.12;
   }
 

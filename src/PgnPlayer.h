@@ -12,6 +12,10 @@ public:
     game_ = new Game();
   }
 
+  virtual ~PGNPlayer() {
+    delete game_;
+  }
+
   virtual void readPGNGame() {
     game_->newGame(Game::START_POSITION);
     PGNFileReader::readPGNGame();
@@ -127,9 +131,6 @@ public:
 
 protected:
   Game* game_;
-
-private:
-  Move move_;
 };
 
 } // namespace pgn

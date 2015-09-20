@@ -126,6 +126,7 @@ protected:
         score_mg += open_file ? pawn_unsupported_open_mg : pawn_unsupported_mg;
         score_eg += open_file ? pawn_unsupported_open_eg : pawn_unsupported_eg;;
       }
+
       resetLSB(bb);
 
       if (bbFile(sq) & bb) {
@@ -375,8 +376,8 @@ protected:
         int r = us == 0 ? rank(sq) : 7 - rank(sq);
         int rr = r*r;
 
-        int score_mg = rr*4;
-        int score_eg = rr*3;
+        int score_mg = passed_pawn_mg[r];
+        int score_eg = passed_pawn_eg[r];
 
         score_eg += rr*(front_span & board->occupied_by_side[us] ? 0 : 1);
         score_eg += rr*(front_span & board->occupied_by_side[them] ? 0 : 1);
@@ -480,6 +481,9 @@ public:
   static int bishop_mob_mg[14];
   static int rook_mob_mg[15];
   static int rook_mob_eg[15];
+
+  static int passed_pawn_mg[8];
+  static int passed_pawn_eg[8];
 
   static int pawn_isolated_open_mg;
   static int pawn_isolated_mg;
@@ -593,28 +597,30 @@ int Eval::_pcsq_eg[64] = {
    0,   0,   0,   0,   0,   0,   0,   0
 };*/
 
-int Eval::pawn_isolated_open_mg = -43;
-int Eval::pawn_isolated_mg = -22;
-int Eval::pawn_isolated_open_eg = -19;
-int Eval::pawn_isolated_eg = -22;
-int Eval::pawn_unsupported_open_mg = -18;
+int Eval::pawn_isolated_open_mg = -37;
+int Eval::pawn_isolated_mg = -23;
+int Eval::pawn_isolated_open_eg = -21;
+int Eval::pawn_isolated_eg = -25;
+int Eval::pawn_unsupported_open_mg = -26;
 int Eval::pawn_unsupported_mg = -4;
-int Eval::pawn_unsupported_open_eg = -2;
-int Eval::pawn_unsupported_eg = -4;
+int Eval::pawn_unsupported_open_eg = 6;
+int Eval::pawn_unsupported_eg = -7;
 int Eval::pawn_doubled_mg = -9;
 int Eval::pawn_doubled_eg = -3;
 int Eval::pawn_advance_mg = 2;
 int Eval::pawn_advance_eg = 3;
-int Eval::side_to_move_mg = 7;
+int Eval::side_to_move_mg = 6;
 int Eval::side_to_move_eg = 4;
 int Eval::rook_on_open_mg = 25;
-int Eval::rook_on_open_eg = 16;
-int Eval::rook_on_half_open_mg = 12;
-int Eval::rook_on_half_open_eg = 6;
-int Eval::bishop_pair_mg = 30;
-int Eval::bishop_pair_eg = 51;
+int Eval::rook_on_open_eg = 18;
+int Eval::rook_on_half_open_mg = 21;
+int Eval::rook_on_half_open_eg = -3;
+int Eval::bishop_pair_mg = 33;
+int Eval::bishop_pair_eg = 58;
 
-int Eval::knight_mob_mg[9] = { -52, -24, -10, 2, 9, 16, 25, 31, 31 };
-int Eval::bishop_mob_mg[14] = { -40, -29, -17, -2, 9, 18, 23, 25, 30, 33, 37, 41, 50, 76 };
-int Eval::rook_mob_mg[15] = { 0, 2, 4, 4, 3, 8, 8, 12, 16, 24, 27, 30, 30, 30, 30 };
-int Eval::rook_mob_eg[15] = { -16, -12, -12, -4, 12, 28, 28, 28, 31, 46, 52, 57, 57, 74, 74 };
+int Eval::knight_mob_mg[9] = { -51, -28, -14, 2, 8, 15, 26, 29, 20 };
+int Eval::bishop_mob_mg[14] = { -43, -29, -21, -4, 5, 15, 21, 25, 31, 29, 36, 38, 52, 70 };
+int Eval::rook_mob_mg[15] = { -13, -14, -17, -15, -12, -7, -5, 0, 5, 13, 11, 11, 18, 10, 26 };
+int Eval::rook_mob_eg[15] = { -26, -31, -27, -24, -7, -5, -5, 0, 5, 10, 20, 25, 23, 26, 26 };
+int Eval::passed_pawn_mg[8] = { 0, 1, -17, 7, 31, 103, 147, 0 };
+int Eval::passed_pawn_eg[8] = { 0, 22, 39, 37, 39, 61, 110, 0 };

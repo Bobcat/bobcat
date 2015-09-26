@@ -163,20 +163,20 @@ public:
     return bbSquare(sq) & occupied;
   }
 
-  __forceinline bool isAttacked(const Square sq, const Side side) {
+  __forceinline bool isAttacked(const Square sq, const Side side) const {
     return  isAttackedBySlider(sq, side) || isAttackedByKnight(sq, side) || isAttackedByPawn(sq, side)
             || isAttackedByKing(sq, side);
   }
 
-  __forceinline BB knightAttacks(const Square sq) {
+  __forceinline BB knightAttacks(const Square sq)const {
     return knight_attacks[sq];
   }
 
-  __forceinline BB bishopAttacks(const Square sq) {
+  __forceinline BB bishopAttacks(const Square sq) const {
     return Bmagic(sq, occupied);
   }
 
-  __forceinline BB rookAttacks(const Square sq) {
+  __forceinline BB rookAttacks(const Square sq) const {
     return Rmagic(sq, occupied);
   }
 
@@ -206,7 +206,7 @@ public:
     return 0;
   }
 
-  __forceinline bool isAttackedBySlider(const Square sq, const Side side) {
+  __forceinline bool isAttackedBySlider(const Square sq, const Side side) const {
     BB r_attacks = rookAttacks(sq);
     if (piece[Rook + (side << 3)] & r_attacks) {
       return true;
@@ -221,15 +221,15 @@ public:
     return false;
   }
 
-  __forceinline bool isAttackedByKnight(const Square sq, const Side side) {
+  __forceinline bool isAttackedByKnight(const Square sq, const Side side) const {
     return (piece[Knight + (side << 3)] & knight_attacks[sq]) != 0;
   }
 
-  __forceinline bool isAttackedByPawn(const Square sq, const Side side) {
+  __forceinline bool isAttackedByPawn(const Square sq, const Side side) const {
     return (piece[Pawn | (side << 3)] & pawn_captures[sq | ((side ^ 1) << 6)]) != 0;
   }
 
-  __forceinline bool isAttackedByKing(const Square sq, const Side side) {
+  __forceinline bool isAttackedByKing(const Square sq, const Side side) const {
     return (piece[King | (side << 3)] & king_attacks[sq]) != 0;
   }
 
@@ -312,7 +312,7 @@ public:
   Square king_square[2];
   BB queen_attacks;
 
-  __forceinline bool isPawnPassed(const Square sq, const Side side) {
+  __forceinline bool isPawnPassed(const Square sq, const Side side) const {
     return (passed_pawn_front_span[side][sq] & pawns(side ^ 1)) == 0;
   }
 
@@ -320,11 +320,11 @@ public:
     return ((bbSquare(sq) & piece[p + (side << 3)]) != 0);
   }
 
-  __forceinline bool isPieceOnFile(const Piece p, const Square sq, const Side side) {
+  __forceinline bool isPieceOnFile(const Piece p, const Square sq, const Side side) const {
     return ((bbFile(sq) & piece[p + (side << 3)]) != 0);
   }
 
-  __forceinline bool isPawnIsolated(const Square sq, const Side side) {
+  __forceinline bool isPawnIsolated(const Square sq, const Side side) const {
     return (pawns(side) & neighbourFiles(bbSquare(sq))) == 0;
   }
 };

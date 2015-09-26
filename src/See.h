@@ -18,21 +18,20 @@
 
 class See {
 public:
-  See(Game* game) {
-    board = &game->board;
+  See(Game* game) : board_(game->board) {
   }
 
   int seeMove(const Move move) {
     int score;
-    board->makeMove(move);
-    if (!board->isAttacked(board->king_square[moveSide(move)], moveSide(move) ^ 1)) {
+    board_.makeMove(move);
+    if (!board_.isAttacked(board_.king_square[moveSide(move)], moveSide(move) ^ 1)) {
       initialiseSeeMove();
       score = seeRec(materialChange(move), nextToCapture(move), moveTo(move), moveSide(move) ^ 1);
     }
     else {
       score = SEE_INVALID_SCORE;
     }
-    board->unmakeMove(move);
+    board_.unmakeMove(move);
     return score;
   }
 
@@ -67,17 +66,17 @@ private:
         initMove(move, current_piece[side_to_move] | (side_to_move << 3), next_to_capture,
                  from, to, CAPTURE, 0);
       }
-      board->makeMove(move);
-      if (!board->isAttacked(board->king_square[side_to_move], side_to_move ^ 1)) {
+      board_.makeMove(move);
+      if (!board_.isAttacked(board_.king_square[side_to_move], side_to_move ^ 1)) {
         break;
       }
-      board->unmakeMove(move);
+      board_.unmakeMove(move);
     }
     while (1);
 
     int score = -seeRec(materialChange(move), nextToCapture(move), moveTo(move), moveSide(move) ^ 1);
 
-    board->unmakeMove(move);
+    board_.unmakeMove(move);
 
     return (score < 0) ? material_change + score : material_change;
   }
@@ -91,42 +90,42 @@ private:
         return true;
       }
       current_piece[side]++;
-      current_piece_bitboard[side] = board->knights(side);
+      current_piece_bitboard[side] = board_.knights(side);
     case Knight:
-      if (current_piece_bitboard[side] & board->knightAttacks(to)) {
-        from = lsb(current_piece_bitboard[side] & board->knightAttacks(to));
+      if (current_piece_bitboard[side] & board_.knightAttacks(to)) {
+        from = lsb(current_piece_bitboard[side] & board_.knightAttacks(to));
         current_piece_bitboard[side] &= ~bbSquare(from);
         return true;
       }
       current_piece[side]++;
-      current_piece_bitboard[side] = board->bishops(side);
+      current_piece_bitboard[side] = board_.bishops(side);
     case Bishop:
-      if (current_piece_bitboard[side] & board->bishopAttacks(to)) {
-        from = lsb(current_piece_bitboard[side] & board->bishopAttacks(to));
+      if (current_piece_bitboard[side] & board_.bishopAttacks(to)) {
+        from = lsb(current_piece_bitboard[side] & board_.bishopAttacks(to));
         current_piece_bitboard[side] &= ~bbSquare(from);
         return true;
       }
       current_piece[side]++;
-      current_piece_bitboard[side] = board->rooks(side);
+      current_piece_bitboard[side] = board_.rooks(side);
     case Rook:
-      if (current_piece_bitboard[side] & board->rookAttacks(to)) {
-        from = lsb(current_piece_bitboard[side] & board->rookAttacks(to));
+      if (current_piece_bitboard[side] & board_.rookAttacks(to)) {
+        from = lsb(current_piece_bitboard[side] & board_.rookAttacks(to));
         current_piece_bitboard[side] &= ~bbSquare(from);
         return true;
       }
       current_piece[side]++;
-      current_piece_bitboard[side] = board->queens(side);
+      current_piece_bitboard[side] = board_.queens(side);
     case Queen:
-      if (current_piece_bitboard[side] & board->queenAttacks(to)) {
-        from = lsb(current_piece_bitboard[side] & board->queenAttacks(to));
+      if (current_piece_bitboard[side] & board_.queenAttacks(to)) {
+        from = lsb(current_piece_bitboard[side] & board_.queenAttacks(to));
         current_piece_bitboard[side] &= ~bbSquare(from);
         return true;
       }
       current_piece[side]++;
-      current_piece_bitboard[side] = board->king(side);
+      current_piece_bitboard[side] = board_.king(side);
     case King:
-      if (current_piece_bitboard[side] & board->kingAttacks(to)) {
-        from = lsb(current_piece_bitboard[side] & board->kingAttacks(to));
+      if (current_piece_bitboard[side] & board_.kingAttacks(to)) {
+        from = lsb(current_piece_bitboard[side] & board_.kingAttacks(to));
         current_piece_bitboard[side] &= ~bbSquare(from);
         return true;
       }
@@ -138,14 +137,14 @@ private:
 protected:
   __forceinline void initialiseSeeMove() {
     current_piece[0] = Pawn;
-    current_piece_bitboard[0] = board->piece[Pawn];
+    current_piece_bitboard[0] = board_.piece[Pawn];
     current_piece[1] = Pawn;
-    current_piece_bitboard[1] = board->piece[Pawn | 8];
+    current_piece_bitboard[1] = board_.piece[Pawn | 8];
   }
 
   BB current_piece_bitboard[2];
   int current_piece[2];
-  Board* board;
+  Board& board_;
 
   static const int SEE_INVALID_SCORE = -5000;
 };

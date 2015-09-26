@@ -23,7 +23,7 @@ public:
     game = new Game();
     game->copy(master);
     see = new See(game);
-    eval = new Eval(game, pawnt, see);
+    eval = new Eval(*game, pawnt);
     search = new Search(game, eval, see, transt);
     thread_ = new std::thread(&Search::run, search);
   }

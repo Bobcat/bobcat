@@ -96,7 +96,7 @@ public:
     return key[side] & 15;
   }
 
-  __forceinline int evaluate(int& flags, int eval, int side_to_move, Board* board) {
+  __forceinline int evaluate(int& flags, int eval, int side_to_move, const Board* board) {
     this->flags = 0;
     uint32_t key1;
     uint32_t key2;
@@ -444,7 +444,7 @@ public:
   int flags;
   uint32_t key[2];
   int material_value[2];
-  Board* board;
+  const Board* board;
   int max_value_without_pawns;
   int max_value;
 

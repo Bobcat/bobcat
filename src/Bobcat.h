@@ -163,7 +163,7 @@ public:
     transt = new TranspositionTable(256);
     pawnt = new PawnStructureTable(8);
     see = new See(game);
-    eval = new Eval(game, pawnt, see);
+    eval = new Eval(*game, pawnt);
     search = new Search(protocol, game, eval, see, transt, logger);
 
 //    print_bb(bbSquare(flip[0][a2]), "bbSquare(flip[0][a2])");

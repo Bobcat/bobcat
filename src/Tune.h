@@ -1,4 +1,7 @@
+#include <fstream>
+#include <sstream>
 #include <vector>
+#include <map>
 #include <memory>
 
 namespace et {
@@ -85,7 +88,8 @@ struct Param {
   int step_;
 };
 
-class Tune : public MoveSorter {
+class Tune : public MoveSorter
+{
 public:
   Tune(Game& game, See& see, Eval& eval) : game_(game), see_(see), eval_(eval) {
     PGNPlayer pgn("C:\\chess\\lb\\test3.pgn");
@@ -101,8 +105,6 @@ public:
     params.push_back(Param("pawn_isolated_eg", eval_.pawn_isolated_eg, 2));
     params.push_back(Param("pawn_doubled_mg", eval_.pawn_doubled_mg, 2));
     params.push_back(Param("pawn_doubled_eg", eval_.pawn_doubled_eg, 2));
-    params.push_back(Param("pawn_advance_mg", eval_.pawn_advance_mg, 2));
-    params.push_back(Param("pawn_advance_eg", eval_.pawn_advance_eg, 2));
     params.push_back(Param("bishop_pair_mg", eval_.bishop_pair_mg, 2));
     params.push_back(Param("bishop_pair_eg", eval_.bishop_pair_eg, 2));
     params.push_back(Param("rook_on_open", eval_.rook_on_open, 2));
@@ -120,9 +122,12 @@ public:
     for (auto i = 0; i < 15; ++i) params.push_back(Param("rook_mob_eg", eval_.rook_mob_eg[i], 2));
     for (auto i = 0; i < 8; ++i) params.push_back(Param("passed_pawn_mg", eval_.passed_pawn_mg[i], 2));
     for (auto i = 0; i < 8; ++i) params.push_back(Param("passed_pawn_eg", eval_.passed_pawn_eg[i], 2));
-    for (auto i = 8; i < 56; ++i) params.push_back(Param("pawn_pcsq_mg", eval_.pawn_pcsq_mg[i], 5));
     */
-    for (auto i = 8; i < 56; ++i) params.push_back(Param("pawn_pcsq_eg", eval_.pawn_pcsq_eg[i], 5));
+    for (auto i = 0; i < 64; ++i) params.push_back(Param("pawn_pcsq_mg", eval_.pawn_pcsq_mg[i], i > 7 && i < 56 ? 2 : 0));
+    for (auto i = 0; i < 64; ++i) params.push_back(Param("pawn_pcsq_eg", eval_.pawn_pcsq_eg[i], 0, i > 7 && i < 56 ? 2 : 0));
+
+    ofstream out("C:\\chess\\lb\\test3.txt");
+    out << "Old:\n" << emitCode(params) << "\n\n";
 
     double K = bestK();
     double bestE = E(pgn.all_nodes_, params, K);
@@ -168,6 +173,8 @@ public:
       }
     }
     printBestValues(bestE, params);
+    out << "New:\n" << emitCode(params) << "\n\n";
+    std::cout << emitCode(params) << "\n";
   }
 
   virtual ~Tune() {}
@@ -262,6 +269,41 @@ public:
     else {
       exit(0);
     }
+  }
+
+  std::string emitCode(const std::vector<Param> params0) {
+    std::map<std::string, std::vector<Param> > params1;
+
+    for (auto& param : params0) {
+      params1[param.name_].push_back(param);
+    }
+    std::stringstream s;
+
+    for (auto& params2 : params1) {
+      s << "int Eval::" << params2.first;
+
+      auto n = params2.second.size();
+
+      if (n > 1) {
+        s << "[" << n <<"] = { ";
+      }
+      else {
+          s << " = ";
+      }
+
+      for (size_t i = 0; i < n; ++i) {
+        s << params2.second[i].value_;
+        if (n > 1 && i < n - 1) {
+          s << ", ";
+        }
+      }
+
+      if (n > 1) {
+        s << " }";
+      }
+      s << ";\n";
+    }
+    return s.str();
   }
 
   void printBestValues(double E, const std::vector<Param> params) {

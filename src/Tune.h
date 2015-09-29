@@ -99,32 +99,39 @@ public:
     // Tune as described in https://chessprogramming.wikispaces.com/Texel%27s+Tuning+Method
 
     std::vector<Param> params;
-    /*
-    params.push_back(Param("pawn_isolated_open_mg", eval_.pawn_isolated_open_mg, 2));
-    params.push_back(Param("pawn_isolated_mg", eval_.pawn_isolated_mg, 2));
-    params.push_back(Param("pawn_isolated_eg", eval_.pawn_isolated_eg, 2));
-    params.push_back(Param("pawn_doubled_mg", eval_.pawn_doubled_mg, 2));
-    params.push_back(Param("pawn_doubled_eg", eval_.pawn_doubled_eg, 2));
-    params.push_back(Param("bishop_pair_mg", eval_.bishop_pair_mg, 2));
-    params.push_back(Param("bishop_pair_eg", eval_.bishop_pair_eg, 2));
-    params.push_back(Param("rook_on_open", eval_.rook_on_open, 2));
-    params.push_back(Param("rook_on_half_open", eval_.rook_on_half_open, 2));
-    params.push_back(Param("side_to_move_mg", eval_.side_to_move_mg, 2));
-    params.push_back(Param("side_to_move_eg", eval_.side_to_move_eg, 2));
-    params.push_back(Param("rook_on_seventh", eval_.rook_on_seventh, 2));
-    params.push_back(Param("queen_on_seventh", eval_.queen_on_seventh, 2));
-    params.push_back(Param("king_on_open", eval_.king_on_open, 2));
-    params.push_back(Param("king_on_half_open", eval_.king_on_half_open, 2));
-    params.push_back(Param("pawn_shelter", eval_.pawn_shelter, 2));
-    for (auto i = 0; i < 14; ++i) params.push_back(Param("bishop_mob_mg", eval_.bishop_mob_mg[i], 2));
-    for (auto i = 0; i < 9; ++i) params.push_back(Param("knight_mob_mg", eval_.knight_mob_mg[i], 2));
-    for (auto i = 0; i < 15; ++i) params.push_back(Param("rook_mob_mg", eval_.rook_mob_mg[i], 2));
-    for (auto i = 0; i < 15; ++i) params.push_back(Param("rook_mob_eg", eval_.rook_mob_eg[i], 2));
-    for (auto i = 0; i < 8; ++i) params.push_back(Param("passed_pawn_mg", eval_.passed_pawn_mg[i], 2));
-    for (auto i = 0; i < 8; ++i) params.push_back(Param("passed_pawn_eg", eval_.passed_pawn_eg[i], 2));
-    */
-    for (auto i = 0; i < 64; ++i) params.push_back(Param("pawn_pcsq_mg", eval_.pawn_pcsq_mg[i], i > 7 && i < 56 ? 2 : 0));
-    for (auto i = 0; i < 64; ++i) params.push_back(Param("pawn_pcsq_eg", eval_.pawn_pcsq_eg[i], 0, i > 7 && i < 56 ? 2 : 0));
+
+    params.push_back(Param("pawn_isolated_open_mg", eval_.pawn_isolated_open_mg, 0, 0));
+    params.push_back(Param("pawn_isolated_mg", eval_.pawn_isolated_mg, 0, 0));
+    params.push_back(Param("pawn_isolated_eg", eval_.pawn_isolated_eg, 0, 0));
+    params.push_back(Param("pawn_doubled_mg", eval_.pawn_doubled_mg, 0, 0));
+    params.push_back(Param("pawn_doubled_eg", eval_.pawn_doubled_eg, 0, 0));
+    params.push_back(Param("bishop_pair_mg", eval_.bishop_pair_mg, 0, 0));
+    params.push_back(Param("bishop_pair_eg", eval_.bishop_pair_eg, 0, 0));
+    params.push_back(Param("rook_on_open", eval_.rook_on_open, 0, 0));
+    params.push_back(Param("rook_on_half_open", eval_.rook_on_half_open, 0, 0));
+    params.push_back(Param("side_to_move_mg", eval_.side_to_move_mg, 0, 0));
+    params.push_back(Param("side_to_move_eg", eval_.side_to_move_eg, 0, 0));
+    params.push_back(Param("rook_on_seventh", eval_.rook_on_seventh, 0, 0));
+    params.push_back(Param("queen_on_seventh", eval_.queen_on_seventh, 0, 0));
+    params.push_back(Param("king_on_open", eval_.king_on_open, 0, 0));
+    params.push_back(Param("king_on_half_open", eval_.king_on_half_open, 0, 0));
+    params.push_back(Param("pawn_shelter", eval_.pawn_shelter, 0, 0));
+    for (auto i = 0; i < 14; ++i) params.push_back(Param("bishop_mob_mg", eval_.bishop_mob_mg[i], 0, 0));
+    for (auto i = 0; i < 9; ++i) params.push_back(Param("knight_mob_mg", eval_.knight_mob_mg[i], 0, 0));
+    for (auto i = 0; i < 15; ++i) params.push_back(Param("rook_mob_mg", eval_.rook_mob_mg[i], 0, 0));
+    for (auto i = 0; i < 15; ++i) params.push_back(Param("rook_mob_eg", eval_.rook_mob_eg[i], 0, 0));
+    for (auto i = 0; i < 8; ++i) params.push_back(Param("passed_pawn_mg", eval_.passed_pawn_mg[i], 0, 0));
+    for (auto i = 0; i < 8; ++i) params.push_back(Param("passed_pawn_eg", eval_.passed_pawn_eg[i], 0, 5));
+    for (auto i = 0; i < 64; ++i) params.push_back(Param("pawn_pcsq_mg", eval_.pawn_pcsq_mg[i], 0, i > 7 && i < 56 ? 0 : 0));
+    for (auto i = 0; i < 64; ++i) params.push_back(Param("pawn_pcsq_eg", eval_.pawn_pcsq_eg[i], 0, i > 7 && i < 56 ? 0 : 0));
+    for (auto i = 0; i < 8; ++i)  params.push_back(Param("pawn_advance_mg", eval_.pawn_advance_mg[i], 0, 0));
+    for (auto i = 0; i < 8; ++i)  params.push_back(Param("pawn_advance_eg", eval_.pawn_advance_eg[i], 0, 0));
+    for (auto i = 0; i < 64; ++i) params.push_back(Param("knight_pcsq_mg", eval_.knight_pcsq_mg[i], 0, 0));
+    for (auto i = 0; i < 64; ++i) params.push_back(Param("knight_pcsq_eg", eval_.knight_pcsq_eg[i], 0, 0));
+    for (auto i = 0; i < 64; ++i) params.push_back(Param("bishop_pcsq_mg", eval_.bishop_pcsq_mg[i], 0, 0));
+    for (auto i = 0; i < 64; ++i) params.push_back(Param("bishop_pcsq_eg", eval_.bishop_pcsq_eg[i], 0, 0));
+    for (auto i = 0; i < 64; ++i) params.push_back(Param("king_pcsq_mg", eval_.king_pcsq_mg[i], 0, 0));
+    for (auto i = 0; i < 64; ++i) params.push_back(Param("king_pcsq_eg", eval_.king_pcsq_eg[i], 0, 0));
 
     ofstream out("C:\\chess\\lb\\test3.txt");
     out << "Old:\n" << emitCode(params) << "\n\n";
@@ -311,6 +318,7 @@ public:
     for (size_t i = 0; i < params.size(); ++i) {
       if (params[i].step_ == 0) {
           finished++;
+          continue;
       }
       cout << i << ":"
       << params[i].name_ << ":" << params[i].value_

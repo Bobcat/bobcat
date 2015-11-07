@@ -327,4 +327,10 @@ public:
   __forceinline bool isPawnIsolated(const Square sq, const Side side) const {
     return (pawns(side) & neighbourFiles(bbSquare(sq))) == 0;
   }
+
+	__forceinline bool isPawnBehind(const Square sq, const Side side) const {
+		const BB& bbsq = bbSquare(sq);
+		return (pawns(side) & (pawnFill[side ^ 1](westOne(bbsq) | eastOne(bbsq)))) == 0;
+	}
+
 };

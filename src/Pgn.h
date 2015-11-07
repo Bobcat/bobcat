@@ -48,13 +48,13 @@ enum Result { WhiteWin, Draw, BlackWin };
 
 class UnexpectedToken {
 public:
-  UnexpectedToken(Token expected, const char* found) {
-    sprintf(buf, "Expected <%s> but found '%s'",
-            token_string[expected], found);
+  UnexpectedToken(Token expected, const char* found, size_t line) {
+    sprintf(buf, "Expected <%s> but found '%s', line=%llu",
+            token_string[expected], found, line);
   }
 
-  UnexpectedToken(const char* expected, const char* found) {
-    sprintf(buf, "Expected %s but found '%s'", expected, found);
+  UnexpectedToken(const char* expected, const char* found, size_t line) {
+    sprintf(buf, "Expected %s but found '%s', line=%llu", expected, found, line);
   }
 
   const char* str() const {
@@ -93,7 +93,7 @@ public:
       readPGNDatabase();
 
       if (token_ != None) {
-        throw UnexpectedToken("no more tokens", token_str);
+        throw UnexpectedToken("no more tokens", token_str, line_);
       }
     }
     catch (const UnexpectedToken& e) {
@@ -129,7 +129,7 @@ protected:
       readTagPair();
 
       if (token_ != RBracket) {
-        throw UnexpectedToken(RBracket, token_str);
+        throw UnexpectedToken(RBracket, token_str, line_);
       }
       readToken(token_);
     }
@@ -139,12 +139,12 @@ protected:
     readToken(token_);
 
     if (token_ != Symbol) {
-      throw UnexpectedToken(Symbol, token_str);
+      throw UnexpectedToken(Symbol, token_str, line_);
     }
     readTagName();
 
     if (token_ != String) {
-      throw UnexpectedToken(String, token_str);
+      throw UnexpectedToken(String, token_str, line_);
     }
     readTagValue();
   }
@@ -166,7 +166,7 @@ protected:
       readGameTermination();
     }
     else {
-      throw UnexpectedToken("<game-termination>", token_str);
+      throw UnexpectedToken("<game-termination>", token_str, line_);
     }
   }
 
@@ -251,7 +251,7 @@ protected:
     while (readSANMoveSuffix(p)) ; // may be too relaxed
 
     if (strlen(token_str) != (size_t)p - (size_t)token_str) {
-      throw UnexpectedToken("<end-of-san-move>", p);
+      throw UnexpectedToken("<end-of-san-move>", p, line_);
     }
   }
 
@@ -294,7 +294,7 @@ protected:
         readPawnCaptureOrQuietMove(p);
       }
       else {
-        throw UnexpectedToken("start-of-pawn-capture-or-quiet-move", token_str);
+        throw UnexpectedToken("start-of-pawn-capture-or-quiet-move", token_str, line_);
       }
     }
     else if (startOfPawnCaptureOrQuietMove(p)) {
@@ -337,7 +337,7 @@ protected:
       p += 1;
     }
     else {
-      throw UnexpectedToken("<piece-letter>", p);
+      throw UnexpectedToken("<piece-letter>", p, line_);
     }
   }
 
@@ -378,7 +378,7 @@ protected:
       p += 2;
     }
     else {
-      throw UnexpectedToken("<to-square>", token_str);
+      throw UnexpectedToken("<to-square>", token_str, line_);
     }
     capture_ = true;
   }
@@ -412,7 +412,7 @@ protected:
         p += 2;
       }
       else {
-        throw UnexpectedToken("<to-square>", token_str);
+        throw UnexpectedToken("<to-square>", token_str, line_);
       }
     }
     else if (isFileLetter(p, from_file_)) {
@@ -422,7 +422,7 @@ protected:
         p += 2;
       }
       else {
-        throw UnexpectedToken("<to-square>", token_str);
+        throw UnexpectedToken("<to-square>", token_str, line_);
       }
     }
     else {
@@ -439,7 +439,7 @@ protected:
     readElementSequence();
 
     if (token_ != RParen) {
-      throw UnexpectedToken(RParen, token_str);
+      throw UnexpectedToken(RParen, token_str, line_);
     }
     readToken(token_);
   }

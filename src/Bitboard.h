@@ -50,7 +50,7 @@ BB corner_h1;
 BB corner_h8;
 BB bb_color[2];
 BB center1;
-BB center2[2];
+BB center2;
 
 
 __forceinline const BB& bbSquare(int sq) {
@@ -191,14 +191,11 @@ void Bitboard_h_initialise() {
   corner_h1 = bbSquare(h1) | bbSquare(g1) | bbSquare(h2) | bbSquare(g2);
   corner_h8 = bbSquare(h8) | bbSquare(g8) | bbSquare(h7) | bbSquare(g7);
   center1 = bbSquare(e4) | bbSquare(d4) | bbSquare(e5) | bbSquare(d5);
-  center2[0] = bbSquare(c4) | bbSquare(c5) | bbSquare(c6) | bbSquare(d6) | bbSquare(e6) | bbSquare(f6) |
-               bbSquare(f5) | bbSquare(f4);
-  center2[1] = bbSquare(c5) | bbSquare(c4) | bbSquare(c3) | bbSquare(d3) | bbSquare(e3) | bbSquare(f3) |
-               bbSquare(f4) | bbSquare(f5);
+  center2 = bbSquare(c4) | bbSquare(c5) | bbSquare(f5) | bbSquare(f4) | center1;
 
 //    print_bb(center1,"");
-//    print_bb(center2[0],"");
-//    print_bb(center2[1],"");
+//    print_bb(center2,"");
+//    print_bb(center2,"");
 }
 
 __forceinline BB neighbourFiles(const BB& bb) {

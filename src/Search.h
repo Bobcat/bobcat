@@ -122,7 +122,7 @@ protected:
     }
     Score score;
 
-    if (okToTryNullMove(depth, beta)) {
+    if (shouldTryNullMove(depth, beta)) {
       makeMoveAndEvaluate(0, alpha, beta);
       score = searchNextDepthNotPV(depth - nullMoveReduction(depth), -beta + 1, 128);
       unmakeMove();
@@ -214,13 +214,6 @@ protected:
     return depth <= 0 ? -searchQuiesce(alpha, beta, 0, true) : -searchPV(depth, alpha, beta);
   }
 
-  bool givesCheck(const Move m) {
-    board->makeMove(m);
-    auto ret = board->isAttacked(board->king_square[pos->side_to_move^1], pos->side_to_move);
-    board->unmakeMove(m);
-    return ret;
-  }
-
   Score searchNotPV(const Depth depth, const Score beta, const int expectedNodeType) {
     if (isTranspositionScoreValid(depth, beta - 1, beta)) {
       return pos->transp_score;
@@ -230,7 +223,7 @@ protected:
       return searchNodeScore(pos->eval_score);
     }
 
-    if (okToTryNullMove(depth, beta)) {
+    if (shouldTryNullMove(depth, beta)) {
       makeMoveAndEvaluate(0, beta - 1, beta);
       auto score = searchNextDepthNotPV(depth - nullMoveReduction(depth), -beta + 1, ALPHA);
       unmakeMove();
@@ -364,7 +357,7 @@ protected:
     return true;
   }
 
-  __forceinline bool okToTryNullMove(const Depth depth, const Score beta) const {
+  __forceinline bool shouldTryNullMove(const Depth depth, const Score beta) const {
     return !pos->in_check
            && pos->null_moves_in_row < 1
            && !pos->material.isKx(pos->side_to_move)

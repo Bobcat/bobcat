@@ -789,8 +789,8 @@ protected:
         return true;
       }
 
-      if (search_time < timeUsed()*2.5) {
-          return true;
+      if (!isAnalysing() && !protocol->isFixedDepth() && search_time < timeUsed()*2.5) {
+        return true;
       }
     }
     return false;

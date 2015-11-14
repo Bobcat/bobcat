@@ -101,35 +101,32 @@ public:
     // Tune as described in https://chessprogramming.wikispaces.com/Texel%27s+Tuning+Method
 
     std::vector<Param> params;
+    int step0 = 0;
 
-    //params.push_back(Param("pawn_isolated_open_mg", eval_.pawn_isolated_open_mg, 0, 5));
-    //params.push_back(Param("pawn_isolated_mg", eval_.pawn_isolated_mg, 0, 5));
-    //params.push_back(Param("pawn_isolated_eg", eval_.pawn_isolated_eg, 0, 5));
-    //params.push_back(Param("rook_on_open", eval_.rook_on_open, 0, 5));
-    //params.push_back(Param("rook_on_half_open", eval_.rook_on_half_open, 0, 5));
-    //for (auto i = 0; i < 8; ++i) params.push_back(Param("passed_pawn_mg", eval_.passed_pawn_mg[i], 0, 5));
-    //for (auto i = 0; i < 8; ++i) params.push_back(Param("passed_pawn_eg", eval_.passed_pawn_eg[i], 0, 5));
-//    for (auto i = 0; i < 64; ++i) params.push_back(Param("pawn_pcsq_mg", eval_.pawn_pcsq_mg[i], i > 7 && i < 56 ? 2 : 0));
-//    for (auto i = 0; i < 64; ++i) params.push_back(Param("pawn_pcsq_eg", eval_.pawn_pcsq_eg[i], i > 7 && i < 56 ? 2 : 0));
-//    for (auto i = 0; i < 64; ++i) params.push_back(Param("knight_pcsq_mg", eval_.knight_pcsq_mg[i], 2));
-//    for (auto i = 0; i < 64; ++i) params.push_back(Param("knight_pcsq_eg", eval_.knight_pcsq_eg[i], 2));
-//    for (auto i = 0; i < 64; ++i) params.push_back(Param("bishop_pcsq_mg", eval_.bishop_pcsq_mg[i], 2));
-//    for (auto i = 0; i < 64; ++i) params.push_back(Param("bishop_pcsq_eg", eval_.bishop_pcsq_eg[i], 2));
-//    for (auto i = 0; i < 64; ++i) params.push_back(Param("rook_pcsq_mg", eval_.rook_pcsq_mg[i], 0, 5));
-//    for (auto i = 0; i < 64; ++i) params.push_back(Param("rook_pcsq_eg", eval_.rook_pcsq_eg[i], 0, 5));
-//    for (auto i = 0; i < 64; ++i) params.push_back(Param("queen_pcsq_mg", eval_.queen_pcsq_mg[i], 2));
-//    for (auto i = 0; i < 64; ++i) params.push_back(Param("queen_pcsq_eg", eval_.queen_pcsq_eg[i], 2));
-//    for (auto i = 0; i < 9; ++i) params.push_back(Param("knight_mob_mg", eval_.knight_mob_mg[i], 2));
-//    for (auto i = 0; i < 9; ++i) params.push_back(Param("knight_mob_eg", eval_.knight_mob_eg[i], 2));
-//    for (auto i = 0; i < 14; ++i) params.push_back(Param("bishop_mob_mg", eval_.bishop_mob_mg[i], 2));
-//    for (auto i = 0; i < 14; ++i) params.push_back(Param("bishop_mob_eg", eval_.bishop_mob_eg[i], 2));
-//    for (auto i = 0; i < 15; ++i) params.push_back(Param("rook_mob_mg", eval_.rook_mob_mg[i], 2));
-//    for (auto i = 0; i < 15; ++i) params.push_back(Param("rook_mob_eg", eval_.rook_mob_eg[i], 2));
-//    params.push_back(Param("king_on_open", eval_.king_on_open, 0, 5));
- //   params.push_back(Param("king_on_half_open", eval_.king_on_half_open, 0, 5));
+    // Pcsq tables
+    for (auto i = 0; i < 64; ++i) params.push_back(Param("pawn_pcsq_mg", eval_.pawn_pcsq_mg[i], i > 7 && i < 56 ? step0 : step0));
+    for (auto i = 0; i < 64; ++i) params.push_back(Param("pawn_pcsq_eg", eval_.pawn_pcsq_eg[i], i > 7 && i < 56 ? step0 : step0));
+    for (auto i = 0; i < 64; ++i) params.push_back(Param("knight_pcsq_mg", eval_.knight_pcsq_mg[i], step0));
+    for (auto i = 0; i < 64; ++i) params.push_back(Param("knight_pcsq_eg", eval_.knight_pcsq_eg[i], step0));
+    for (auto i = 0; i < 64; ++i) params.push_back(Param("bishop_pcsq_mg", eval_.bishop_pcsq_mg[i], step0));
+    for (auto i = 0; i < 64; ++i) params.push_back(Param("bishop_pcsq_eg", eval_.bishop_pcsq_eg[i], step0));
+    for (auto i = 0; i < 64; ++i) params.push_back(Param("rook_pcsq_mg", eval_.rook_pcsq_mg[i], 0, step0));
+    for (auto i = 0; i < 64; ++i) params.push_back(Param("rook_pcsq_eg", eval_.rook_pcsq_eg[i], 0, step0));
+    for (auto i = 0; i < 64; ++i) params.push_back(Param("queen_pcsq_mg", eval_.queen_pcsq_mg[i], step0));
+    for (auto i = 0; i < 64; ++i) params.push_back(Param("queen_pcsq_eg", eval_.queen_pcsq_eg[i], step0));
+    for (auto i = 0; i < 64; ++i) params.push_back(Param("king_pcsq_mg", eval_.king_pcsq_mg[i], step0));
+    for (auto i = 0; i < 64; ++i) params.push_back(Param("king_pcsq_eg", eval_.king_pcsq_eg[i], step0));
+
+    // Mobility
+    for (auto i = 0; i < 9; ++i) params.push_back(Param("knight_mob_mg", eval_.knight_mob_mg[i], step0));
+    for (auto i = 0; i < 9; ++i) params.push_back(Param("knight_mob_eg", eval_.knight_mob_eg[i], step0));
+    for (auto i = 0; i < 14; ++i) params.push_back(Param("bishop_mob_mg", eval_.bishop_mob_mg[i], step0));
+    for (auto i = 0; i < 14; ++i) params.push_back(Param("bishop_mob_eg", eval_.bishop_mob_eg[i], step0));
+    for (auto i = 0; i < 15; ++i) params.push_back(Param("rook_mob_mg", eval_.rook_mob_mg[i], step0));
+    for (auto i = 0; i < 15; ++i) params.push_back(Param("rook_mob_eg", eval_.rook_mob_eg[i], step0));
 
     ofstream out("C:\\chess\\test6.txt");
-    out << "Old:\n" << emitCode(params) << "\n";
+    out << "Old:\n" << emitCode(params, true) << "\n";
 
     double K = bestK();
     double bestE = E(pgn.all_nodes_, params, K);
@@ -157,7 +154,7 @@ public:
         if (newE < bestE) {
           bestE = newE;
           improved = true;
-          out << emitCode(params);
+          out << emitCode(params, true);
         }
         else if (step > 0) {
           step = -step;
@@ -172,7 +169,7 @@ public:
           if (newE < bestE) {
             bestE = newE;
             improved = true;
-            out << emitCode(params);
+            out << emitCode(params, true);
           }
           else {
             value -= step;
@@ -186,8 +183,8 @@ public:
       }
     }
     printBestValues(bestE, params);
-    out << "\nNew:\n" << emitCode(params) << "\n";
-    std::cout << emitCode(params) << "\n";
+    out << "\nNew:\n" << emitCode(params, false) << "\n";
+    std::cout << emitCode(params, false) << "\n";
   }
 
   virtual ~Tune() {}
@@ -285,7 +282,7 @@ public:
     }
   }
 
-  std::string emitCode(const std::vector<Param> params0) {
+  std::string emitCode(const std::vector<Param> params0, bool hr) {
     std::map<std::string, std::vector<Param> > params1;
 
     for (auto& param : params0) {
@@ -296,9 +293,6 @@ public:
     for (auto& params2 : params1) {
       auto n = params2.second.size();
 
-      if (n == 64) {
-        s << "\n";
-      }
       s << "int Eval::" << params2.first;
 
       if (n > 1) {
@@ -309,7 +303,7 @@ public:
       }
 
       for (size_t i = 0; i < n; ++i) {
-        if (n == 64) {
+        if (hr && n == 64) {
             if (i % 8 == 0) {
               s << "\n ";
             }

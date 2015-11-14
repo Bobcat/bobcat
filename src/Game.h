@@ -181,6 +181,10 @@ public:
     return false;
   }
 
+  __forceinline int halfMoveCount() {
+      return pos - position_list;
+  }
+
   void addPiece(const Piece p, const Side c, const Square sq) {
     int pc = p | (c << 3);
 

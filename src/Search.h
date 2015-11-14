@@ -107,6 +107,7 @@ protected:
     this->logger = logger;
     board = game->pos->board;
     verbosity = 1;
+    lag_buffer = -1;
   }
 
   /*void postInfo(int depth, int selective_depth, uint64 node_count, uint64 nodes_per_sec, uint64 time, int hash_full) {
@@ -119,18 +120,18 @@ protected:
     if (ply >= MAXDEPTH - 1) {
       return searchNodeScore(pos->eval_score);
     }
-		Score score;
+    Score score;
 
-		if (okToTryNullMove(depth, beta)) {
-			makeMoveAndEvaluate(0, alpha, beta);
-			score = searchNextDepthNotPV(depth - nullMoveReduction(depth), -beta + 1, 128);
-			unmakeMove();
+    if (okToTryNullMove(depth, beta)) {
+      makeMoveAndEvaluate(0, alpha, beta);
+      score = searchNextDepthNotPV(depth - nullMoveReduction(depth), -beta + 1, 128);
+      unmakeMove();
 
-			if (score >= beta) {
-				return searchNodeScore(score);
-			}
-		}
-		Move singular_move = getSingularMove(depth, true);
+      if (score >= beta) {
+        return searchNodeScore(score);
+      }
+    }
+    Move singular_move = getSingularMove(depth, true);
 
     if (!pos->transp_move && depth >= 4) {
       searchPV(depth - 2, alpha, beta);
@@ -245,7 +246,7 @@ protected:
       auto score = searchQuiesce(beta - 1, beta, 0, false);
 
       if (score < beta) {
-				return std::max(score, pos->eval_score + razor_margin[depth]);
+        return std::max(score, pos->eval_score + razor_margin[depth]);
       }
     }
     generateMoves();
@@ -257,10 +258,6 @@ protected:
     auto nextExpectedNodeType = expectedNodeType == ALPHA ? BETA : ALPHA;
 
     while (const auto move_data = pos->nextMove()) {
-      if (shouldPruneMove(move_data->move, move_count, depth, best_score, beta - 1)) {
-          continue;
-      }
-
       if (makeMoveAndEvaluate(move_data->move, beta - 1, beta)) {
         auto next_depth = nextDepthNotPV(depth, ++move_count, move_data, beta - 1, best_score, expectedNodeType);
 
@@ -374,40 +371,9 @@ protected:
            && pos->eval_score >= beta;
   }
 
-  __forceinline bool shouldPruneMove(const Move m, int move_count, const Depth depth,
-                                     Score& best_score, const Score alpha)
-  {
-    if (true||pos->in_check || isCapture(m) || isQueenPromotion(m) || isKillerMove(m, ply)
-        || move_count == 0 || givesCheck(m))
-    {
-      return false;
-    }
-    auto prune = false;
-    static int lmp_margin[5] = { 0, 8, 12, 20, 40 };
-
-    if (depth <= 4 && move_count >= lmp_margin[depth]) {
-      prune = true;
-    }
-    /*
-    else if (depth <= 6 && pos->eval_score + 50*depth + 100 < alpha) {
-      best_score = std::max(best_score, pos->eval_score + pos->eval_score + 50*depth + 100);
-      prune = true;
-    }
-    */
-    else if (depth <= 3 && see->seeMove(m) < 0) {
-      prune = true;
-    }
-
-    if (prune) {
-      ++total_node_count;
-      ++node_count;
-    }
-    return prune;
-  }
-
   __forceinline Depth nextDepthNotPV(const Depth depth, const int move_count,
                                      const MoveData* move_data, const Score alpha, Score& best_score,
-                                     int expectedNodeType) const
+                                     int expectedNodeType)
   {
     const auto m = move_data->move;
     auto reduce = true;
@@ -427,7 +393,7 @@ protected:
         && depth > 1)
     {
       Depth next_depth = depth - 2 - depth/8 - (move_count-6)/12;
-//move to before makeMove with depth <= 6/7 (or leave here because pos_->eval_score can be better now, test, 1st tests failed)
+
       if (next_depth <= 3
           && -pos->eval_score + futility_margin[std::max(0, next_depth)] < alpha)
       {
@@ -466,8 +432,8 @@ protected:
     return 4 + depth/4;
   }
 
-	Score searchQuiesce(Score alpha, const Score beta, int qs_ply, bool search_pv) {
-		if (!search_pv && isTranspositionScoreValid(0, alpha, beta)) {
+  Score searchQuiesce(Score alpha, const Score beta, int qs_ply, bool search_pv) {
+    if (!search_pv && isTranspositionScoreValid(0, alpha, beta)) {
       return searchNodeScore(pos->transp_score);
     }
 
@@ -495,8 +461,8 @@ protected:
         if (move_data->score < 0) {
           break;
         }
-				else if (pos->eval_score + piece_value(moveCaptured(move_data->move)) + 150 < alpha) {
-					best_score = std::max(best_score, pos->eval_score + piece_value(moveCaptured(move_data->move)) + 150);
+        else if (pos->eval_score + piece_value(moveCaptured(move_data->move)) + 150 < alpha) {
+          best_score = std::max(best_score, pos->eval_score + piece_value(moveCaptured(move_data->move)) + 150);
           continue;
         }
       }
@@ -510,7 +476,7 @@ protected:
           score = drawScore();
         }
         else {
-					score = -searchQuiesce(-beta, -alpha, qs_ply + 1, search_pv && move_count == 1);
+          score = -searchQuiesce(-beta, -alpha, qs_ply + 1, search_pv && move_count == 1);
         }
         unmakeMove();
 
@@ -574,9 +540,9 @@ protected:
         throw 1;
       }
     }
-//    if ((node_count & 0x3FFFFF) == 0) {
-//      postInfo(search_depth, max_ply_reached, node_count, nodesPerSecond(), timeUsed(), transt->getLoad());
-//    }
+    /*if ((node_count & 0x3FFFFF) == 0) {
+      postInfo(search_depth, max_ply_reached, node_count, nodesPerSecond(), timeUsed(), transt->getLoad());
+    }*/
   }
 
   __forceinline int isAnalysing() const {
@@ -669,21 +635,25 @@ protected:
         search_time = 900*movetime/1000;
       }
       else {
-        int moves_left = std::min(movestogo + 2, 26);
+        int moves_left = std::min(movestogo, movestogo < 80 ? 30 : movestogo/2);
 
-        if (moves_left == 2) {
-          moves_left = 26;
+        if (moves_left == 0) {
+          moves_left = 30;
         }
 
+        if (lag_buffer == -1) {
+          lag_buffer = wtime > 5000 ? 200 : 50;
+        }
         time_left = pos->side_to_move == 0 ? wtime : btime;
         time_inc = pos->side_to_move == 0 ? winc : binc;
 
-        time_left = std::max(0, static_cast<int>(time_left) - 50);
-        search_time = 2*(time_left/moves_left + time_inc);
+        search_time = 2*(time_left/(moves_left + 1) + time_inc);
 
+        // This helps in very fast controls such as 1000ms/80ms
         if (movestogo == 0 && search_time > time_left/4) {
           search_time = time_left/4;
         }
+        search_time = std::max(0, std::min((int)search_time, (int)time_left - lag_buffer));
       }
       start_time = millis();
       transt->initialiseSearch();
@@ -819,7 +789,7 @@ protected:
         return true;
       }
 
-      if (search_time < timeUsed()*2) {
+      if (search_time < timeUsed()*2.5) {
           return true;
       }
     }
@@ -848,6 +818,7 @@ public:
   uint64_t search_time;
   uint64_t time_left;
   uint64_t time_inc;
+  int lag_buffer;
   volatile bool stop_search;
   int verbosity;
 
@@ -877,7 +848,7 @@ protected:
   static const int KILLERMOVESCORE = 124900;
   static const int PROMOTIONMOVESCORE = 50000;
 
-  static int futility_margin[6];
+  static int futility_margin[4];
   static int razor_margin[4];
 };
 
@@ -888,7 +859,7 @@ const int Search::ALPHA;
 const int Search::BETA;
 const int Search::MAXSCORE;
 
-int Search::futility_margin[6] = { 150, 150, 150 ,400, 500, 600 };
+int Search::futility_margin[6] = { 150, 150, 150, 400 };
 int Search::razor_margin[4] = { 0, 125, 125, 400 };
 
 //vanaf depth 36 vreemde matscores (32298 of zo)

@@ -1,6 +1,6 @@
 /*
   This file is part of Bobcat.
-  Copyright 2008-2011 Gunnar Harms
+  Copyright 2008-2015 Gunnar Harms
 
   Bobcat is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -164,7 +164,7 @@ public:
   }
 
   __forceinline bool isAttacked(const Square sq, const Side side) const {
-    return  isAttackedBySlider(sq, side) || isAttackedByKnight(sq, side) || isAttackedByPawn(sq, side)
+    return isAttackedBySlider(sq, side) || isAttackedByKnight(sq, side) || isAttackedByPawn(sq, side)
             || isAttackedByKing(sq, side);
   }
 
@@ -262,32 +262,6 @@ public:
     sprintf(buf+strlen(buf), "BOARD:    a b c d e f g h\n");
   }
 
-  // get the fields for a piece where it checks the opponen king
-  __forceinline BB getCheckGivingSquaresFor(Piece piece, Side side) {
-    BB checkGivingSquares;
-    switch (piece & 7) {
-    case Pawn:
-      checkGivingSquares = pawnEastAttacks[side^1](king_square[side^1]) | pawnWestAttacks[side^1](king_square[side^1]);
-      break;
-    case Knight:
-      checkGivingSquares = knightAttacks(king_square[side^1]);
-      break;
-    case Bishop:
-      checkGivingSquares = Bmagic(king_square[side^1], occupied);
-      break;
-    case Rook:
-      checkGivingSquares = Rmagic(king_square[side^1], occupied);
-      break;
-    case Queen:
-      checkGivingSquares = Qmagic(king_square[side^1], occupied);
-      break;
-    default:
-      assert(0);
-      break;
-    }//switch
-    return checkGivingSquares;
-  }
-
   __forceinline const BB& pawns(int side) const {
     return piece[Pawn | (side << 3)];
   }
@@ -328,9 +302,8 @@ public:
     return (pawns(side) & neighbourFiles(bbSquare(sq))) == 0;
   }
 
-	__forceinline bool isPawnBehind(const Square sq, const Side side) const {
-		const BB& bbsq = bbSquare(sq);
-		return (pawns(side) & (pawnFill[side ^ 1](westOne(bbsq) | eastOne(bbsq)))) == 0;
-	}
-
+  __forceinline bool isPawnBehind(const Square sq, const Side side) const {
+    const BB& bbsq = bbSquare(sq);
+    return (pawns(side) & (pawnFill[side ^ 1](westOne(bbsq) | eastOne(bbsq)))) == 0;
+  }
 };

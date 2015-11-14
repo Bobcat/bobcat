@@ -1,6 +1,6 @@
 /*
   This file is part of Bobcat.
-  Copyright 2008-2011 Gunnar Harms
+  Copyright 2008-2015 Gunnar Harms
 
   Bobcat is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -98,7 +98,7 @@ protected:
         evalPawnsOneSide(1);
 
         pawnp = pawnt->insert(pos->pawn_structure_key, (int)(pawn_eval_mg[0] - pawn_eval_mg[1]),
-          (int)(pawn_eval_eg[0] - pawn_eval_eg[1]), passed_pawn_files);
+                              (int)(pawn_eval_eg[0] - pawn_eval_eg[1]), passed_pawn_files);
       }
       poseval_mg[0] += pawnp->eval_mg;
       poseval_eg[0] += pawnp->eval_eg;

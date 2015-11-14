@@ -1,6 +1,6 @@
 /*
   This file is part of Bobcat.
-  Copyright 2008-2011 Gunnar Harms
+  Copyright 2008-2015 Gunnar Harms
 
   Bobcat is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -197,11 +197,11 @@ public:
     if (strieq(params[0], "uci")) {
       char buf[2048];
       snprintf(buf, sizeof(buf),
-               "id name Bobcat 6.4b\n" \
+               "id name Bobcat 7.1\n" \
                "id author Gunnar Harms\n" \
-               "option name Hash type spin default 256 min 8 max 1024\n" \
+               "option name Hash type spin default 256 min 8 max 2048\n" \
                "option name Ponder type check default true\n" \
-               "option name Threads type spin default 1 min 1 max 16\n" \
+               "option name Threads type spin default 1 min 1 max 64\n" \
                "option name UCI_Chess960 type check default false\n" \
                "uciok");
 

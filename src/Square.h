@@ -1,6 +1,6 @@
 /*
   This file is part of Bobcat.
-  Copyright 2008-2011 Gunnar Harms
+  Copyright 2008-2015 Gunnar Harms
 
   Bobcat is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ __forceinline bool sameColor(const Square sq1, const Square sq2) {
   return isDark(sq1) == isDark(sq2);
 }
 
-enum SquareEnum {
+enum ESquare {
   a1, b1, c1, d1, e1, f1, g1, h1,
   a2, b2, c2, d2, e2, f2, g2, h2,
   a3, b3, c3, d3, e3, f3, g3, h3,

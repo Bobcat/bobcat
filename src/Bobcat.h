@@ -1,6 +1,6 @@
 /*
   This file is part of Bobcat.
-  Copyright 2008-2011 Gunnar Harms
+  Copyright 2008-2015 Gunnar Harms
 
   Bobcat is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -113,11 +113,11 @@ public:
     strcpy(buf, "");;
     if (value != NULL) {
       if (strieq("Hash", name)) {
-        transt->initialise(std::min(1024, std::max(8, (int)strtol(value, NULL, 10))));
+        transt->initialise(std::min(2048, std::max(8, (int)strtol(value, NULL, 10))));
         _snprintf(buf, sizeof(buf), "Hash ", transt->getSizeMb());
       }
       else if (strieq("Threads", name)) {
-        num_threads = std::min(16, std::max(1, (int)strtol(value, NULL, 10)));
+        num_threads = std::min(64, std::max(1, (int)strtol(value, NULL, 10)));
         _snprintf(buf, sizeof(buf), "Threads %d.", num_threads);
       }
       else if (strieq("UCI_Chess960", name)) {
@@ -130,9 +130,7 @@ public:
         if (strieq(value, "true")) {
           game->chess960 = true;
           game->xfen = true;
-          //  game->arena = true;
         }
-        //  snprintf(buf, sizeof(buf), "UCI_Chess960_Arena ", game->arena ? on : off);
       }
     }
     if (strlen(buf)) {
@@ -165,10 +163,6 @@ public:
     see = new See(game);
     eval = new Eval(*game, pawnt);
     search = new Search(protocol, game, eval, see, transt, logger);
-
-//    print_bb(bbSquare(flip[0][a2]), "bbSquare(flip[0][a2])");
-    //  print_bb(bbSquare(flip[1][a2]), "bbSquare(flip[1][a2])");
-    //print_bb(bbSquare(a2), "bbSquare(a2)");
 
     newGame();
 
@@ -301,7 +295,7 @@ public:
     char buf1[2048];
     char buf2[2048];
 
-    if (true/*!!!!*/||config->getBool("Bobcat", "log-file", false)) {
+    if (config->getBool("Bobcat", "log-file", false)) {
       logger->open(config->getString("Logging", "filename", "bobcat.log"));
     }
     snprintf(buf1, sizeof(buf1), "Time is %s.", dateAndTimeString(buf2));

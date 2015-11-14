@@ -1,6 +1,6 @@
 /*
   This file is part of Bobcat.
-  Copyright 2008-2011 Gunnar Harms
+  Copyright 2008-2015 Gunnar Harms
 
   Bobcat is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -22,14 +22,7 @@
 #include <inttypes.h>
 #define __USE_MINGW_ANSI_STDIO 1
 
-//typedef uint64_t uint64;
-//typedef uint32_t uint32;
-//typedef uint16_t uint16;
-//typedef uint8_t uint8;
-//typedef int16_t int16;
-//typedef unsigned int uint;
-
-#include <algorithm> // std::min/max
+#include <algorithm>
 #include <conio.h>
 #include <math.h>
 #include <assert.h>

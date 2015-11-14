@@ -1,6 +1,6 @@
 /*
   This file is part of Bobcat.
-  Copyright 2008-2011 Gunnar Harms
+  Copyright 2008-2015 Gunnar Harms
 
   Bobcat is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ public:
   }
 
   __forceinline void generateMoves(const Piece piece, const BB& to_squares) {
-    reset(0,0,0);
+    reset(0, 0, 0);
     for (BB bb = board->piece[piece]; bb; resetLSB(bb)) {
       Square from = lsb(bb);
       addMoves(piece, from, board->pieceAttacks(piece, from) & to_squares);
@@ -58,7 +58,6 @@ public:
 
   __forceinline void generatePawnMoves(bool capture, const BB& to_squares) {
     reset(0, 0, 0);
-
     if (capture) {
       addPawnCaptureMoves(to_squares);
     }

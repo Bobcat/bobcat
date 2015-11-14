@@ -1,6 +1,6 @@
 /*
   This file is part of Bobcat.
-  Copyright 2008-2011 Gunnar Harms
+  Copyright 2008-2015 Gunnar Harms
 
   Bobcat is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -470,7 +470,7 @@ public:
   static const uint32_t all_pawns = 0xf;
 };
 
-int Material::piece_bit_shift[7] = {0, 4, 8, 12, 16, 20};
+int Material::piece_bit_shift[7] = { 0, 4, 8, 12, 16, 20 };
 int Material::piece_value[6] = { 100, 400, 400, 600, 1200, 0 };
 
 #define piece_value(p) (Material::piece_value[p & 7])

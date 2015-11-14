@@ -1,6 +1,6 @@
 /*
   This file is part of Bobcat.
-  Copyright 2008-2011 Gunnar Harms
+  Copyright 2008-2015 Gunnar Harms
 
   Bobcat is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -859,8 +859,5 @@ const int Search::ALPHA;
 const int Search::BETA;
 const int Search::MAXSCORE;
 
-int Search::futility_margin[6] = { 150, 150, 150, 400 };
+int Search::futility_margin[4] = { 150, 150, 150, 400 };
 int Search::razor_margin[4] = { 0, 125, 125, 400 };
-
-//vanaf depth 36 vreemde matscores (32298 of zo)
-//7k/8/6KN/7B/8/8/8/8 w - - 5 1

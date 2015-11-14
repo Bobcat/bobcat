@@ -1,6 +1,6 @@
 /*
   This file is part of Bobcat.
-  Copyright 2008-2011 Gunnar Harms
+  Copyright 2008-2015 Gunnar Harms
 
   Bobcat is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,28 +20,28 @@
 class Worker {
 public:
   void start(Game* master, TTable* transt, PSTable* pawnt) {
-    game = new Game();
-    game->copy(master);
-    see = new See(game);
-    eval = new Eval(*game, pawnt);
-    search = new Search(game, eval, see, transt);
-    thread_ = new std::thread(&Search::run, search);
+    game_ = new Game();
+    game_->copy(master);
+    see_ = new See(game_);
+    eval_ = new Eval(*game_, pawnt);
+    search_ = new Search(game_, eval_, see_, transt);
+    thread_ = new std::thread(&Search::run, search_);
   }
 
   void stop() {
-    search->stop();
+    search_->stop();
     thread_->join();
     delete thread_;
-    delete search;
-    delete eval;
-    delete see;
-    delete game;
+    delete search_;
+    delete eval_;
+    delete see_;
+    delete game_;
   }
 
 private:
-  Game* game;
-  Eval* eval;
-  See* see;
-  Search* search;
+  Game* game_;
+  Eval* eval_;
+  See* see_;
+  Search* search_;
   std::thread* thread_;
 };

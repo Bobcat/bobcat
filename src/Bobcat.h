@@ -141,7 +141,7 @@ public:
 
   int run(int argc, char* argv[]) {
     setbuf(stdout, NULL);
-    setbuf(stdin, NULL);
+    //setbuf(stdin, NULL);
 
     logger = new Logger();
     config = new Config(argc > 1 ? argv[1] : "bobcat.ini");

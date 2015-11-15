@@ -105,18 +105,19 @@ public:
 
     // Piece square tables
     for (auto i = 0; i < 64; ++i) {
-        params.push_back(Param("pawn_pcsq_mg", eval_.pawn_pcsq_mg[i], i > 7 && i < 56 ? step0 : step0));
-        params.push_back(Param("pawn_pcsq_eg", eval_.pawn_pcsq_eg[i], i > 7 && i < 56 ? step0 : step0));
-        params.push_back(Param("knight_pcsq_mg", eval_.knight_pcsq_mg[i], step0));
-        params.push_back(Param("knight_pcsq_eg", eval_.knight_pcsq_eg[i], step0));
-        params.push_back(Param("bishop_pcsq_mg", eval_.bishop_pcsq_mg[i], step0));
-        params.push_back(Param("bishop_pcsq_eg", eval_.bishop_pcsq_eg[i], step0));
-        params.push_back(Param("rook_pcsq_mg", eval_.rook_pcsq_mg[i], 0, step0));
-        params.push_back(Param("rook_pcsq_eg", eval_.rook_pcsq_eg[i], 0, step0));
-        params.push_back(Param("queen_pcsq_mg", eval_.queen_pcsq_mg[i], step0));
-        params.push_back(Param("queen_pcsq_eg", eval_.queen_pcsq_eg[i], step0));
-        params.push_back(Param("king_pcsq_mg", eval_.king_pcsq_mg[i], step0));
-        params.push_back(Param("king_pcsq_eg", eval_.king_pcsq_eg[i], step0));
+//        auto step = i > 7 && i < 56 ? step0 : step0;
+//        params.push_back(Param("pawn_pcsq_mg", eval_.pawn_pcsq_mg[i], step));
+//        params.push_back(Param("pawn_pcsq_eg", eval_.pawn_pcsq_eg[i], step));
+//        params.push_back(Param("knight_pcsq_mg", eval_.knight_pcsq_mg[i], step0));
+//        params.push_back(Param("knight_pcsq_eg", eval_.knight_pcsq_eg[i], step0));
+//        params.push_back(Param("bishop_pcsq_mg", eval_.bishop_pcsq_mg[i], step0));
+//        params.push_back(Param("bishop_pcsq_eg", eval_.bishop_pcsq_eg[i], step0));
+//        params.push_back(Param("rook_pcsq_mg", eval_.rook_pcsq_mg[i], 0, step0));
+//        params.push_back(Param("rook_pcsq_eg", eval_.rook_pcsq_eg[i], 0, step0));
+//        params.push_back(Param("queen_pcsq_mg", eval_.queen_pcsq_mg[i], step0));
+//        params.push_back(Param("queen_pcsq_eg", eval_.queen_pcsq_eg[i], step0));
+//        params.push_back(Param("king_pcsq_mg", eval_.king_pcsq_mg[i], step0));
+//        params.push_back(Param("king_pcsq_eg", eval_.king_pcsq_eg[i], step0));
     }
     // Mobility
     for (auto i = 0; i < 9; ++i) {
@@ -124,12 +125,12 @@ public:
       params.push_back(Param("knight_mob_eg", eval_.knight_mob_eg[i], step0));
     }
     for (auto i = 0; i < 14; ++i) {
-      params.push_back(Param("bishop_mob_mg", eval_.bishop_mob_mg[i], step0));
-      params.push_back(Param("bishop_mob_eg", eval_.bishop_mob_eg[i], step0));
+//      params.push_back(Param("bishop_mob_mg", eval_.bishop_mob_mg[i], step0));
+//      params.push_back(Param("bishop_mob_eg", eval_.bishop_mob_eg[i], step0));
     }
     for (auto i = 0; i < 15; ++i) {
-      params.push_back(Param("rook_mob_mg", eval_.rook_mob_mg[i], step0));
-      params.push_back(Param("rook_mob_eg", eval_.rook_mob_eg[i], step0));
+//      params.push_back(Param("rook_mob_mg", eval_.rook_mob_mg[i], step0));
+//      params.push_back(Param("rook_mob_eg", eval_.rook_mob_eg[i], step0));
     }
     ofstream out("C:\\chess\\test6.txt");
     out << "Old:\n" << emitCode(params, true) << "\n";

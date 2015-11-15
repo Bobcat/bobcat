@@ -362,6 +362,16 @@ protected:
         }
       }
     }
+
+    if (((us == 0) &&
+        (((sq == f1 || sq == g1) && (bbSquare(h1) & game_.board.rooks(0))) ||
+        ((sq == c1 || sq == b1) && (bbSquare(a1) & game_.board.rooks(0))))) ||
+      ((us == 1) &&
+        (((sq == f8 || sq == g8) && (bbSquare(h8) & game_.board.rooks(1))) ||
+        ((sq == c8 || sq == b8) && (bbSquare(a8) & game_.board.rooks(1))))))
+    {
+      score_mg += -80;
+    }
     all_attacks[us] |= king_attacks[kingSq(us)];
     poseval_mg[us] += score_mg;
     poseval_eg[us] += score_eg;

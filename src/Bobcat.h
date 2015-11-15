@@ -255,12 +255,6 @@ public:
           printf("SEE score for %s is %d\n", tokens[1], see->seeMove(*m));
         }
       }
-      else if (strieq(tokens[0], "see") && num_tokens > 0) {
-        const Move* m = game->pos->stringToMove(tokens[1]);
-        if (m) {
-          printf("SEE score for %s is %d\n", tokens[1], see->seeMove(*m));
-        }
-      }
       else if (strieq(tokens[0], "tune")) {
         clock_t t1 = millis();
         et::Tune(*game, *see, *eval);
@@ -318,7 +312,7 @@ public:
   Book* book;
   TTable* transt;
   PSTable* pawnt;
-  Worker workers[16];
+  Worker workers[64];
   int num_threads;
 
   static const char* on;

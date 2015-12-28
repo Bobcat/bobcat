@@ -67,15 +67,7 @@ private:
 
 class PGNFileReader {
 public:
-  PGNFileReader(const char* path) : readpos_(0), fillpos_(0), line_(1), pos_(1),
-    token_(None), strict_(true), game_count_(0)
-
-  {
-    if ((file_ = new File(path, O_RDONLY, 0)) == NULL) {
-      fprintf(stderr, "PGNFileReader: unable to create a File\n");
-      exit(EXIT_FAILURE);
-    }
-
+  PGNFileReader() : file_(NULL) {
     if ((buffer_ = new unsigned char[bufsize]) == NULL) {
       fprintf(stderr, "PGNFileReader: unable to allocate buffer\n");
       exit(EXIT_FAILURE);
@@ -87,6 +79,27 @@ public:
     delete[] buffer_;
   }
 
+  virtual void read(const char* path) {
+    if (file_) {
+        delete file_;
+        file_ = NULL;
+    }
+    readpos_ = 0;
+    fillpos_ = 0;
+    line_ = 1;
+    pos_ = 1;
+    token_ = None;
+    strict_ = true;
+    game_count_ = 0;
+
+    if ((file_ = new File(path, O_RDONLY, 0)) == NULL) {
+      fprintf(stderr, "PGNFileReader::read: unable to create a File\n");
+      exit(EXIT_FAILURE);
+    }
+    read();
+  }
+
+protected:
   virtual void read() {
     try {
       readToken(token_);
@@ -101,7 +114,6 @@ public:
     }
   }
 
-protected:
   virtual void readPGNDatabase() {
     while (startOfPGNGame()) {
       try {

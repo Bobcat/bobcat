@@ -375,7 +375,7 @@ protected:
       if (see->seeLastMove(m) >= 0) {
         return depth;
       }
-      //reduce = false;
+//      reduce = false;
     }
 
     if (reduce
@@ -793,6 +793,7 @@ protected:
     return movePieceType(m) == Pawn && board->isPawnPassed(moveTo(m), moveSide(m));
   }
 
+public:
   struct PVEntry {
     uint64_t key;
     Depth depth;
@@ -802,7 +803,6 @@ protected:
     int eval;
   };
 
-public:
   Depth ply;
   Depth max_ply;
   PVEntry pv[128][128];

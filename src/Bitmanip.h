@@ -20,9 +20,20 @@ __forceinline void resetLSB(uint64_t& x) {
   x &= (x - 1);
 }
 
+#ifndef BK_POPCOUNT
 __forceinline int popCount(uint64_t x) {
   return __builtin_popcountll(x);
 }
+#else
+__forceinline int popCount(uint64_t x) {
+  int y = 0; // some say auto y = int{0} is always better:)
+  while (x) {
+    y++;
+    resetLSB(x);
+  }
+  return y;
+}
+#endif
 
 __forceinline int lsb(uint64_t x) {
   return __builtin_ctzll(x);

@@ -6,7 +6,7 @@ namespace pgn {
 class PGNPlayer : public PGNFileReader
 {
 public:
-  PGNPlayer(const char* path, bool check_legal = true) : PGNFileReader(path),
+  PGNPlayer(bool check_legal = true) : PGNFileReader(),
     game_(nullptr)
   {
     game_ = new Game();

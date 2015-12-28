@@ -55,17 +55,16 @@ public:
     evalQueensOneSide(1);
     evalKingOneSide(0);
     evalKingOneSide(1);
-
+/*
     for (Side side = 0; side < 2; side++) {
       if (pawn_attacks[side] & king_area[side^1]) {
-        attack_count[side]++;
-        attack_counter[side] += 2;
+        pos_eval_[side] += ...;
       }
     }
+    */
     // Pass 2.
     for (Side side = 0; side < 2; side++) {
       evalPassedPawnsOneSide(side);
-      evalKingAttackOneSide(side);
     }
     double stage = (pos->material.value()-pos->material.pawnValue())/
                    (double)pos->material.max_value_without_pawns;
@@ -115,30 +114,21 @@ protected:
       if (game_.board.isPawnPassed(sq, us)) {
         passed_pawn_files[us] |= 1 << file(sq);
       }
-      bool open_file = !game_.board.isPieceOnFile(Pawn, sq, us^1);
+      int open_file = !game_.board.isPieceOnFile(Pawn, sq, us^1) ? 1 :0;
 
       if (game_.board.isPawnIsolated(sq, us)) {
-        score_mg += open_file ? -40 : -20;
-        score_eg += -20;
+        score_mg += pawn_isolated_mg[open_file];
+        score_eg += pawn_isolated_eg[open_file];
       }
       else if (game_.board.isPawnBehind(sq, us)) {
-        score_mg += open_file ? -20 : -8;
-        score_eg += -8;
-
-        if ((pawns(us^1) | pawn_attacks[us^1]) & pawnPush[us](bbSquare(sq))) {
-          score_mg += open_file ? -20 : -8;
-          score_eg += -8;
-        }
-      }
-      else if ((bbSquare(sq) & pawn_attacks[us]) == 0) {
-        score_mg += open_file ? -20 : -8;
-        score_eg += -8;
+        score_mg += pawn_behind_mg[open_file];
+        score_eg += pawn_behind_eg[open_file];
       }
       resetLSB(bb);
 
       if (bbFile(sq) & bb) {
-        score_mg += -15;
-        score_eg += -15;
+        score_mg += pawn_doubled_mg[open_file];
+        score_eg += pawn_doubled_eg[open_file];
       }
       score_mg += pawn_pcsq_mg[flip[us][sq]];
       score_eg += pawn_pcsq_eg[flip[us][sq]];
@@ -176,12 +166,11 @@ protected:
       }
 
       if (attacks & king_area[them]) {
-        attack_counter[us] += popCount(attacks & king_area[them])*8;
-        attack_count[us]++;
+        score_mg += knight_attack_king[popCount(attacks & king_area[them])];
       }
 
       if (bbSquare(sq) & pawn_attacks[them]) {
-        score += -28;
+        score += knight_in_danger;
       }
     }
     poseval[us] += score;
@@ -212,12 +201,11 @@ protected:
       bishop_attacks[us] |= attacks;
 
       if (attacks & king_area[them]) {
-        attack_counter[us] += popCount(attacks & king_area[them])*6;
-        attack_count[us]++;
+        score_mg += bishop_attack_king[popCount(attacks & king_area[them])];
       }
 
       if (bbSquare(sq) & pawn_attacks[them]) {
-        score += -28;
+        score += bishop_in_danger;
       }
     }
     poseval[us] += score;
@@ -233,30 +221,30 @@ protected:
 
     for (BB rooks = game_.board.rooks(us); rooks; resetLSB(rooks)) {
       Square sq = lsb(rooks);
-      //Square flipsq = flip[us][sq];
+      Square flipsq = flip[us][sq];
 
-      //score_mg += rook_pcsq_mg[flipsq];
-      //score_eg += rook_pcsq_eg[flipsq];
+      score_mg += rook_pcsq_mg[flipsq];
+      score_eg += rook_pcsq_eg[flipsq];
 
       const BB& bbsq = bbSquare(sq);
 
       if (bbsq & open_files) {
-        score += 20;
+        score += rook_open_file;
 
         if (~bbsq & bbFile(sq) & game_.board.rooks(us)) {
-          score += 20;
+          score += rook_open_file_doubled;
         }
       }
       else if (bbsq & half_open_files[us]) {
-        score += 10;
+        score += rook_half_open_file;
 
         if (~bbsq & bbFile(sq) & game_.board.rooks(us)) {
-          score += 10;
+          score += rook_half_open_file_doubled;
         }
       }
 
       if ((bbsq & rank_7[us]) && (rank_7_and_8[us] & (pawns(them) | game_.board.king(them)))) {
-        score += 20;
+        score += rook_seventh_rank;
       }
       const BB attacks = Rmagic(sq, occupied);
       int x = popCount(attacks & ~game_.board.occupied_by_side[us]);
@@ -268,12 +256,11 @@ protected:
       rook_attacks[us] |= attacks;
 
       if (attacks & king_area[them]) {
-        attack_counter[us] += popCount(attacks & king_area[them])*12;
-        attack_count[us]++;
+        score_mg += rook_attack_king[popCount(attacks & king_area[them])];
       }
 
       if (bbSquare(sq) & (pawn_attacks[them] | _knight_attacks[them] | bishop_attacks[them])) {
-        score += -36;
+        score += rook_in_danger;
       }
     }
     poseval[us] += score;
@@ -297,7 +284,7 @@ protected:
       const BB& bbsq = bbSquare(sq);
 
       if ((bbsq & rank_7[us]) && (rank_7_and_8[us] & (pawns(them) | game_.board.king(them)))) {
-        score += 20;
+        score += queen_seventh_rank;
       }
       const BB attacks = Qmagic(sq, occupied);
 
@@ -305,15 +292,14 @@ protected:
       queen_attacks[us] |= attacks;
 
       if (attacks & king_area[them]) {
-        attack_counter[us] += popCount(attacks & king_area[them])*24;
-        attack_count[us]++;
+        score_mg += queen_attack_king[popCount(attacks & king_area[them])];
       }
 
       if (bbSquare(sq) & (pawn_attacks[them] | _knight_attacks[them] | bishop_attacks[them] | rook_attacks[them])) {
-        score += -40;
+        score += queen_in_danger;
       }
       else {
-        score += 6*(7 - distance[sq][kingSq(them)]);
+        score += queen_approach_king*(7 - distance[sq][kingSq(them)]);
       }
     }
     poseval[us] += score;
@@ -325,43 +311,27 @@ protected:
     poseval[us] = pos->material.material_value[us];
 
     if (pos->material.count(us, Bishop) == 2) {
-      poseval[us] += 30;
-
-      if (pos->material.pawnCount() <= 12) {
-        poseval[us] += 20;
-      }
+      poseval_mg[us] += bishop_pair_mg;
+      poseval_eg[us] += bishop_pair_eg;
     }
   }
 
   __forceinline void evalKingOneSide(const Side us) {
-    const Side them = us ^ 1;
+ //  const Side them = us ^ 1;
     Square sq = lsb(game_.board.king(us));
     const BB& bbsq = bbSquare(sq);
 
     int score_mg = king_pcsq_mg[flip[us][sq]];
     int score_eg = king_pcsq_eg[flip[us][sq]];
 
-    score_mg += -45 + 15*popCount((pawnPush[us](bbsq) | pawnWestAttacks[us](bbsq) |
-      pawnEastAttacks[us](bbsq)) & pawns(us));
+    score_mg += king_pawn_shelter[popCount((pawnPush[us](bbsq) | pawnWestAttacks[us](bbsq) |
+                  pawnEastAttacks[us](bbsq)) & pawns(us))];
 
-    if (game_.board.queens(them) || popCount(game_.board.rooks(them)) > 1) {
-      BB eastwest = bbsq | westOne(bbsq) | eastOne(bbsq);
-      int x = -15*popCount(open_files & eastwest);
-      int y = -10*popCount(half_open_files[us] & eastwest);
+    //int majors = std::min(popCount(game_.board.rooks(them)) + popCount(game_.board.queens(them))*2, 4);
+    BB eastwest = bbsq | westOne(bbsq) | eastOne(bbsq);
 
-      score_mg += x;
-      score_mg += y;
-
-      if (game_.board.queens(them) && popCount(game_.board.rooks(them))) {
-        score_mg += x;
-        score_mg += y;
-
-        if (popCount(game_.board.rooks(them) > 1)) {
-          score_mg += x;
-          score_mg += y;
-        }
-      }
-    }
+    score_mg += king_on_open[popCount(open_files & eastwest)];
+    score_mg += king_on_half_open[popCount(half_open_files[us] & eastwest)];
 
     if (((us == 0) &&
         (((sq == f1 || sq == g1) && (bbSquare(h1) & game_.board.rooks(0))) ||
@@ -370,7 +340,7 @@ protected:
         (((sq == f8 || sq == g8) && (bbSquare(h8) & game_.board.rooks(1))) ||
         ((sq == c8 || sq == b8) && (bbSquare(a8) & game_.board.rooks(1))))))
     {
-      score_mg += -80;
+      score_mg += king_obstructs_rook;
     }
     all_attacks[us] |= king_attacks[kingSq(us)];
     poseval_mg[us] += score_mg;
@@ -384,25 +354,18 @@ protected:
         int sq = lsb(bb);
         const BB& front_span = pawn_front_span[us][sq];
         int r = us == 0 ? rank(sq) : 7 - rank(sq);
-        int rr = r*r;
+ //       int rr = r*r;
 
-        int score_mg = rr*4;
-        int score_eg = rr*3;
+        int score_mg = passed_pawn_mg[r];
+        int score_eg = passed_pawn_eg[r];
 
-        score_eg += rr*(front_span & game_.board.occupied_by_side[us] ? 0 : 1);
-        score_eg += rr*(front_span & game_.board.occupied_by_side[them] ? 0 : 1);
-        score_eg += rr*(front_span & all_attacks[them] ? 0 : 1);
-        score_eg += r*(distance[sq][kingSq(them)]*2-distance[sq][kingSq(us)]*2);
+        score_eg += passed_pawn_no_us[r]*(front_span & game_.board.occupied_by_side[us] ? 0 : 1);
+        score_eg += passed_pawn_no_them[r]*(front_span & game_.board.occupied_by_side[them] ? 0 : 1);
+        score_eg += passed_pawn_no_attacks[r]*(front_span & all_attacks[them] ? 0 : 1);
 
         poseval_mg[us] += score_mg;
         poseval_eg[us] += score_eg;
       }
-    }
-  }
-
-  __forceinline void evalKingAttackOneSide(const Side side) {
-    if (attack_count[side] > 1) {
-      poseval_mg[side] += attack_counter[side]*(attack_count[side]-1);
     }
   }
 
@@ -420,9 +383,6 @@ protected:
 
     poseval_mg[0] = poseval_eg[0] = poseval[0] = 0;
     poseval_mg[1] = poseval_eg[1] = poseval[1] = 0;
-
-    attack_counter[0] = attack_counter[1] = 0;
-    attack_count[0] = attack_count[1] = 0;
 
     king_area[0] = king_attacks[kingSq(0)] | game_.board.king(0);
     king_area[1] = king_attacks[kingSq(1)] | game_.board.king(1);
@@ -458,8 +418,6 @@ protected:
   int pawn_eval_mg[2];
   int pawn_eval_eg[2];
   int passed_pawn_files[2];
-  int attack_counter[2];
-  int attack_count[2];
 
   BB pawn_attacks[2];
   BB all_attacks[2];
@@ -480,8 +438,6 @@ public:
   static int bishop_mob_eg[14];
   static int rook_mob_mg[15];
   static int rook_mob_eg[15];
-  static int passed_pawn_mg[8];
-  static int passed_pawn_eg[8];
   static int pawn_pcsq_mg[64];
   static int pawn_pcsq_eg[64];
   static int knight_pcsq_mg[64];
@@ -494,23 +450,87 @@ public:
   static int queen_pcsq_eg[64];
   static int king_pcsq_mg[64];
   static int king_pcsq_eg[64];
+  static int rook_open_file;
+  static int rook_half_open_file;
+  static int rook_open_file_doubled;
+  static int rook_half_open_file_doubled;
+  static int rook_seventh_rank;
+  static int queen_seventh_rank;
+  static int knight_in_danger;
+  static int bishop_in_danger;
+  static int rook_in_danger;
+  static int queen_in_danger;
+  static int queen_approach_king;
+  static int king_pawn_shelter[4];
+  static int king_on_open[4];
+  static int king_on_half_open[4];
+  static int bishop_pair_mg;
+  static int bishop_pair_eg;
+  static int pawn_isolated_mg[2];
+  static int pawn_isolated_eg[2];
+  static int pawn_behind_mg[2];
+  static int pawn_behind_eg[2];
+  static int pawn_doubled_mg[2];
+  static int pawn_doubled_eg[2];
+  static int passed_pawn_mg[8];
+  static int passed_pawn_eg[8];
+  static int passed_pawn_no_them[8];
+  static int passed_pawn_no_us[8];
+  static int passed_pawn_no_attacks[8];
+  static int king_obstructs_rook;
+  static int knight_attack_king[9];
+  static int bishop_attack_king[9];
+  static int rook_attack_king[9];
+  static int queen_attack_king[9];
 };
 
-int Eval::bishop_mob_eg[14] = { -45, -35, -30, -20, -10, 0, 5, 20, 20, 20, 20, 25, 25, 30 };
-int Eval::bishop_mob_mg[14] = { -50, -25, -20, -10, -5, 10, 15, 15, 20, 20, 20, 30, 35, 50 };
-int Eval::bishop_pcsq_eg[64] = { 0, -35, 0, 20, -10, -30, 0, 30, -15, 10, 5, 20, -35, 5, 15, 15, -15, 5, 0, -20, -5, 15, 10, 0, -10, 5, -10, 15, -10, 10, 0, 5, -15, -5, 0, 5, 0, -10, 0, -25, -40, 5, -5, 0, 0, 0, -25, -15, -10, -30, -15, -15, -20, -40, -25, -50, -35, -10, -30, -25, -25, -35, -30, -55 };
-int Eval::bishop_pcsq_mg[64] = { -15, -50, 10, -20, 0, -25, 75, 0, -35, -25, 15, -45, 40, 5, -5, 10, -25, -50, 5, -10, 10, 45, 20, -15, -20, 0, -5, 20, 40, 15, 0, 10, -35, -5, -5, 10, 20, -10, -15, -5, -20, 5, 5, -5, -10, -10, -10, -15, -15, 10, -10, -15, -15, -15, 20, -30, -35, -10, -30, -30, -25, -20, -30, -15 };
 int Eval::king_pcsq_eg[64] = { -42, -25, -10, -5, -5, -10, -25, -42, -22, -5, 6, 11, 11, 6, -5, -22, -15, 2, 16, 21, 21, 16, 2, -15, -17, 8, 25, 30, 30, 25, 8, -17, -23, 2, 20, 25, 25, 20, 2, -23, -28, -3, 11, 16, 16, 11, -3, -28, -35, -10, 1, 6, 6, 1, -10, -35, -70, -45, -30, -25, -25, -30, -45, -70 };
 int Eval::king_pcsq_mg[64] = { 5, 10, -20, -40, -40, -19, 10, 5, 14, 19, -10, -29, -29, -8, 19, 14, 22, 27, 0, -19, -19, 0, 27, 22, 29, 34, 8, -14, -14, 7, 34, 29, 34, 39, 14, -9, -9, 12, 39, 34, 36, 41, 16, -6, -6, 15, 41, 36, 38, 43, 18, -3, -3, 17, 43, 38, 40, 45, 20, 0, 0, 20, 45, 40 };
-int Eval::knight_mob_eg[9] = { 0, -25, -25, -20, -5, -15, -15, 0, -10 };
-int Eval::knight_mob_mg[9] = { -30, -25, -25, -20, -10, 0, -5, -5, 0 };
-int Eval::knight_pcsq_eg[64] = { -55, -40, -45, 0, 0, -5, 0, -95, -40, 45, -10, 10, 25, 15, -25, -30, -25, 5, 15, 15, 20, 20, 15, -15, 10, 15, 15, 25, 30, 25, 15, 35, -15, 15, 20, 15, 20, 15, -10, 10, -25, -15, -5, 0, 20, -15, -5, -20, -35, -30, -15, -20, -10, -25, -10, -40, -85, -30, -50, -35, -45, -25, -50, -105 };
-int Eval::knight_pcsq_mg[64] = { -65, -110, -95, 5, 65, -65, 85, -105, -70, -50, 0, 60, 45, 30, -20, -40, -40, 15, 10, 30, 50, 45, 30, 25, 5, 10, 35, 45, 30, 30, 15, -10, -15, -10, 5, 20, 20, 25, 0, 5, -35, -15, -5, 5, 15, 10, 0, -35, -35, -40, -20, 0, 0, -15, -15, -40, -35, -40, -65, -35, -35, -15, -40, -150 };
-int Eval::pawn_pcsq_eg[64] = { 0, 0, 0, 0, 0, 0, 0, 0, 75, 85, 50, 30, 50, 50, 50, 70, 45, 30, 35, 15, 0, 50, 45, 35, 20, 20, 0, 0, 5, 0, 0, 15, 5, 10, 5, 0, 0, 15, 0, 0, 0, -5, 5, 10, 5, 15, 0, 0, 0, 0, -5, -5, 20, 15, 10, -10, 0, 0, 0, 0, 0, 0, 0, 0 };
-int Eval::pawn_pcsq_mg[64] = { 0, 0, 0, 0, 0, 0, 0, 0, 70, 60, 20, 30, 30, 20, 10, 40, 10, -10, 10, 40, 30, 30, 30, 30, -5, 5, 10, 20, 25, -5, -15, -10, -5, 0, 10, 10, 10, 0, -10, -10, 0, -5, 0, 0, -5, -5, -5, 0, 0, 5, -5, -10, -10, 10, 15, -5, 0, 0, 0, 0, 0, 0, 0, 0 };
-int Eval::queen_pcsq_eg[64] = { 20, 30, 25, 45, 45, 30, 60, 10, -5, -5, 40, 50, 35, 50, 45, 30, -5, 15, 35, 35, 55, 55, 60, 0, 20, 45, 35, 30, 45, 25, 30, 10, -10, -5, 5, 15, 5, 10, 15, 30, -15, -15, 5, -15, 0, -10, 0, -15, -20, -30, -10, -20, -10, -25, -25, -25, -15, -30, -25, -15, -25, -20, -30, -40 };
-int Eval::queen_pcsq_mg[64] = { -10, -20, 10, 35, 50, 70, 70, 45, -15, -35, -25, -20, 25, 45, 5, 40, -10, 0, 15, 20, 50, 50, 70, 5, 0, -35, 5, 5, 20, 35, 25, 5, -10, -15, 5, 0, 10, 20, 15, -20, -15, -5, 5, 0, 5, 5, 0, 0, -15, -10, -5, 5, 5, 5, -20, -30, -15, -20, -15, 0, -10, -15, -40, -40 };
-int Eval::rook_mob_eg[15] = { -15, -20, -25, -25, -20, -15, -10, -5, 0, 5, 15, 15, 20, 25, 25 };
-int Eval::rook_mob_mg[15] = { -20, -25, -20, -20, -15, -10, -5, 0, 10, 10, 10, 10, 20, 20, 25 };
-int Eval::rook_pcsq_eg[64] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-int Eval::rook_pcsq_mg[64] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+int Eval::bishop_in_danger = -45;
+int Eval::bishop_mob_eg[14] = { -40, -35, -35, -30, -15, -15, -5, 5, 10, 10, 10, 15, 10, 20 };
+int Eval::bishop_mob_mg[14] = { -45, -25, -15, -10, -5, 15, 15, 15, 15, 15, 15, 20, 20, 35 };
+int Eval::bishop_pair_eg = 40;
+int Eval::bishop_pair_mg = 20;
+int Eval::bishop_pcsq_eg[64] = { -10, -5, 5, 5, 0, -15, -5, 40, -10, 15, 5, 25, 5, -5, 0, -5, -10, 10, 15, -15, 15, 20, 10, 5, -5, 10, 10, 25, 15, 15, 10, 0, -5, 15, 10, 15, 15, 5, 10, -25, -20, 0, 5, -5, 10, 5, -15, -10, -35, -25, -10, -5, -5, -20, 10, -40, -35, -15, -25, -15, -20, -15, -30, -30 };
+int Eval::bishop_pcsq_mg[64] = { -10, -40, -5, 0, -5, -40, 30, -40, -25, -10, 0, -20, 10, 10, -5, -15, -15, 5, 25, 25, 35, 40, 25, 10, -20, 10, 10, 40, 35, 25, 10, 0, -25, 5, 10, 25, 30, 5, 0, 0, -5, 15, 10, 10, 10, 10, 0, -5, 5, 20, 5, -5, -5, -10, 25, -20, -25, -5, -20, -20, -20, -15, -20, -20 };
+int Eval::king_pawn_shelter[4] = { -25, 0, 5, -5 };
+int Eval::knight_in_danger = -40;
+int Eval::knight_mob_eg[9] = { -40, -25, -30, -20, -15, -10, -10, 5, -5 };
+int Eval::knight_mob_mg[9] = { -30, -30, -30, -20, -5, 5, 0, 0, 5 };
+int Eval::knight_pcsq_eg[64] = { -25, -15, -15, -10, -5, -10, -10, -25, -25, -10, 10, 15, 5, -5, -25, -25, -15, 5, 10, 15, 15, 15, 15, -20, -10, 5, 15, 20, 20, 15, 15, -15, -25, -5, 5, 15, 15, 5, -10, -20, -35, -30, -10, -10, -5, -20, -15, -30, -40, -30, -30, -20, -15, -25, -20, -30, -40, -30, -40, -25, -30, -30, -40, -40 };
+int Eval::knight_pcsq_mg[64] = { -40, -25, -25, -15, 25, -15, -20, -25, -25, -15, 0, 25, 25, 25, 0, -20, -20, 20, 15, 25, 40, 40, 25, -5, -10, 5, 30, 30, 20, 40, 10, 20, -20, -10, 10, 10, 20, 20, -5, -5, -35, -20, -15, -5, 0, 0, -5, -30, -40, -40, -20, -10, -10, -15, -25, -25, -40, -30, -40, -30, -25, -25, -35, -40 };
+int Eval::passed_pawn_eg[8] = { 0, 0, 0, 10, 15, 30, 0, 0 };
+int Eval::passed_pawn_mg[8] = { 0, 5, -5, 10, 30, 75, 120, 0 };
+int Eval::passed_pawn_no_attacks[8] = { 0, -10, -10, 5, 30, 50, 60, 0 };
+int Eval::passed_pawn_no_them[8] = { 0, 5, 15, 25, 25, 50, 70, 0 };
+int Eval::passed_pawn_no_us[8] = { 0, -5, -5, 0, 10, 0, 40, 0 };
+int Eval::pawn_behind_eg[2] = { 5, 15 };
+int Eval::pawn_behind_mg[2] = { 0, -25 };
+int Eval::pawn_doubled_eg[2] = { -10, -10 };
+int Eval::pawn_doubled_mg[2] = { -5, -5 };
+int Eval::pawn_isolated_eg[2] = { -10, 0 };
+int Eval::pawn_isolated_mg[2] = { -15, -35 };
+int Eval::pawn_pcsq_eg[64] = { 0, 0, 0, 0, 0, 0, 0, 0, 45, 65, 50, 30, 40, 50, 45, 40, 50, 35, 25, 25, 25, 25, 30, 25, 20, 15, 10, 0, 10, 0, 20, 15, 0, 10, 0, -5, 0, 0, 10, -10, -10, -5, 0, -5, 10, -5, 0, -5, -5, 10, -5, -10, -5, 10, 5, -10, 0, 0, 0, 0, 0, 0, 0, 0 };
+int Eval::pawn_pcsq_mg[64] = { 0, 0, 0, 0, 0, 0, 0, 0, 120, 115, 50, 50, 60, 40, 50, 40, 0, 25, 25, 25, 35, 40, 40, 25, -5, 10, 10, 15, 15, 5, -10, -10, -10, 0, 5, 10, 5, -10, -15, -15, 0, -5, -5, -10, -5, -5, 5, -5, -15, -5, -10, -15, -20, 10, 10, -20, 0, 0, 0, 0, 0, 0, 0, 0 };
+int Eval::queen_approach_king = 10;
+int Eval::queen_in_danger = -20;
+int Eval::queen_pcsq_eg[64] = { -5, -5, 20, 15, 15, 25, 10, -5, -10, -10, 20, 5, 15, 30, 30, 10, -10, 15, 20, 20, 30, 15, 15, 0, -5, 25, 20, 20, 20, 15, 10, -25, -10, -10, 5, 10, 0, 0, 5, -15, -25, -10, 5, -45, 0, 0, 0, -40, -35, -20, -15, -10, -10, -25, -45, -25, -35, -30, -25, -10, -30, -40, -45, -45 };
+int Eval::queen_pcsq_mg[64] = { 0, 20, 15, 10, 20, 45, 25, 25, -25, -35, -5, 5, 10, 10, -5, 15, -15, -5, 5, 15, 30, 45, 40, -15, -10, -20, 10, -10, 15, 15, 15, 5, -20, -20, -15, -10, -5, -5, -10, -20, -20, -15, -10, 0, 5, 5, 5, -20, -20, -20, -5, 0, -5, -10, -25, -20, -10, -20, -15, -5, -20, -30, -40, -25 };
+int Eval::queen_seventh_rank = 5;
+int Eval::rook_half_open_file = 0;
+int Eval::rook_half_open_file_doubled = 10;
+int Eval::rook_in_danger = -35;
+int Eval::rook_mob_eg[15] = { -40, -30, -25, -20, -10, -10, -10, -5, -5, 5, 10, 15, 15, 10, 10 };
+int Eval::rook_mob_mg[15] = { -35, -20, -15, -15, -15, -10, -5, 0, 10, 10, 15, 15, 20, 20, 30 };
+int Eval::rook_open_file = 15;
+int Eval::rook_open_file_doubled = 10;
+int Eval::rook_pcsq_eg[64] = { 30, 35, 30, 35, 35, 35, 30, 30, 20, 20, 20, 20, 20, 20, 15, 20, 35, 30, 30, 20, 20, 30, 25, 20, 30, 30, 15, 15, 15, 20, 10, 10, 0, 25, 15, 5, 5, 5, 10, 0, -15, -10, -5, -5, -10, -5, -10, -15, -20, -15, -10, -10, -10, -10, -15, -25, -15, -15, -10, 0, 0, -10, -10, -15 };
+int Eval::rook_pcsq_mg[64] = { 25, 20, 30, 30, 30, 40, 40, 40, -10, -10, 20, 20, 25, 20, 15, 25, 0, 20, 10, 30, 40, 40, 40, 25, -20, -20, 20, 20, 20, 30, 10, 15, -25, -35, -10, 5, 5, 10, 0, 10, -35, -20, -5, -15, 5, -5, -5, -25, -35, -20, -5, -10, -10, -10, -15, -45, -15, -5, 5, 5, 0, 5, -5, -15 };
+int Eval::rook_seventh_rank = 20;
+int Eval::king_obstructs_rook = -80;
+int Eval::knight_attack_king[9] = { 0, 15, 15, 0, 0, 0, 0, 0, 0 };
+int Eval::bishop_attack_king[9] = { 0, 10, 25, 0, 0, 0, 0, 0, 0 };
+int Eval::rook_attack_king[9] = { 0, 10, 30, 45, 25, 0, 0, 0, 0 };
+int Eval::queen_attack_king[9] = { 0, -5, 30, 25, 110, 135, 0, 0, 0 };
+int Eval::king_on_half_open[4] = { 20, -10, -50, -125 };
+int Eval::king_on_open[4] = { 30, -10, -35, -185 };

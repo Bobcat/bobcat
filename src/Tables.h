@@ -30,7 +30,7 @@ struct Transposition {
 
 class TranspositionTable {
 public:
-  TranspositionTable(int size_mb) : table(NULL), size_mb(-1) {
+  TranspositionTable(uint64_t size_mb) : table(NULL), size_mb(0) {
     if (sizeof(Transposition) != 16) {
       printf("error sizeof(Transposition) == %d\n", static_cast<int>(sizeof(Transposition)));
       exit(0);
@@ -38,8 +38,8 @@ public:
     initialise(size_mb);
   }
 
-  void initialise(int new_size_mb) {
-    new_size_mb = pow2(log2((uint32_t)new_size_mb));
+  void initialise(uint64_t new_size_mb) {
+    new_size_mb = pow2(log2(new_size_mb));
     if (new_size_mb == size_mb) {
       return;
     }
@@ -114,7 +114,7 @@ public:
   }
 
   int getSizeMb() {
-    return size_mb;
+    return (int)size_mb;
   }
 
   __forceinline static uint32_t key32(const uint64_t key) {
@@ -123,10 +123,10 @@ public:
 
 protected:
   Transposition* table;
-  int mask;
-  int occupied;
-  int size_mb;
-  int size;
+  uint64_t mask;
+  uint64_t occupied;
+  uint64_t size_mb;
+  uint64_t size;
   int age;
 
   static const int NUMBER_SLOTS = 4;
@@ -144,7 +144,7 @@ struct PawnEntry {
 
 class PawnStructureTable {
 public:
-  PawnStructureTable(int size_mb) : table(NULL) {
+  PawnStructureTable(uint64_t  size_mb) : table(NULL) {
     if (sizeof(PawnEntry) != 16) {
       printf("error sizeof(PawnEntry) == %d\n", static_cast<int>(sizeof(PawnEntry)));
       exit(0);
@@ -152,8 +152,8 @@ public:
     initialise(size_mb);
   }
 
-  void initialise(int size_mb) {
-    size = 1024*1024*pow2(log2((uint32_t)size_mb))/sizeof(PawnEntry);
+  void initialise(uint64_t size_mb) {
+    size = 1024*1024*pow2(log2(size_mb))/sizeof(PawnEntry);
     mask = size - 1;
     delete [] table;
     table = new PawnEntry[size];
@@ -184,8 +184,8 @@ public:
 
 protected:
   PawnEntry* table;
-  int size;
-  int mask;
+  uint64_t size;
+  uint64_t mask;
 };
 
 typedef TranspositionTable TTable;

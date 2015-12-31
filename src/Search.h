@@ -382,8 +382,7 @@ protected:
         && !isQueenPromotion(m)
         && !isCapture(m)
         && !isKillerMove(m, ply - 1)
-        && move_count >= 3
-        && depth > 1)
+        && move_count >= 3)
     {
       Depth next_depth = depth - 2 - depth/8 - (move_count-6)/12;
 

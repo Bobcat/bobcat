@@ -34,7 +34,6 @@ public:
 
   //  if (stage <= 0.901 && (half_move_count > 8) && (half_move_count % 7 == 0) && stage >= 0.499) {
     if ((half_move_count > 7) && (half_move_count % 7 == 0)) {
-//    if (position_count_ % 17 == 0) {
       node_.fen_ = game_->getFen();
       game_nodes_.push_back(node_);
     }
@@ -99,120 +98,19 @@ public:
   Tune(Game& game, See& see, Eval& eval) : game_(game), see_(see), eval_(eval) {
     PGNPlayer pgn;
 
-    pgn.read("C:\\chess\\lb\\test3.pgn");
+    pgn.read("C:\\chess\\lb\\test20150827.pgn");
     pgn.read("C:\\chess\\lb\\test20151102.pgn");
     pgn.read("C:\\chess\\lb\\test20151118.pgn");
     pgn.read("C:\\chess\\lb\\test20151204.pgn");
     pgn.read("C:\\chess\\lb\\test20151208.pgn");
     pgn.read("C:\\chess\\lb\\test20151215.pgn");
-
-    // Make all positions quiet
-   // makeQuiet(pgn.all_nodes_);
+    pgn.read("C:\\chess\\lb\\test20151230.pgn");
 
     // Tune as described in https://chessprogramming.wikispaces.com/Texel%27s+Tuning+Method
 
     std::vector<Param> params;
 
-//    auto step0 = 0;
-  //  auto step2 = 2;
-    auto step5 = 5;
-    //auto step10 = 10;
-
-    // Piece square tables
-/*
-    for (auto i = 0; i < 64; ++i) {
-        auto step = i > 7 && i < 56 ? step5 : 0;
-        params.push_back(Param("pawn_pcsq_mg", eval_.pawn_pcsq_mg[i], 0, step));
-        params.push_back(Param("pawn_pcsq_eg", eval_.pawn_pcsq_eg[i], 0, step));
-    }
-
-    for (auto i = 0; i < 64; ++i) {
-        params.push_back(Param("knight_pcsq_mg", eval_.knight_pcsq_mg[i], 0, step5));
-        params.push_back(Param("knight_pcsq_eg", eval_.knight_pcsq_eg[i], 0, step5));
-    }
-
-    for (auto i = 0; i < 64; ++i) {
-        params.push_back(Param("bishop_pcsq_mg", eval_.bishop_pcsq_mg[i], 0, step5));
-        params.push_back(Param("bishop_pcsq_eg", eval_.bishop_pcsq_eg[i], 0, step5));
-    }
-
-    for (auto i = 0; i < 64; ++i) {
-        params.push_back(Param("rook_pcsq_mg", eval_.rook_pcsq_mg[i], 0, step5));
-        params.push_back(Param("rook_pcsq_eg", eval_.rook_pcsq_eg[i], 0, step5));
-    }
-
-    for (auto i = 0; i < 64; ++i) {
-        params.push_back(Param("queen_pcsq_mg", eval_.queen_pcsq_mg[i], 0, step5));
-        params.push_back(Param("queen_pcsq_eg", eval_.queen_pcsq_eg[i], 0, step5));
-    }
-
-//    for (auto i = 0; i < 64; ++i) {
-//        params.push_back(Param("king_pcsq_mg", eval_.king_pcsq_mg[i], step0));
-//        params.push_back(Param("king_pcsq_eg", eval_.king_pcsq_eg[i], step0));
-//    }
-
-    // Mobility
-    for (auto i = 0; i < 9; ++i) {
-      params.push_back(Param("knight_mob_mg", eval_.knight_mob_mg[i], 0, step5));
-      params.push_back(Param("knight_mob_eg", eval_.knight_mob_eg[i], 0, step5));
-    }
-
-    for (auto i = 0; i < 14; ++i) {
-      params.push_back(Param("bishop_mob_mg", eval_.bishop_mob_mg[i], 0, step5));
-      params.push_back(Param("bishop_mob_eg", eval_.bishop_mob_eg[i], 0, step5));
-    }
-
-    for (auto i = 0; i < 15; ++i) {
-      params.push_back(Param("rook_mob_mg", eval_.rook_mob_mg[i], 0, step5));
-      params.push_back(Param("rook_mob_eg", eval_.rook_mob_eg[i], 0, step5));
-    }
-
-    params.push_back(Param("rook_open_file", eval_.rook_open_file, 0, step5));
-    params.push_back(Param("rook_half_open_file", eval_.rook_half_open_file, 0, step5));
-    params.push_back(Param("rook_open_file_doubled", eval_.rook_open_file_doubled, 0, step5));
-    params.push_back(Param("rook_half_open_file_doubled", eval_.rook_half_open_file_doubled, 0, step5));
-    params.push_back(Param("knight_attack_king", eval_.knight_attack_king, 0, step5));
-    params.push_back(Param("bishop_attack_king", eval_.bishop_attack_king, 0, step5));
-    params.push_back(Param("rook_attack_king", eval_.rook_attack_king, 0, step5));
-    params.push_back(Param("queen_attack_king", eval_.queen_attack_king, 0, step5));
-    params.push_back(Param("rook_seventh_rank", eval_.rook_seventh_rank, 0, step5));
-    params.push_back(Param("queen_seventh_rank", eval_.queen_seventh_rank, 0, step5));
-    params.push_back(Param("knight_in_danger", eval_.knight_in_danger, 0, step5));
-    params.push_back(Param("bishop_in_danger", eval_.bishop_in_danger, 0, step5));
-    params.push_back(Param("rook_in_danger", eval_.rook_in_danger, 0, step5));
-    params.push_back(Param("queen_in_danger", eval_.queen_in_danger, 0, step5));
-
-    params.push_back(Param("queen_approach_king", eval_.queen_approach_king, 0, step5));
-
-    for (auto i = 0; i < 4; ++i) params.push_back(Param("king_pawn_shelter", eval_.king_pawn_shelter[i], 0, step5));
-    for (auto i = 0; i < 4; ++i) params.push_back(Param("king_on_open", eval_.king_on_open[i], 0, step5));
-    for (auto i = 0; i < 4; ++i) params.push_back(Param("king_on_half_open", eval_.king_on_half_open[i], 0, step5));
-
-    for (auto i = 0; i < 2; ++i) params.push_back(Param("pawn_isolated_mg", eval_.pawn_isolated_mg[i], 0, step5));
-    for (auto i = 0; i < 2; ++i) params.push_back(Param("pawn_isolated_eg", eval_.pawn_isolated_eg[i], 0, step5));
-    for (auto i = 0; i < 2; ++i) params.push_back(Param("pawn_behind_mg", eval_.pawn_behind_mg[i], 0, step5));
-    for (auto i = 0; i < 2; ++i) params.push_back(Param("pawn_behind_eg", eval_.pawn_behind_eg[i], 0, step5));
-    for (auto i = 0; i < 2; ++i) params.push_back(Param("pawn_doubled_mg", eval_.pawn_doubled_mg[i], 0, step5));
-    for (auto i = 0; i < 2; ++i) params.push_back(Param("pawn_doubled_eg", eval_.pawn_doubled_eg[i], 0, step5));
-//    params.push_back(Param("pawn_eg", eval_.pawn_eg, 0, step5));
-*/
-//    params.push_back(Param("bishop_pair_mg", eval_.bishop_pair_mg, 0, step5));
-//    params.push_back(Param("bishop_pair_eg", eval_.bishop_pair_eg, 0, step5));
-/*
-    for (auto i = 0; i < 8; ++i) params.push_back(Param("passed_pawn_mg", eval_.passed_pawn_mg[i], 0, step5));
-    for (auto i = 0; i < 8; ++i) params.push_back(Param("passed_pawn_eg", eval_.passed_pawn_eg[i], 0, step5));
-    for (auto i = 0; i < 8; ++i) params.push_back(Param("passed_pawn_no_us", eval_.passed_pawn_no_us[i], 0, step5));
-    for (auto i = 0; i < 8; ++i) params.push_back(Param("passed_pawn_no_attacks", eval_.passed_pawn_no_attacks[i], 0, step5));
-    for (auto i = 0; i < 8; ++i) params.push_back(Param("passed_pawn_no_them", eval_.passed_pawn_no_them[i], 0, step5));
-    params.push_back(Param("x_", eval_.x_, 0, step5));
-*/
-//    for (auto i = 0; i < 9; ++i) params.push_back(Param("a_", eval_.a_[i], 0, step5));
-//    for (auto i = 0; i < 9; ++i) params.push_back(Param("b_", eval_.b_[i], 0, step5));
-//    for (auto i = 0; i < 9; ++i) params.push_back(Param("c_", eval_.c_[i], 0, step5));
-//    for (auto i = 0; i < 9; ++i) params.push_back(Param("d_", eval_.d_[i], 0, step5));
-
-    for (auto i = 0; i < 4; ++i) params.push_back(Param("king_on_open", eval_.king_on_open[i], 0, step5));
-    for (auto i = 0; i < 4; ++i) params.push_back(Param("king_on_half_open", eval_.king_on_half_open[i], 0, step5));
+    initEval(params);
 
     makeQuiet(pgn.all_nodes_);
 
@@ -275,7 +173,7 @@ public:
             step = 0;
         }
       }
-      makeQuiet(pgn.all_nodes_);
+      //makeQuiet(pgn.all_nodes_);
     }
     printBestValues(bestE, params);
     out << "New E:" << bestE << "\n";
@@ -487,8 +385,7 @@ public:
   }
 
   double bestK() {
-    /*
-    double smallestE;
+    /*double smallestE;
     double bestK = -1;
     for (double K = 1.10; K < 1.15; K += 0.01) {
         double _E = E(pgn.all_nodes_, params, K);
@@ -498,9 +395,97 @@ public:
         }
         std::cout << "K:" << K << "  _E:" << _E << endl;
     }
-    std::cout << "bestK:" << bestK << "smallestE:" << smallestE << endl;
-    */
+    std::cout << "bestK:" << bestK << "smallestE:" << smallestE << endl;*/
     return 1.12;
+  }
+
+  void initEval(std::vector<Param>& params) {
+    //auto step0 = 0;
+    auto step5 = 5;
+    //auto step1 = 1;
+
+    for (auto i = 0; i < 64; ++i) {
+      params.push_back(Param("king_pcsq_mg", eval_.king_pcsq_mg[i], 0, step5));
+      params.push_back(Param("king_pcsq_eg", eval_.king_pcsq_eg[i], 0, step5));
+    }
+
+    /*for (auto i = 0; i < 64; ++i) {
+      auto step = i > 7 && i < 56 ? step5 : 0;
+      params.push_back(Param("pawn_pcsq_mg", eval_.pawn_pcsq_mg[i], 0, step));
+      params.push_back(Param("pawn_pcsq_eg", eval_.pawn_pcsq_eg[i], 0, step));
+    }
+
+    for (auto i = 0; i < 64; ++i) {
+      params.push_back(Param("knight_pcsq_mg", eval_.knight_pcsq_mg[i], 0, step5));
+      params.push_back(Param("knight_pcsq_eg", eval_.knight_pcsq_eg[i], 0, step5));
+    }
+
+    for (auto i = 0; i < 64; ++i) {
+      params.push_back(Param("bishop_pcsq_mg", eval_.bishop_pcsq_mg[i], 0, step5));
+      params.push_back(Param("bishop_pcsq_eg", eval_.bishop_pcsq_eg[i], 0, step5));
+    }
+
+    for (auto i = 0; i < 64; ++i) {
+      params.push_back(Param("rook_pcsq_mg", eval_.rook_pcsq_mg[i], 0, step5));
+      params.push_back(Param("rook_pcsq_eg", eval_.rook_pcsq_eg[i], 0, step5));
+    }
+
+    for (auto i = 0; i < 64; ++i) {
+      params.push_back(Param("queen_pcsq_mg", eval_.queen_pcsq_mg[i], 0, step5));
+      params.push_back(Param("queen_pcsq_eg", eval_.queen_pcsq_eg[i], 0, step5));
+    }
+
+    for (auto i = 0; i < 9; ++i) {
+      params.push_back(Param("knight_mob_mg", eval_.knight_mob_mg[i], 0, step5));
+      params.push_back(Param("knight_mob_eg", eval_.knight_mob_eg[i], 0, step5));
+    }
+
+    for (auto i = 0; i < 14; ++i) {
+      params.push_back(Param("bishop_mob_mg", eval_.bishop_mob_mg[i], 0, step5));
+      params.push_back(Param("bishop_mob_eg", eval_.bishop_mob_eg[i], 0, step5));
+    }
+
+    for (auto i = 0; i < 15; ++i) {
+      params.push_back(Param("rook_mob_mg", eval_.rook_mob_mg[i], 0, step5));
+      params.push_back(Param("rook_mob_eg", eval_.rook_mob_eg[i], 0, step5));
+    }
+    params.push_back(Param("rook_seventh_rank", eval_.rook_seventh_rank, 0, step5));
+    params.push_back(Param("knight_in_danger", eval_.knight_in_danger, 0, step5));
+    params.push_back(Param("bishop_in_danger", eval_.bishop_in_danger, 0, step5));
+    params.push_back(Param("rook_in_danger", eval_.rook_in_danger, 0, step5));
+    params.push_back(Param("queen_in_danger", eval_.queen_in_danger, 0, step5));
+
+    for (auto i = 0; i < 2; ++i) params.push_back(Param("pawn_isolated_mg", eval_.pawn_isolated_mg[i], 0, step5));
+    for (auto i = 0; i < 2; ++i) params.push_back(Param("pawn_isolated_eg", eval_.pawn_isolated_eg[i], 0, step5));
+    for (auto i = 0; i < 2; ++i) params.push_back(Param("pawn_doubled_mg", eval_.pawn_doubled_mg[i], 0, step5));
+    for (auto i = 0; i < 2; ++i) params.push_back(Param("pawn_doubled_eg", eval_.pawn_doubled_eg[i], 0, step5));
+
+    params.push_back(Param("bishop_pair_mg", eval_.bishop_pair_mg, 0, step5));
+    params.push_back(Param("bishop_pair_eg", eval_.bishop_pair_eg, 0, step5));
+
+    for (auto i = 0; i < 8; ++i) params.push_back(Param("passed_pawn_mg", eval_.passed_pawn_mg[i], 0, step5));
+    for (auto i = 0; i < 8; ++i) params.push_back(Param("passed_pawn_eg", eval_.passed_pawn_eg[i], 0, step5));
+    for (auto i = 0; i < 8; ++i) params.push_back(Param("passed_pawn_no_us", eval_.passed_pawn_no_us[i], 0, step5));
+    for (auto i = 0; i < 8; ++i) params.push_back(Param("passed_pawn_no_attacks", eval_.passed_pawn_no_attacks[i], 0, step5));
+    for (auto i = 0; i < 8; ++i) params.push_back(Param("passed_pawn_no_them", eval_.passed_pawn_no_them[i], 0, step5));
+
+    params.push_back(Param("king_obstructs_rook", eval_.king_obstructs_rook, 0, step5));
+    params.push_back(Param("queen_approach_king", eval_.queen_approach_king, 0, step5));
+
+    for (auto i = 0; i < 9; ++i) params.push_back(Param("knight_attack_king", eval_.knight_attack_king[i], 0, step5));
+    for (auto i = 0; i < 9; ++i) params.push_back(Param("bishop_attack_king", eval_.bishop_attack_king[i], 0, step5));
+    for (auto i = 0; i < 9; ++i) params.push_back(Param("rook_attack_king", eval_.rook_attack_king[i], 0, step5));
+    for (auto i = 0; i < 9; ++i) params.push_back(Param("queen_attack_king", eval_.queen_attack_king[i], 0, step5));
+
+    for (auto i = 0; i < 4; ++i) params.push_back(Param("king_pawn_shelter", eval_.king_pawn_shelter[i], 0, step5));
+    for (auto i = 0; i < 4; ++i) params.push_back(Param("king_on_open", eval_.king_on_open[i], 0, step5));
+    for (auto i = 0; i < 4; ++i) params.push_back(Param("king_on_half_open", eval_.king_on_half_open[i], 0, step5));
+
+    params.push_back(Param("rook_open_file", eval_.rook_open_file, 0, step5));
+
+    for (auto i = 0; i < 8; ++i) params.push_back(Param("passed_pawn_king_dist_us", eval_.passed_pawn_king_dist_us[i], 0, step5));
+    for (auto i = 0; i < 8; ++i) params.push_back(Param("passed_pawn_king_dist_them", eval_.passed_pawn_king_dist_them[i], 0, step5));
+*/
   }
 
 private:
@@ -510,7 +495,6 @@ private:
 
   Search::PVEntry pv[128][128];
   int pv_length[128];
-
 };
 
 }

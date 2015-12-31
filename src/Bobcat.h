@@ -114,11 +114,11 @@ public:
     if (value != NULL) {
       if (strieq("Hash", name)) {
         transt->initialise(std::min(2048, std::max(8, (int)strtol(value, NULL, 10))));
-        _snprintf(buf, sizeof(buf), "Hash ", transt->getSizeMb());
+        _snprintf(buf, sizeof(buf), "Hash:%d", transt->getSizeMb());
       }
       else if (strieq("Threads", name)) {
         num_threads = std::min(64, std::max(1, (int)strtol(value, NULL, 10)));
-        _snprintf(buf, sizeof(buf), "Threads %d.", num_threads);
+        _snprintf(buf, sizeof(buf), "Threads:%d", num_threads);
       }
       else if (strieq("UCI_Chess960", name)) {
         if (strieq(value, "true")) {

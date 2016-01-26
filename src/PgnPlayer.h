@@ -21,9 +21,11 @@ public:
     PGNFileReader::readPGNGame();
   }
 
-  virtual void readTagSection() {
-    PGNFileReader::readTagSection();
-
+  virtual void readTagPair() {
+    PGNFileReader::readTagPair();
+//std::cout<<std::string(tag_name_)<<std::endl;
+//std::cout<<std::string(tag_value_).substr(1, strlen(tag_value_) - 2).c_str()<<std::endl;
+//exit(0);
     if (strieq(tag_name_, "FEN")) {
       game_->setFen(std::string(tag_value_).substr(1, strlen(tag_value_) - 2).c_str());
     }

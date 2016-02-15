@@ -65,8 +65,8 @@ public:
         if (moveIsEasy()) {
           break;
         }
-        alpha = std::max(-MAXSCORE, pv[0][0].score - 30);
-        beta = std::min(MAXSCORE, pv[0][0].score + 30);
+        alpha = std::max(-MAXSCORE, pv[0][0].score - 50);
+        beta = std::min(MAXSCORE, pv[0][0].score + 50);
       }
       catch (const int) {
         while (ply) {
@@ -196,7 +196,7 @@ protected:
 
             if (score >= beta) {
               if (pv) {
-                updatePV(best_move, best_score, depth, BETA);
+              updatePV(best_move, best_score, depth, BETA);
               }
               break;
             }

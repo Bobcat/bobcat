@@ -29,7 +29,6 @@ public:
 
     auto half_move_count = game_->pos - game_->position_list;
 
-//    if ((game_->board.queens(0)|game_->board.queens(1))&&(half_move_count >=14) && (half_move_count % 7 == 0)) {
     if ((half_move_count >=14) && (half_move_count % 7 == 0)) {
       node_.fen_ = game_->getFen();
       game_nodes_.push_back(node_);

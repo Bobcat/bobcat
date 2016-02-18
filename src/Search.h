@@ -314,7 +314,7 @@ protected:
       Depth next_depth = depth - 2 - depth/8 - (move_count-6)/10;
 
       if (next_depth <= 3
-          && -pos->eval_score + futility_margin[std::max(0, next_depth)] < alpha)
+        && -pos->eval_score + futility_margin[std::max(0, next_depth)] < alpha)
       {
         best_score = std::max(best_score, -pos->eval_score + futility_margin[std::max(0, next_depth)]);
         return -999;

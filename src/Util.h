@@ -53,10 +53,6 @@ int tokenize(char* input, char* tokens[], int max_tokens) {
   return num_tokens;
 }
 
-static uint64_t rand64() {
-  return genrand64_int64();
-}
-
 static int pow2(int x) {
   return (int)pow(2.0, x);
 }

@@ -25,15 +25,13 @@ public:
   }
 
   virtual int newGame() {
-    game->newGame(game->START_POSITION);
-    search->newGame();
-    eval->newGame();
+    game->newGame(Game::kStartPosition);
     pawnt->clear();
     transt->clear();
     return 0;
   }
 
-  virtual int setFEN(const char* fen) {
+  virtual int setFen(const char* fen) {
     return game->newGame(fen);
   }
 
@@ -90,7 +88,7 @@ public:
   }
 
   void goSearch(int wtime, int btime, int movestogo, int winc, int binc, int movetime) {
-    // Simple MT with shared transposition table.
+    // Shared transposition table
     startWorkers();
     search->go(wtime, btime, movestogo, winc, binc, movetime);
     stopWorkers();
@@ -113,7 +111,7 @@ public:
     strcpy(buf, "");;
     if (value != NULL) {
       if (strieq("Hash", name)) {
-        transt->initialise(std::min(2048, std::max(8, (int)strtol(value, NULL, 10))));
+        transt->initialise(std::min(65536, std::max(8, (int)strtol(value, NULL, 10))));
         _snprintf(buf, sizeof(buf), "Hash:%d", transt->getSizeMb());
       }
       else if (strieq("Threads", name)) {
@@ -148,10 +146,10 @@ public:
 
     logTimeAndCwd();
 
-    Bitboard_h_initialise();
-    Magic_h_initialise();
-    Zobrist_h_initialise();
-    Square_h_initialise();
+    bitboard::initialize();
+    attacks::initialize();
+    zobrist::initialize();
+    squares::initialize();
 
     game = new Game();
     input = new StdIn(logger);
@@ -233,7 +231,7 @@ public:
           int token = 0;
           char fen[128];
           if (FENfromParams((const char**)tokens, num_tokens, token, fen)) {
-            setFEN(fen);
+            setFen(fen);
           }
         }
       }
@@ -257,7 +255,7 @@ public:
       }
       else if (strieq(tokens[0], "tune")) {
         clock_t t1 = millis();
-        et::Tune(*game, *see, *eval);
+        eval::Tune(*game, *see, *eval);
         clock_t t2 = millis();
         double seconds = (t2 - t1)/1000.;
         printf("%f\n", seconds);

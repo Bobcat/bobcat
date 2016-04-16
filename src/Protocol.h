@@ -24,7 +24,7 @@ const int PONDER_SEARCH = 8;
 class ProtocolListener {
 public:
   virtual int newGame() = 0;
-  virtual int setFEN(const char* fen) = 0;
+  virtual int setFen(const char* fen) = 0;
   virtual int go(int wtime, int btime, int movestogo, int winc, int binc, int movetime) = 0;
   virtual void ponderHit() = 0;
   virtual void stop() = 0;
@@ -199,7 +199,7 @@ public:
       snprintf(buf, sizeof(buf),
                "id name Bobcat 7.1\n" \
                "id author Gunnar Harms\n" \
-               "option name Hash type spin default 256 min 8 max 2048\n" \
+               "option name Hash type spin default 256 min 8 max 65536\n" \
                "option name Ponder type check default true\n" \
                "option name Threads type spin default 1 min 1 max 64\n" \
                "option name UCI_Chess960 type check default false\n" \
@@ -294,7 +294,7 @@ public:
     }
     char fen[128];
     if (strieq(params[param], "startpos")) {
-      strcpy(fen, game->START_POSITION);
+      strcpy(fen, Game::kStartPosition);
       param++;
     }
     else if (strieq(params[param], "fen")) {
@@ -306,7 +306,7 @@ public:
     else {
       return -1;
     }
-    callback->setFEN(fen);
+    callback->setFen(fen);
     if ((num_params > param) && (strieq(params[param++], "moves"))) {
       while (param < num_params) {
         const Move* move = game->pos->stringToMove(params[param++]);

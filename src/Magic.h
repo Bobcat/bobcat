@@ -20,9 +20,12 @@
  *
  *
  *Original files: magicmoves.c and magicmoves.h
+ *Added namespace attacks
  *Conditional compile paths were removed. The original algorithm and data
  *were not changed in any way.
  */
+namespace attacks
+{
 
 BB magic_bishop_db[64][1 << 9];
 
@@ -104,16 +107,24 @@ BB magicmoves_r_mask[64] = {
   0x6E10101010101000ULL, 0x5E20202020202000ULL, 0x3E40404040404000ULL, 0x7E80808080808000ULL
 };
 
-__forceinline BB Bmagic(const uint32_t square, const BB occupied) {
+__forceinline BB bishopAttacks(const uint32_t square, const BB occupied) {
   return magic_bishop_db[square][(((occupied)&magicmoves_b_mask[square])*magicmoves_b_magics[square])>>55];
 }
 
-__forceinline BB Rmagic(const uint32_t square, const BB occupied) {
+__forceinline BB rookAttacks(const uint32_t square, const BB occupied) {
   return magic_rook_db[square][(((occupied)&magicmoves_r_mask[square])*magicmoves_r_magics[square])>>52];
 }
 
-__forceinline BB Qmagic(const uint32_t square, const BB occupied) {
-  return Bmagic(square,occupied)|Rmagic(square,occupied);
+__forceinline BB queenAttacks(const uint32_t square, const BB occupied) {
+  return bishopAttacks(square, occupied) | rookAttacks(square, occupied);
+}
+
+__forceinline BB knightAttacks(const Square sq) {
+  return knight_attacks[sq];
+}
+
+__forceinline BB kingAttacks(const Square sq) {
+  return king_attacks[sq];
 }
 
 BB initmagicmoves_occ (const int *squares, const int numSquares, const BB linocc) {
@@ -213,7 +224,7 @@ BB initmagicmoves_Bmoves (const int square, const BB occ) {
   return ret;
 }
 
-void Magic_h_initialise()
+void initialize()
 {
   int i;
 
@@ -270,3 +281,7 @@ void Magic_h_initialise()
     }
   }
 }
+
+}//namespace attacks
+
+using namespace attacks;

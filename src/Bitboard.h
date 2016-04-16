@@ -16,7 +16,8 @@
   along with Bobcat.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-namespace bitboard {
+namespace bitboard
+{
 
 typedef uint64_t BB;
 
@@ -117,7 +118,7 @@ void initBetweenBitboards(const Square from, BB (*stepFunc)(const BB&), int step
   Square to = from + step;
   BB between = 0;
   while (bb) {
-    if (from < 64 && to < 64) { // to make gcc happy
+    if (from < 64 && to < 64) {
       bb_between[from][to] = between;
       between |= bb;
       bb = stepFunc(bb);
@@ -126,7 +127,8 @@ void initBetweenBitboards(const Square from, BB (*stepFunc)(const BB&), int step
   }
 }
 
-void Bitboard_h_initialise() {
+void initialize()
+{
   for (Square sq = a1; sq <= h8; sq++) {
     bb_square[sq] = (BB)1 << sq;
     bb_rank[sq] = RANK1 << (sq & 56);
@@ -184,10 +186,6 @@ void Bitboard_h_initialise() {
   corner_h8 = bbSquare(h8) | bbSquare(g8) | bbSquare(h7) | bbSquare(g7);
 }
 
-__forceinline BB neighbourFiles(const BB& bb) {
-  return northFill(southFill(westOne(bb) | eastOne(bb)));
-}
-
 BB (*pawnPush[2])(const BB&) = { northOne, southOne };
 BB (*pawnEastAttacks[2])(const BB&) = { northWestOne, southWestOne };
 BB (*pawnWestAttacks[2])(const BB&) = { northEastOne, southEastOne };
@@ -204,6 +202,33 @@ const int pawn_double_push_dist[2] = { 16, -16 };
 const int pawn_west_attack_dist[2] = { 9, -7 };
 const int pawn_east_attack_dist[2] = { 7, -9 };
 
-} // namespace bitboard
+__forceinline void resetLSB(uint64_t& x)
+{
+  x &= (x - 1);
+}
+
+#ifndef BK_POPCOUNT
+__forceinline int popCount(uint64_t x)
+{
+  return __builtin_popcountll(x);
+}
+#else
+__forceinline int popCount(uint64_t x)
+{
+  int y = 0;
+  while (x) {
+    y++;
+    resetLSB(x);
+  }
+  return y;
+}
+#endif
+
+__forceinline int lsb(uint64_t x)
+{
+  return __builtin_ctzll(x);
+}
+
+}//namespace bitboard
 
 using namespace bitboard;

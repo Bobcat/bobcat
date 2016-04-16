@@ -10,7 +10,8 @@ namespace pgn {
 
 class File {
 public:
-  File(const char* path, int oflag, int pmode) {
+  File(const char* path, int oflag, int pmode)
+  {
     if ((fd = open(path, oflag|O_BINARY, pmode)) == -1) {
       perror("File::File: cannot open file");
       exit(EXIT_FAILURE);
@@ -21,7 +22,8 @@ public:
     close(fd);
   }
 
-  size_t read(unsigned char* buf, size_t count) {
+  size_t read(unsigned char* buf, size_t count)
+  {
     int n;
 
     if ((n = ::read(fd, (void*)buf, count)) == -1) {
@@ -46,18 +48,22 @@ static const char token_string[][12] = { "Symbol", "Integer", "String", "NAG",
 
 enum Result { WhiteWin, Draw, BlackWin };
 
-class UnexpectedToken {
+class UnexpectedToken
+{
 public:
-  UnexpectedToken(Token expected, const char* found, size_t line) {
+  UnexpectedToken(Token expected, const char* found, size_t line)
+  {
     sprintf(buf, "Expected <%s> but found '%s', line=%llu",
             token_string[expected], found, line);
   }
 
-  UnexpectedToken(const char* expected, const char* found, size_t line) {
+  UnexpectedToken(const char* expected, const char* found, size_t line)
+  {
     sprintf(buf, "Expected %s but found '%s', line=%llu", expected, found, line);
   }
 
-  const char* str() const {
+  const char* str() const
+  {
     return buf;
   }
 
@@ -65,21 +71,25 @@ private:
   char buf[2048];
 };
 
-class PGNFileReader {
+class PGNFileReader
+{
 public:
-  PGNFileReader() : file_(NULL) {
+  PGNFileReader() : file_(NULL)
+  {
     if ((buffer_ = new unsigned char[bufsize]) == NULL) {
       fprintf(stderr, "PGNFileReader: unable to allocate buffer\n");
       exit(EXIT_FAILURE);
     }
   }
 
-  ~PGNFileReader() {
+  ~PGNFileReader()
+  {
     delete file_;
     delete[] buffer_;
   }
 
-  virtual void read(const char* path) {
+  virtual void read(const char* path)
+  {
     if (file_) {
         delete file_;
         file_ = NULL;
@@ -100,7 +110,8 @@ public:
   }
 
 protected:
-  virtual void read() {
+  virtual void read()
+  {
     try {
       readToken(token_);
       readPGNDatabase();
@@ -114,7 +125,8 @@ protected:
     }
   }
 
-  virtual void readPGNDatabase() {
+  virtual void readPGNDatabase()
+  {
     while (startOfPGNGame()) {
       try {
         readPGNGame();
@@ -130,13 +142,15 @@ protected:
     }
   }
 
-  virtual void readPGNGame() {
+  virtual void readPGNGame()
+  {
     readTagSection();
     readMoveTextSection();
     ++game_count_;
   }
 
-  virtual void readTagSection() {
+  virtual void readTagSection()
+  {
     while (startOfTagPair()) {
       readTagPair();
 
@@ -147,7 +161,8 @@ protected:
     }
   }
 
-  virtual void readTagPair() {
+  virtual void readTagPair()
+  {
     readToken(token_);
 
     if (token_ != Symbol) {
@@ -161,17 +176,20 @@ protected:
     readTagValue();
   }
 
-  virtual void readTagName() {
+  virtual void readTagName()
+  {
     strcpy(tag_name_, token_str);
     readToken(token_);
   }
 
-  virtual void readTagValue() {
+  virtual void readTagValue()
+  {
     strcpy(tag_value_, token_str);
     readToken(token_);
   }
 
-  virtual void readMoveTextSection() {
+  virtual void readMoveTextSection()
+  {
     readElementSequence();
 
     if (startOfGameTermination()) {
@@ -182,7 +200,8 @@ protected:
     }
   }
 
-  virtual void readElementSequence() {
+  virtual void readElementSequence()
+  {
     for (;;) {
       if (startOfElement()) {
         readElement();
@@ -196,7 +215,8 @@ protected:
     }
   }
 
-  virtual void readElement() {
+  virtual void readElement()
+  {
     if (startOfMoveNumberIndication()) {
       readMoveNumberIndication();
     }
@@ -210,11 +230,13 @@ protected:
     }
   }
 
-  virtual void readGameTermination() {
+  virtual void readGameTermination()
+  {
     readToken(token_);
   }
 
-  virtual void readMoveNumberIndication() {
+  virtual void readMoveNumberIndication()
+  {
     move_number_ = strtol(token_str, NULL, 10);
 
     int periods = 0;
@@ -236,7 +258,8 @@ protected:
     }
   }
 
-  virtual void readSANMove() {
+  virtual void readSANMove()
+  {
     from_piece_ = -1;
     from_file_ = -1;
     from_rank_ = -1;
@@ -267,7 +290,8 @@ protected:
     }
   }
 
-  virtual bool readSANMoveSuffix(char*& p) {
+  virtual bool readSANMoveSuffix(char*& p)
+  {
     size_t len = strlen(p);
 
     if (len && p[0] == '+') {
@@ -300,7 +324,8 @@ protected:
     return true;
   }
 
-  virtual void readPawnMove(char*& p) {
+  virtual void readPawnMove(char*& p)
+  {
     if (isPawnPieceLetter(p)) {
       if (startOfPawnCaptureOrQuietMove(++p)) {
         readPawnCaptureOrQuietMove(p);
@@ -315,7 +340,8 @@ protected:
     pawn_move_ = true;
   }
 
-  virtual void readPawnCaptureOrQuietMove(char*& p) {
+  virtual void readPawnCaptureOrQuietMove(char*& p)
+  {
     if (startOfPawnCapture(p)) {
       readPawnCapture(p);
     }
@@ -328,7 +354,8 @@ protected:
     }
   }
 
-  virtual void readPawnCapture(char*& p) {
+  virtual void readPawnCapture(char*& p)
+  {
     p += 2;
 
     if (!isSquare(p, to_square_)) {
@@ -338,11 +365,13 @@ protected:
     capture_ = true;
   }
 
-  virtual void readPawnQuietMove(char*& p) {
+  virtual void readPawnQuietMove(char*& p)
+  {
     p += 2;
   }
 
-  virtual void readPromotedTo(char*& p) {
+  virtual void readPromotedTo(char*& p)
+  {
     p += 1;
 
     if (strlen(p) && isNonPawnPieceLetter(p, promoted_to)) {
@@ -353,7 +382,8 @@ protected:
     }
   }
 
-  virtual void readMove(char*& p) {
+  virtual void readMove(char*& p)
+  {
     p += 1;
 
     if (!startOfCaptureOrQuietMove(p)) {
@@ -363,7 +393,8 @@ protected:
     piece_move_ = true;
   }
 
-  virtual void readCaptureOrQuietMove(char*& p) {
+  virtual void readCaptureOrQuietMove(char*& p)
+  {
     if (startOfCapture(p)) {
       readCapture(p);
     }
@@ -372,7 +403,8 @@ protected:
     }
   }
 
-  virtual void readCapture(char*& p) {
+  virtual void readCapture(char*& p)
+  {
     if (p[0] == 'x') {
       p += 1;
     }
@@ -395,7 +427,8 @@ protected:
     capture_ = true;
   }
 
-  virtual void readCastleMove(char*& p) {
+  virtual void readCastleMove(char*& p)
+  {
     int len = strlen(p);
 
     if (len > 4 && strncmp(p, "O-O-O", 5) == 0) {
@@ -413,7 +446,8 @@ protected:
     castle_move_ = true;
   }
 
-  virtual void readQuietMove(char*& p) {
+  virtual void readQuietMove(char*& p)
+  {
     if (isSquare(p, to_square_)) {
       p += 2;
     }
@@ -442,11 +476,13 @@ protected:
     }
   }
 
-  virtual void readNumericAnnotationGlyph() {
+  virtual void readNumericAnnotationGlyph()
+  {
     readToken(token_);
   }
 
-  virtual void readRecursiveVariation() {
+  virtual void readRecursiveVariation()
+  {
     readToken(token_);
     readElementSequence();
 
@@ -456,40 +492,49 @@ protected:
     readToken(token_);
   }
 
-  bool startOfPGNGame() {
+  bool startOfPGNGame()
+  {
     return startOfTagSection() || startOfMoveTextSection();
   }
 
-  bool startOfTagSection() {
+  bool startOfTagSection()
+  {
     return startOfTagPair();
   }
 
-  bool startOfMoveTextSection() {
+  bool startOfMoveTextSection()
+  {
     return startOfElement();
   }
 
-  bool startOfTagPair() {
+  bool startOfTagPair()
+  {
     return token_ == LBracket;
   }
 
-  bool startOfElement() {
+  bool startOfElement()
+  {
     return startOfMoveNumberIndication() || startOfSANMove()
            || startOfNumericAnnotationGlyph();
   }
 
-  bool startOfRecursiveVariation() {
+  bool startOfRecursiveVariation()
+  {
     return token_ == LParen;
   }
 
-  bool startOfTagName() {
+  bool startOfTagName()
+  {
     return token_ == Symbol;
   }
 
-  bool startOfTagValue() {
+  bool startOfTagValue()
+  {
     return token_ == String;
   }
 
-  bool startOfGameTermination() {
+  bool startOfGameTermination()
+  {
     if (token_ != Symbol) {
       return false;
     }
@@ -509,36 +554,44 @@ protected:
     return true;
   }
 
-  bool startOfMoveNumberIndication() {
+  bool startOfMoveNumberIndication()
+  {
     return token_ == Integer;
   }
 
-  bool startOfSANMove() {
+  bool startOfSANMove()
+  {
     return token_ == Symbol && (startOfPawnMove(token_str) ||
                                 startOfCastleMove(token_str) || startOfMove(token_str));
   }
 
-  bool startOfPawnMove(const char* p) {
+  bool startOfPawnMove(const char* p)
+  {
     return isPawnPieceLetter(p) || startOfPawnCaptureOrQuietMove(p);
   }
 
-  bool isPawnPieceLetter(const char* p) {
+  bool isPawnPieceLetter(const char* p)
+  {
     return token_ == Symbol && strlen(p) && p[0] == 'P';
   }
 
-  bool startOfPawnCaptureOrQuietMove(const char* p) {
+  bool startOfPawnCaptureOrQuietMove(const char* p)
+  {
     return startOfPawnCapture(p) || startOfPawnQuietMove(p, to_square_);
   }
 
-  bool startOfPawnCapture(const char* p) {
+  bool startOfPawnCapture(const char* p)
+  {
     return (strlen(p) > 1 && p[1] == 'x' && isFileLetter(p, from_file_));
   }
 
-  bool startOfPawnQuietMove(const char* p, int& to_square) {
+  bool startOfPawnQuietMove(const char* p, int& to_square)
+  {
     return strlen(p) > 1 && isSquare(p, to_square);
   }
 
-  bool isFileLetter(const char* p, int& file) {
+  bool isFileLetter(const char* p, int& file)
+  {
     if (strlen(p) && p[0] >= 'a' && p[0] <= 'h') {
       file = p[0] - 'a';
       return true;
@@ -546,7 +599,8 @@ protected:
     return false;
   }
 
-  bool isRankDigit(const char* p, int& rank) {
+  bool isRankDigit(const char* p, int& rank)
+  {
     if (strlen(p) && p[0] >= '1' && p[0] <= '8') {
       rank = p[0] - '1';
       return true;
@@ -554,7 +608,8 @@ protected:
     return false;
   }
 
-  bool isSquare(const char* p, int& square ) {
+  bool isSquare(const char* p, int& square )
+  {
     if (strlen(p) > 1 && p[0] >= 'a' && p[0] <= 'h' && p[1] >= '0' && p[1] <= '9')  {
       square = ((p[1] - '1') << 3) + p[0] -'a';
       return true;
@@ -562,18 +617,20 @@ protected:
     return false;
   }
 
-  bool startOfPromotedTo(const char* p) {
+  bool startOfPromotedTo(const char* p)
+  {
     return strlen(p) && p[0] == '=';
   }
 
-  bool startOfMove(const char* p) {
+  bool startOfMove(const char* p)
+  {
     return isNonPawnPieceLetter(p, from_piece_);
   }
 
-  bool isNonPawnPieceLetter(const char* p, int& piece_letter) {
-    if (
-      token_ == Symbol && strlen(p) && (p[0] == 'N' || p[0] == 'B'
-                                        || p[0] == 'R' || p[0] == 'Q' ||p[0] == 'K'))
+  bool isNonPawnPieceLetter(const char* p, int& piece_letter)
+  {
+    if (token_ == Symbol && strlen(p) &&
+        (p[0] == 'N' || p[0] == 'B'|| p[0] == 'R' || p[0] == 'Q' ||p[0] == 'K'))
     {
       piece_letter = p[0];
       return true;
@@ -581,35 +638,41 @@ protected:
     return false;
   }
 
-  bool startOfCaptureOrQuietMove(const char* p) {
+  bool startOfCaptureOrQuietMove(const char* p)
+  {
     return startOfCapture(p) || startOfQuietMove(p);
   }
 
-  bool startOfCapture(const char* p) {
+  bool startOfCapture(const char* p)
+  {
     return (strlen(p) && p[0] == 'x')
            || (strlen(p) > 1 && p[1] == 'x' && isRankDigit(p, from_rank_))
            || (strlen(p) > 1 && p[1] == 'x' && isFileLetter(p, from_file_))
            || (strlen(p) > 2 && p[2] == 'x' && isSquare(p, from_square_));
   }
 
-  bool startOfQuietMove(const char* p) {
+  bool startOfQuietMove(const char* p)
+  {
     return (strlen(p) > 1 && isSquare(p, from_square_))
            || (strlen(p)&& isRankDigit(p, from_rank_))
            || (strlen(p)&& isFileLetter(p, from_file_));
   }
 
-  bool startOfCastleMove(const char* p) {
+  bool startOfCastleMove(const char* p)
+  {
     return strlen(p) && p[0] == 'O';
   }
 
-  bool startOfNumericAnnotationGlyph() {
+  bool startOfNumericAnnotationGlyph()
+  {
     return strlen(token_str) && token_str[0] == '$';
   }
 
   //---------
   // scan for tokens
   //
-  virtual void readToken(Token& token) {
+  virtual void readToken(Token& token)
+  {
     for (;;) {
       readNextToken(token);
 
@@ -619,7 +682,8 @@ protected:
     }
   }
 
-  virtual void readNextToken(Token& token) {
+  virtual void readNextToken(Token& token)
+  {
     bool get = (token != Symbol && token != Integer && token != String
                 && token != NAG);
 
@@ -679,7 +743,8 @@ protected:
     token_str[1] = '\0';
   }
 
-  int getChar(unsigned char& c) {
+  int getChar(unsigned char& c)
+  {
     bool escape = false;
 
     for (;;) {
@@ -716,7 +781,8 @@ protected:
     return 1;
   }
 
-  bool readSymbol() {
+  bool readSymbol()
+  {
     if (!isAlNum(ch_)) {
       return false;
     }
@@ -767,7 +833,8 @@ protected:
     return true;
   }
 
-  bool readNAG() {
+  bool readNAG()
+  {
     if (ch_ != '$') {
       return false;
     }
@@ -798,7 +865,8 @@ protected:
     return true;
   }
 
-  bool readString() {
+  bool readString()
+  {
     if (ch_ != '\"') {
       return false;
     }
@@ -832,7 +900,8 @@ protected:
     return true;
   }
 
-  int getChar(unsigned char& c, bool get, bool skip_ws, bool skip_comment) {
+  int getChar(unsigned char& c, bool get, bool skip_ws, bool skip_comment)
+  {
     for (;;) {
       if (get) {
         int n = getChar(c);
@@ -862,7 +931,8 @@ protected:
     return 1;
   }
 
-  virtual void readComment1() {
+  virtual void readComment1()
+  {
     unsigned char c;
     char* p = comment_;
 
@@ -885,7 +955,8 @@ protected:
     *p = '\0';
   }
 
-  virtual void readComment2(unsigned char& c) {
+  virtual void readComment2(unsigned char& c)
+  {
     for (;;) {
       int n = getChar(c);
 
@@ -910,19 +981,23 @@ protected:
     }
   }
 
-  bool isWhiteSpace(const char c) {
+  bool isWhiteSpace(const char c)
+  {
     return c == ' ' || c == '\t' || c == 0x0a || c == 0x0d;
   }
 
-  bool isDigit(const char c) {
+  bool isDigit(const char c)
+  {
     return c >= '0' && c <= '9';
   }
 
-  bool isAlpha(const char c) {
+  bool isAlpha(const char c)
+  {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
   }
 
-  bool isAlNum(const char c) {
+  bool isAlNum(const char c)
+  {
     return isAlpha(c) || isDigit(c);
   }
 
@@ -959,7 +1034,7 @@ private:
   static const size_t bufsize = 128*1024;
 };
 
-} // namespace pgn
+}//namespace pgn
 
 /*
 http://www6.chessclub.com/help/PGN-spec

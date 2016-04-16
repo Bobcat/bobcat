@@ -101,7 +101,7 @@ public:
     }
     key ^= zobrist_castling[pos->castle_rights];
     if (pos->en_passant_square) {
-      key ^= zobrist_ep_file[file(lsb(pos->en_passant_square))];
+      key ^= zobrist_ep_file[fileOf(lsb(pos->en_passant_square))];
     }
     if (pos->side_to_move == 1) {
       key ^= zobrist_side;
@@ -114,10 +114,10 @@ public:
     pos->pawn_structure_key ^= zobrist_side;
 
     if ((pos - 1)->en_passant_square) {
-      pos->key ^= zobrist_ep_file[file(lsb((pos - 1)->en_passant_square))];
+      pos->key ^= zobrist_ep_file[fileOf(lsb((pos - 1)->en_passant_square))];
     }
     if (pos->en_passant_square) {
-      pos->key ^= zobrist_ep_file[file(lsb(pos->en_passant_square))];
+      pos->key ^= zobrist_ep_file[fileOf(lsb(pos->en_passant_square))];
     }
     if (!m) {
       pos->key ^= pos->pawn_structure_key;
@@ -201,7 +201,7 @@ public:
     if (setFen(fen) == 0) {
       return 0;
     }
-    return setFen(START_POSITION);
+    return setFen(kStartPosition);
   }
 
   int setFen(const char* fen) {
@@ -291,7 +291,7 @@ public:
     pos->key ^= zobrist_castling[pos->castle_rights];
 
     if (pos->en_passant_square) {
-      pos->key ^= zobrist_ep_file[file(lsb(pos->en_passant_square))];
+      pos->key ^= zobrist_ep_file[fileOf(lsb(pos->en_passant_square))];
     }
     pos->in_check = board.isAttacked(board.king_square[pos->side_to_move], pos->side_to_move ^ 1);
     return 0;
@@ -411,7 +411,7 @@ public:
 
         int rook_file = c - 'A';
 
-        if (rook_file > file(board.king_square[0])) {
+        if (rook_file > fileOf(board.king_square[0])) {
           addShortCastleRights(0, rook_file);
         }
         else {
@@ -424,7 +424,7 @@ public:
 
         int rook_file = c - 'a';
 
-        if (rook_file > file(board.king_square[1])) {
+        if (rook_file > fileOf(board.king_square[1])) {
           addShortCastleRights(1, rook_file);
         }
         else {
@@ -465,11 +465,11 @@ public:
     }
     pos->castle_rights |= side == 0 ? 1 : 4;
     castle_rights_mask[flip[side ^ 1][rook_file]] -= oo_allowed_mask[side];
-    castle_rights_mask[flip[side ^ 1][file(board.king_square[side])]] -= oo_allowed_mask[side];
+    castle_rights_mask[flip[side ^ 1][fileOf(board.king_square[side])]] -= oo_allowed_mask[side];
     rook_castles_from[flip[side ^ 1][g1]] = flip[side ^ 1][rook_file];
     oo_king_from[side] = board.king_square[side];
 
-    if (file(board.king_square[side]) != 4 || rook_file != 7) {
+    if (fileOf(board.king_square[side]) != 4 || rook_file != 7) {
       chess960 = true;
     }
   }
@@ -486,11 +486,11 @@ public:
     }
     pos->castle_rights |= side == 0 ? 2 : 8;
     castle_rights_mask[flip[side ^ 1][rook_file]] -= ooo_allowed_mask[side];
-    castle_rights_mask[flip[side ^ 1][file(board.king_square[side])]] -= ooo_allowed_mask[side];
+    castle_rights_mask[flip[side ^ 1][fileOf(board.king_square[side])]] -= ooo_allowed_mask[side];
     rook_castles_from[flip[side ^ 1][c1]] = flip[side ^ 1][rook_file];
     ooo_king_from[side] = board.king_square[side];
 
-    if (file(board.king_square[side]) != 4 || rook_file != 0) {
+    if (fileOf(board.king_square[side]) != 4 || rook_file != 0) {
       chess960 = true;
     }
   }
@@ -572,7 +572,7 @@ public:
   bool chess960;
   bool xfen;
 
-  static const char START_POSITION[];
+  static const char kStartPosition[];
 };
 
-const char Game::START_POSITION[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const char Game::kStartPosition[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";

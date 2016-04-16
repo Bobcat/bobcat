@@ -148,15 +148,15 @@ public:
   }
 
   __forceinline BB xrayRookAttacks(const BB& occupied, BB blockers, const Square sq) {
-    BB attacks = Rmagic(sq, occupied);
+    BB attacks = rookAttacks(sq, occupied);
     blockers &= attacks;
-    return attacks ^ Rmagic(sq, occupied ^ blockers);
+    return attacks ^ rookAttacks(sq, occupied ^ blockers);
   }
 
   __forceinline BB xrayBishopAttacks(const BB& occupied, BB blockers, const Square sq) {
-    BB attacks = Bmagic(sq, occupied);
+    BB attacks = bishopAttacks(sq, occupied);
     blockers &= attacks;
-    return attacks ^ Bmagic(sq, occupied ^ blockers);
+    return attacks ^ bishopAttacks(sq, occupied ^ blockers);
   }
 
   __forceinline BB isOccupied(Square sq) {
@@ -168,36 +168,16 @@ public:
             || isAttackedByKing(sq, side);
   }
 
-  __forceinline BB knightAttacks(const Square sq)const {
-    return knight_attacks[sq];
-  }
-
-  __forceinline BB bishopAttacks(const Square sq) const {
-    return Bmagic(sq, occupied);
-  }
-
-  __forceinline BB rookAttacks(const Square sq) const {
-    return Rmagic(sq, occupied);
-  }
-
-  __forceinline BB queenAttacks(const Square sq) {
-    return Qmagic(sq, occupied);
-  }
-
-  __forceinline BB kingAttacks(const Square sq) {
-    return king_attacks[sq];
-  }
-
   __forceinline BB pieceAttacks(const Piece piece, const Square sq) {
     switch (piece & 7) {
     case Knight:
       return knightAttacks(sq);
     case Bishop:
-      return bishopAttacks(sq);
+      return bishopAttacks(sq, occupied);
     case Rook:
-      return rookAttacks(sq);
+      return rookAttacks(sq, occupied);
     case Queen:
-      return queenAttacks(sq);
+      return queenAttacks(sq, occupied);
     case King:
       return kingAttacks(sq);
     default:
@@ -207,11 +187,11 @@ public:
   }
 
   __forceinline bool isAttackedBySlider(const Square sq, const Side side) const {
-    BB r_attacks = rookAttacks(sq);
+    BB r_attacks = rookAttacks(sq, occupied);
     if (piece[Rook + (side << 3)] & r_attacks) {
       return true;
     }
-    BB b_attacks = bishopAttacks(sq);
+    BB b_attacks = bishopAttacks(sq, occupied);
     if (piece[Bishop + (side << 3)] & b_attacks) {
       return true;
     }
@@ -298,8 +278,11 @@ public:
     return ((bbFile(sq) & piece[p + (side << 3)]) != 0);
   }
 
-  __forceinline bool isPawnIsolated(const Square sq, const Side side) const {
-    return (pawns(side) & neighbourFiles(bbSquare(sq))) == 0;
+  __forceinline bool isPawnIsolated(const Square sq, const Side side) const
+  {
+    const BB& bb = bbSquare(sq);
+    BB neighbourFiles = northFill(southFill(westOne(bb) | eastOne(bb)));
+    return (pawns(side) & neighbourFiles) == 0;
   }
 
   __forceinline bool isPawnBehind(const Square sq, const Side side) const {

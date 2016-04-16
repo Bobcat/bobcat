@@ -305,7 +305,7 @@ public:
         const BB& bishopbb = board->bishops(side1);
         if (side1 == side_to_move || !board->isAttacked(lsb(board->bishops(side1)), side2)) {
           if (pawn_front_span[side2][lsb(board->pawns(side2))] &
-              (board->bishopAttacks(lsb(bishopbb)) | bishopbb))
+              (bishopAttacks(lsb(bishopbb), board->occupied) | bishopbb))
           {
             return drawScore();
           }
@@ -334,7 +334,7 @@ public:
         const BB& knightbb = board->knights(side1);
         if (side1 == side_to_move || !board->isAttacked(lsb(board->knights(side1)), side2)) {
           if (pawn_front_span[side2][lsb(board->pawns(side2))] &
-              (board->knightAttacks(lsb(knightbb)) | knightbb))
+              (knightAttacks(lsb(knightbb)) | knightbb))
           {
             return drawScore();
           }
@@ -400,7 +400,7 @@ public:
   // fen 8/6k1/8/8/3K4/5B1P/8/8 w - - 0 1
   __forceinline int KBpK(int eval, int side1) {
     Square pawnsq1 = lsb(board->pawns(side1));
-    Square promosq1 = side1 == 1 ? file(pawnsq1) : file(pawnsq1) + 56;
+    Square promosq1 = side1 == 1 ? fileOf(pawnsq1) : fileOf(pawnsq1) + 56;
     if (!sameColor(promosq1, lsb(board->bishops(side1)))) {
       const BB& bbk2 = board->king(side1 ^ 1);
       if ((promosq1 == h8 && (bbk2 & corner_h8)) ||
@@ -423,7 +423,7 @@ public:
 
   __forceinline int KpK(int eval, int side1) {
     Square pawnsq1 = lsb(board->pawns(side1));
-    Square promosq1 = side1 == 1 ? file(pawnsq1) : file(pawnsq1) + 56;
+    Square promosq1 = side1 == 1 ? fileOf(pawnsq1) : fileOf(pawnsq1) + 56;
     const BB& bbk2 = board->king(side1 ^ 1);
     if ((promosq1 == h8 && (bbk2 & corner_h8)) ||
         (promosq1 == a8 && (bbk2 & corner_a8)) ||

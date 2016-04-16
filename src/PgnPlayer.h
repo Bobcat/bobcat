@@ -1,7 +1,8 @@
 #include <iostream>
 using namespace std;
 
-namespace pgn {
+namespace pgn
+{
 
 class PGNPlayer : public PGNFileReader
 {
@@ -12,26 +13,28 @@ public:
     game_ = new Game();
   }
 
-  virtual ~PGNPlayer() {
+  virtual ~PGNPlayer()
+  {
     delete game_;
   }
 
-  virtual void readPGNGame() {
-    game_->newGame(Game::START_POSITION);
+  virtual void readPGNGame()
+  {
+    game_->newGame(Game::kStartPosition);
     PGNFileReader::readPGNGame();
   }
 
-  virtual void readTagPair() {
+  virtual void readTagPair()
+  {
     PGNFileReader::readTagPair();
-//std::cout<<std::string(tag_name_)<<std::endl;
-//std::cout<<std::string(tag_value_).substr(1, strlen(tag_value_) - 2).c_str()<<std::endl;
-//exit(0);
+
     if (strieq(tag_name_, "FEN")) {
       game_->setFen(std::string(tag_value_).substr(1, strlen(tag_value_) - 2).c_str());
     }
   }
 
-  virtual void readSANMove() {
+  virtual void readSANMove()
+  {
     PGNFileReader::readSANMove();
 
     int piece = (side_to_move << 3);
@@ -102,8 +105,8 @@ public:
           || ((int)moveTo(m) != to_square_)
           || (promoted_to != -1 && movePromoted(m) != promoted)
           || (capture_ && !isCapture(m))
-          || (from_file_ != -1 && ::file(moveFrom(m)) != from_file_)
-          || (from_rank_ != -1 && ::rank(moveFrom(m)) != from_rank_))
+          || (from_file_ != -1 && fileOf(moveFrom(m)) != from_file_)
+          || (from_rank_ != -1 && rankOf(moveFrom(m)) != from_rank_))
       {
         continue;
       }
@@ -135,4 +138,4 @@ protected:
   Game* game_;
 };
 
-} // namespace pgn
+}//namespace pgn

@@ -15,18 +15,20 @@
   You should have received a copy of the GNU General Public License
   along with Bobcat.  If not, see <http://www.gnu.org/licenses/>.
 */
+namespace squares
+{
 
 typedef uint32_t Square;
 
-__forceinline int rank(const Square sq) {
+__forceinline int rankOf(const Square sq) {
   return sq >> 3;
 }
 
-__forceinline int file(const Square sq) {
+__forceinline int fileOf(const Square sq) {
   return sq & 7;
 }
 
-__forceinline Square square(const Square f, const Square r) {
+__forceinline Square square(int f, int r) {
   return (r << 3) + f;
 }
 
@@ -61,15 +63,16 @@ static uint32_t castle_rights_mask[64];
 static uint32_t distance[64][64]; // chebyshev distance
 static uint32_t flip[2][64];
 
-static void Square_h_initialise() {
+static void initialize()
+{
   for (uint32_t sq = 0; sq < 64; sq++) {
-    flip[0][sq] = file(sq) + ((7 - rank(sq)) << 3);
-    flip[1][sq] = file(sq) + (rank(sq) << 3);
+    flip[0][sq] = fileOf(sq) + ((7 - rankOf(sq)) << 3);
+    flip[1][sq] = fileOf(sq) + (rankOf(sq) << 3);
   }
   for (uint32_t sq1 = 0; sq1 < 64; sq1++) {
     for (uint32_t sq2 = 0; sq2 < 64; sq2++) {
-      uint32_t ranks = abs(rank(sq1) - rank(sq2));
-      uint32_t files = abs(file(sq1) - file(sq2));
+      uint32_t ranks = abs(rankOf(sq1) - rankOf(sq2));
+      uint32_t files = abs(fileOf(sq1) - fileOf(sq2));
       distance[sq1][sq2] = std::max(ranks, files);
     }
   }
@@ -82,6 +85,10 @@ static void Square_h_initialise() {
 }
 
 const char* squareToString(const Square sq, char* buf) {
-  sprintf(buf, "%c%d", (char)(file(sq) + 'a'), rank(sq) + 1);
+  sprintf(buf, "%c%d", (char)(fileOf(sq) + 'a'), rankOf(sq) + 1);
   return buf;
 }
+
+}//namespace squares
+
+using namespace squares;

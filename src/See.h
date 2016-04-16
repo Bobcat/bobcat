@@ -58,7 +58,7 @@ private:
       if (!lookupBestAttacker(to, side_to_move, from)) {
         return material_change;
       }
-      if ((current_piece[side_to_move] == Pawn) && (rank(to) == 0 || rank(to) == 7)) {
+      if ((current_piece[side_to_move] == Pawn) && (rankOf(to) == 0 || rankOf(to) == 7)) {
         initMove(move, current_piece[side_to_move] | (side_to_move << 3), next_to_capture,
                  from, to, PROMOTION | CAPTURE, Queen | (side_to_move << 3));
       }
@@ -92,40 +92,40 @@ private:
       current_piece[side]++;
       current_piece_bitboard[side] = board_.knights(side);
     case Knight:
-      if (current_piece_bitboard[side] & board_.knightAttacks(to)) {
-        from = lsb(current_piece_bitboard[side] & board_.knightAttacks(to));
+      if (current_piece_bitboard[side] & knightAttacks(to)) {
+        from = lsb(current_piece_bitboard[side] & knightAttacks(to));
         current_piece_bitboard[side] &= ~bbSquare(from);
         return true;
       }
       current_piece[side]++;
       current_piece_bitboard[side] = board_.bishops(side);
     case Bishop:
-      if (current_piece_bitboard[side] & board_.bishopAttacks(to)) {
-        from = lsb(current_piece_bitboard[side] & board_.bishopAttacks(to));
+      if (current_piece_bitboard[side] & bishopAttacks(to, board_.occupied)) {
+        from = lsb(current_piece_bitboard[side] & bishopAttacks(to, board_.occupied));
         current_piece_bitboard[side] &= ~bbSquare(from);
         return true;
       }
       current_piece[side]++;
       current_piece_bitboard[side] = board_.rooks(side);
     case Rook:
-      if (current_piece_bitboard[side] & board_.rookAttacks(to)) {
-        from = lsb(current_piece_bitboard[side] & board_.rookAttacks(to));
+      if (current_piece_bitboard[side] & rookAttacks(to, board_.occupied)) {
+        from = lsb(current_piece_bitboard[side] & rookAttacks(to, board_.occupied));
         current_piece_bitboard[side] &= ~bbSquare(from);
         return true;
       }
       current_piece[side]++;
       current_piece_bitboard[side] = board_.queens(side);
     case Queen:
-      if (current_piece_bitboard[side] & board_.queenAttacks(to)) {
-        from = lsb(current_piece_bitboard[side] & board_.queenAttacks(to));
+      if (current_piece_bitboard[side] & queenAttacks(to, board_.occupied)) {
+        from = lsb(current_piece_bitboard[side] & queenAttacks(to, board_.occupied));
         current_piece_bitboard[side] &= ~bbSquare(from);
         return true;
       }
       current_piece[side]++;
       current_piece_bitboard[side] = board_.king(side);
     case King:
-      if (current_piece_bitboard[side] & board_.kingAttacks(to)) {
-        from = lsb(current_piece_bitboard[side] & board_.kingAttacks(to));
+      if (current_piece_bitboard[side] & kingAttacks(to)) {
+        from = lsb(current_piece_bitboard[side] & kingAttacks(to));
         current_piece_bitboard[side] &= ~bbSquare(from);
         return true;
       }

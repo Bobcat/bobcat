@@ -242,23 +242,23 @@ private:
     Square from;
     for (bb = bb_piece[Queen + offset]; bb; resetLSB(bb)) {
       from = lsb(bb);
-      addMoves(Queen + offset, from, board->queenAttacks(from) & to_squares);
+      addMoves(Queen + offset, from, queenAttacks(from, board->occupied) & to_squares);
     }
     for (bb = bb_piece[Rook + offset]; bb; resetLSB(bb)) {
       from = lsb(bb);
-      addMoves(Rook + offset, from, board->rookAttacks(from) & to_squares);
+      addMoves(Rook + offset, from, rookAttacks(from, board->occupied) & to_squares);
     }
     for (bb = bb_piece[Bishop + offset]; bb; resetLSB(bb)) {
       from = lsb(bb);
-      addMoves(Bishop + offset, from, board->bishopAttacks(from) & to_squares);
+      addMoves(Bishop + offset, from, bishopAttacks(from, board->occupied) & to_squares);
     }
     for (bb = bb_piece[Knight + offset]; bb; resetLSB(bb)) {
       from = lsb(bb);
-      addMoves(Knight + offset, from, board->knightAttacks(from) & to_squares);
+      addMoves(Knight + offset, from, knightAttacks(from) & to_squares);
     }
     for (bb = bb_piece[King + offset]; bb; resetLSB(bb)) {
       from = lsb(bb);
-      addMoves(King + offset, from, board->kingAttacks(from) & to_squares);
+      addMoves(King + offset, from, kingAttacks(from) & to_squares);
     }
   }
 
@@ -287,7 +287,7 @@ private:
     for (BB bb = to_squares; bb; resetLSB(bb)) {
       Square to = lsb(bb);
       Square from = to - dist[side_to_move];
-      if (rank(to) == 0 || rank(to) == 7) {
+      if (rankOf(to) == 0 || rankOf(to) == 7) {
         if (flags & QUEENPROMOTION) {
           addMove(Pawn | (side_to_move << 3), from, to, type | PROMOTION, Queen | (side_to_move << 3));
           return;

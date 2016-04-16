@@ -16,8 +16,10 @@
   along with Bobcat.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-struct perft_result {
-  perft_result() {
+struct perft_result
+{
+  perft_result()
+  {
     nodes = enpassants = castles = captures = promotions = 0;
   }
   uint64_t nodes;
@@ -27,14 +29,17 @@ struct perft_result {
   uint32_t promotions;
 };
 
-class Test {
+class Test
+{
 public:
-  Test(Game* game, int flags = LEGALMOVES) {
+  Test(Game* game, int flags = LEGALMOVES)
+  {
     this->game = game;
     this->flags = flags;
   }
 
-  void perft(int depth) {
+  void perft(int depth)
+  {
     printf("\nDepth         Nodes\n-------------------\n");
     perft_result result;
     for (int i = 1; i <= depth; i++) {
@@ -48,7 +53,8 @@ public:
     }
   }
 
-  void perft_divide(int depth) {
+  void perft_divide(int depth)
+  {
     printf("depth is %d\n", depth);
     printf("  move    positions\n");
 
@@ -70,7 +76,8 @@ public:
     printf("total positions is %" PRIu64 "\n", result.nodes);
   }
 
-  void timeToDepth(Search* search, ProtocolListener* app) {
+  void timeToDepth(Search* search, ProtocolListener* app)
+  {
     this->app = app;
     this->search = search;
     int saved_verbosity = search->verbosity;
@@ -103,22 +110,25 @@ public:
 
 private:
   double total_time;
-  void timeToDepth(const char* fen, int depth = 12) {
+
+  void timeToDepth(const char* fen, int depth = 12)
+  {
     app->newGame();
-    app->setFEN(fen);
+    app->setFen(fen);
     char sdepth[12];
     sprintf(sdepth, "%d", depth);
     const char* p[3] = {"go", "depth", sdepth};
     clock_t t1, t2;
     t1 = millis();
-    search->getProtocol()->handleInput(p, 3);
+    search->protocol->handleInput(p, 3);
     t2 = millis();
     double seconds = (t2-t1)/(double)1000;
     printf("%f\n", seconds);
     total_time += seconds;
   }
 
-  int perft_(int depth, perft_result& result) {
+  int perft_(int depth, perft_result& result)
+  {
     if (depth == 0) {
       result.nodes++;
       return 0;
@@ -135,7 +145,7 @@ private:
         if (!game->makeMove(*m, (flags & LEGALMOVES) ? false : true, true)) {
           continue;
         }
-        Test(game).perft_(depth - 1, result);
+        perft_(depth - 1, result);
         game->unmakeMove();
       }
     }

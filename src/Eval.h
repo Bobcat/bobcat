@@ -506,16 +506,6 @@ int Eval::knight_mob2_eg[9] = { -110, -40, -20, -10, -5, 0, 0, -5, -10 };
 int Eval::knight_mob2_mg[9] = { -45, -15, -10, -5, 0, 5, 10, 15, -5 };
 int Eval::knight_mob_eg[9] = { -60, -15, -10, -5, -5, -5, -10, -15, -5 };
 int Eval::knight_mob_mg[9] = { -15, -15, -5, -5, 0, 0, -5, -5, -15 };
-
-//int Eval::bishop_mob2_eg[14] = { -35, -31, -20, -14, -7, 0, -1, 3, 3, -4, 5, 1, 22, -11 };
-//int Eval::bishop_mob2_mg[14] = { -20, -15, -5, 0, 1, 3, 7, 5, 8, 17, 7, 15, 17, 20 };
-//int Eval::bishop_mob_eg[14] = { -12, -20, -36, -29, -17, -5, -2, -2, 1, 8, -4, 1, 7, -3 };
-//int Eval::bishop_mob_mg[14] = { -15, -15, -15, -8, -5, 0, 3, 5, 8, 2, 5, 5, -5, 19 };
-//int Eval::knight_mob2_eg[9] = { -130, -52, -32, -16, -9, 0, 0, -3, -12 };
-//int Eval::knight_mob2_mg[9] = { -43, -19, -12, -9, 0, 5, 10, 17, 19 };
-//int Eval::knight_mob_eg[9] = { -36, 11, 8, -3, -7, -9, -10, -17, -11 };
-//int Eval::knight_mob_mg[9] = { 21, -7, -3, 1, 0, -2, -7, -11, -19 };
-
 int Eval::bishop_attack_king = 6;
 int Eval::bishop_in_danger = -47;
 int Eval::bishop_pair_eg = 60;

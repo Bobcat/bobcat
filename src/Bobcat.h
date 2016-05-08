@@ -59,7 +59,7 @@ public:
   }
 
   virtual void ponderHit() {
-    search->search_time += search->timeUsed();
+    search->search_time += search->millisUsed();
   }
 
   virtual void stop() {
@@ -90,7 +90,7 @@ public:
   void goSearch(int wtime, int btime, int movestogo, int winc, int binc, int movetime) {
     // Shared transposition table
     startWorkers();
-    search->go(wtime, btime, movestogo, winc, binc, movetime);
+    search->go(wtime, btime, movestogo, winc, binc, movetime, num_threads);
     stopWorkers();
   }
 
@@ -114,7 +114,7 @@ public:
         transt->initialise(std::min(65536, std::max(8, (int)strtol(value, NULL, 10))));
         _snprintf(buf, sizeof(buf), "Hash:%d", transt->getSizeMb());
       }
-      else if (strieq("Threads", name)) {
+      else if (strieq("Threads", name) || strieq("NumThreads", name)) {
         num_threads = std::min(64, std::max(1, (int)strtol(value, NULL, 10)));
         _snprintf(buf, sizeof(buf), "Threads:%d", num_threads);
       }
@@ -254,10 +254,9 @@ public:
         }
       }
       else if (strieq(tokens[0], "tune")) {
-        clock_t t1 = millis();
+        Stopwatch sw;
         eval::Tune(*game, *see, *eval);
-        clock_t t2 = millis();
-        double seconds = (t2 - t1)/1000.;
+        double seconds = sw.millisElapsed()/1000.;
         printf("%f\n", seconds);
       }
       else if (makeMove(tokens[0])) {

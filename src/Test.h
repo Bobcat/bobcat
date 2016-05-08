@@ -43,12 +43,10 @@ public:
     printf("\nDepth         Nodes\n-------------------\n");
     perft_result result;
     for (int i = 1; i <= depth; i++) {
-      clock_t t1, t2;
-      t1 = millis();
       perft_result result;
+      Stopwatch sw;
       perft_(i, result);
-      t2 = millis();
-      double diff = (t2-t1)/(double)1000;
+      double diff = sw.millisElapsed()/(double)1000;
       printf("%5d%14" PRIu64 "  %f\n", i, result.nodes, diff);
     }
   }
@@ -118,11 +116,9 @@ private:
     char sdepth[12];
     sprintf(sdepth, "%d", depth);
     const char* p[3] = {"go", "depth", sdepth};
-    clock_t t1, t2;
-    t1 = millis();
+    Stopwatch sw;
     search->protocol->handleInput(p, 3);
-    t2 = millis();
-    double seconds = (t2-t1)/(double)1000;
+    double seconds = sw.millisElapsed()/(double)1000;
     printf("%f\n", seconds);
     total_time += seconds;
   }

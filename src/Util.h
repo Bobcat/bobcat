@@ -86,10 +86,6 @@ const char* FENfromParams(const char* params[], int num_params, int& param, char
 
 //#if defined(_MSC_VER)
 
-__forceinline uint64_t millis() {
-  return GetTickCount();
-}
-
 const char* dateAndTimeString(char* buf) {
   time_t now = time(NULL);
   struct tm* time = localtime(&now);
@@ -106,12 +102,48 @@ const char* timeString(char* buf) {
   return buf;
 }
 
-/*
-const char* timeString(char* buf) {
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  struct tm* time = localtime((const time_t*)&tv.tv_sec);
-  sprintf(buf, "%02d:%02d:%02d.%03ld", time->tm_hour, time->tm_min, time->tm_sec, tv.tv_usec);
-  return buf;
-}
-*/
+class Stopwatch
+{
+public:
+  LARGE_INTEGER start1_;
+  static LARGE_INTEGER frequency_;
+  uint64_t start2_;
+
+  Stopwatch()
+  {
+    start();
+  }
+
+  Stopwatch(int)
+  {
+    QueryPerformanceFrequency(&frequency_);
+  }
+
+  __forceinline void start()
+  {
+    QueryPerformanceCounter(&start1_);
+    start2_ = GetTickCount64();
+  }
+
+  __forceinline uint64_t microsElapsedHighRes() const
+  {
+    LARGE_INTEGER now;
+    QueryPerformanceCounter(&now);
+    return (now.QuadPart - start1_.QuadPart)*1000000/frequency_.QuadPart;
+  }
+
+  __forceinline uint64_t millisElapsedHighRes() const
+  {
+    LARGE_INTEGER now;
+    QueryPerformanceCounter(&now);
+    return (now.QuadPart - start1_.QuadPart)*1000/frequency_.QuadPart;
+  }
+
+  __forceinline uint64_t millisElapsed() const
+  {
+    return GetTickCount64() - start2_;
+  }
+};
+
+LARGE_INTEGER Stopwatch::frequency_;
+static Stopwatch stopwatch_init(1);

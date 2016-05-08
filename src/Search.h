@@ -35,8 +35,9 @@ public:
   virtual ~Search() {
   }
 
-  int go(int wtime, int btime, int movestogo, int winc, int binc, int movetime)
+  int go(int wtime, int btime, int movestogo, int winc, int binc, int movetime, int num_workers)
   {
+    num_workers_ = num_workers;
     initialiseSearch(wtime, btime, movestogo, winc, binc, movetime);
 
     drawScore_[pos->side_to_move] = 0;//-25;
@@ -92,11 +93,11 @@ public:
 
   virtual void run()
   {
-    go(0, 0, 0, 0, 0, 0);
+    go(0, 0, 0, 0, 0, 0, 0);
   }
 
-  __forceinline uint64_t timeUsed() const {
-    return std::max(static_cast<uint64_t>(1), millis() - start_time);
+  __forceinline uint64_t millisUsed() const {
+    return start_time.millisElapsed();
   }
 
 protected:
@@ -410,7 +411,6 @@ protected:
       pos = game->pos;
       ++ply;
       pv_length[ply] = ply;
-      ++total_node_count;
       ++node_count;
 
       if (!getTransposition()) {
@@ -435,7 +435,7 @@ protected:
     if ((node_count & 0x1fff) == 0) {
       if (protocol) {
         if (!isAnalysing() && !protocol->isFixedDepth()) {
-          stop_search = search_depth > 1 && timeUsed() > search_time;
+          stop_search = search_depth > 1 && millisUsed() > search_time;
         }
         else {
           protocol->checkInput();
@@ -481,8 +481,8 @@ protected:
       }
 
       if (protocol && verbosity > 0) {
-        protocol->postPV(search_depth, max_ply, total_node_count, nodesPerSecond(),
-                         timeUsed(), transt->getLoad(), score, buf, node_type);
+        protocol->postPV(search_depth, max_ply, node_count*num_workers_, nodesPerSecond(),
+                         std::max(1ull, start_time.millisElapsed()), transt->getLoad(), score, buf, node_type);
       }
     }
   }
@@ -498,7 +498,8 @@ protected:
 
   uint64_t nodesPerSecond() const
   {
-    return (uint64_t)(total_node_count*1000/std::max((uint64_t)1, (millis() - start_time)));
+    uint64_t micros = start_time.microsElapsedHighRes();
+    return micros == 0 ? node_count*num_workers_ : node_count*num_workers_*1000000/micros;
   }
 
   __forceinline void updateHistoryScores(const Move move, const Depth depth)
@@ -567,10 +568,9 @@ protected:
         }
         search_time = std::max(0, std::min((int)search_time, (int)time_left - lag_buffer));
       }
-      start_time = millis();
       transt->initialiseSearch();
-      total_node_count = 1;
       stop_search = false;
+      start_time.start();
     }
     ply = 0;
     search_depth = 0;
@@ -701,7 +701,7 @@ protected:
         return true;
       }
 
-      if (!isAnalysing() && !protocol->isFixedDepth() && search_time < timeUsed()*2.5) {
+      if (!isAnalysing() && !protocol->isFixedDepth() && search_time < millisUsed()*2.5) {
         return true;
       }
     }
@@ -728,7 +728,7 @@ public:
   Depth max_ply;
   PVEntry pv[128][128];
   int pv_length[128];
-  uint64_t start_time;
+  Stopwatch start_time;
   uint64_t search_time;
   uint64_t time_left;
   uint64_t time_inc;
@@ -751,7 +751,7 @@ protected:
   Logger* logger;
 
   uint64_t node_count;
-  static uint64_t total_node_count;
+  uint64_t num_workers_;
 
   static const int EXACT = 1;
   static const int BETA = 2;
@@ -766,8 +766,6 @@ protected:
   static int futility_margin[4];
   static int razor_margin[4];
 };
-
-uint64_t Search::total_node_count;
 
 const int Search::EXACT;
 const int Search::ALPHA;

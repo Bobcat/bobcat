@@ -197,7 +197,7 @@ public:
     if (strieq(params[0], "uci")) {
       char buf[2048];
       snprintf(buf, sizeof(buf),
-               "id name Bobcat 7.6\n" \
+               "id name Bobcat 7.6 sp1\n" \
                "id author Gunnar Harms\n" \
                "option name Hash type spin default 256 min 8 max 65536\n" \
                "option name Ponder type check default true\n" \

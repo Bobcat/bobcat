@@ -106,7 +106,8 @@ bool operator<(const ParamIndexRecord& lhs, const ParamIndexRecord& rhs)
 class Tune : public MoveSorter
 {
 public:
-  Tune(Game& game, See& see, Eval& eval) : game_(game), see_(see), eval_(eval)
+  Tune(Game& game, See& see, Eval& eval) :
+    game_(game), see_(see), eval_(eval), score_static_(false)
   {
     PGNPlayer pgn;
     /*
@@ -143,21 +144,33 @@ public:
     pgn.read("C:\\chess\\lb\\test20160318.pgn");
     pgn.read("C:\\chess\\lb\\test20160319.pgn");
     pgn.read("C:\\chess\\lb\\test20160320.pgn");
-*/
     pgn.read("C:\\chess\\lb\\test20160327.pgn");
     pgn.read("C:\\chess\\lb\\test20160328.pgn");
-
-
+    pgn.read("C:\\chess\\lb\\test20160330.pgn");
+    pgn.read("C:\\chess\\lb\\test20160331.pgn");
+    pgn.read("C:\\chess\\lb\\test20160401.pgn");
+    pgn.read("C:\\chess\\lb\\test20160516.pgn");
+    pgn.read("C:\\chess\\lb\\test20160517.pgn");
+    pgn.read("C:\\chess\\lb\\test20160518.pgn");
+    pgn.read("C:\\chess\\lb\\test20160519.pgn");
+???????????
+    pgn.read("C:\\chess\\lb\\test20160524.pgn");
+    pgn.read("C:\\chess\\lb\\test20160525.pgn");
+    pgn.read("C:\\chess\\lb\\test20160526.pgn");
+*/
+    pgn.read("C:\\chess\\lb\\test20160527.pgn");
     // Tune as described in https://chessprogramming.wikispaces.com/Texel%27s+Tuning+Method
 
     eval_.tuning_ = true;
+    score_static_ = false;
 
     std::vector<Param> params;
 
     initEval(params);
 
-    makeQuiet(pgn.all_selected_nodes_);
-
+    if (score_static_) {
+      makeQuiet(pgn.all_selected_nodes_);
+    }
     std::vector<ParamIndexRecord> params_index;
 
     for (size_t i = 0; i < params.size(); ++i) {
@@ -231,7 +244,7 @@ public:
       }
 
       if (improved) {
-        std::stable_sort(params_index.begin(), params_index.end());
+        //std::stable_sort(params_index.begin(), params_index.end());
       }
     }
     printBestValues(bestE, params);
@@ -251,27 +264,6 @@ public:
     //auto step2 = 1;
     auto step5 = 1;
 
-    for (auto i = 0; i < 9; ++i) {
-      params.push_back(Param("knight_mob_mg", eval_.knight_mob_mg[i], 0, step5));
-      params.push_back(Param("knight_mob_eg", eval_.knight_mob_eg[i], 0, step5));
-    }
-
-    for (auto i = 0; i < 14; ++i) {
-      params.push_back(Param("bishop_mob_mg", eval_.bishop_mob_mg[i], 0, step5));
-      params.push_back(Param("bishop_mob_eg", eval_.bishop_mob_eg[i], 0, step5));
-    }
-
-    for (auto i = 0; i < 9; ++i) {
-      params.push_back(Param("knight_mob2_mg", eval_.knight_mob2_mg[i], 0, step5));
-      params.push_back(Param("knight_mob2_eg", eval_.knight_mob2_eg[i], 0, step5));
-    }
-
-    for (auto i = 0; i < 14; ++i) {
-      params.push_back(Param("bishop_mob2_mg", eval_.bishop_mob2_mg[i], 0, step5));
-      params.push_back(Param("bishop_mob2_eg", eval_.bishop_mob2_eg[i], 0, step5));
-    }
-
-/*
     for (auto i = 0; i < 9; ++i) {
       params.push_back(Param("knight_mob2_mg", eval_.knight_mob2_mg[i], 0, step5));
       params.push_back(Param("knight_mob2_eg", eval_.knight_mob2_eg[i], 0, step5));
@@ -366,7 +358,6 @@ public:
     params.push_back(Param("bishop_attack_king", eval_.bishop_attack_king, 0, step5));
     params.push_back(Param("rook_attack_king", eval_.rook_attack_king, 0, step5));
     params.push_back(Param("queen_attack_king", eval_.queen_attack_king, 0, step5));
-*/
   }
 
   double E(const std::vector<Node>& nodes,
@@ -406,8 +397,14 @@ public:
 
   Score getScore(int side)
   {
-    Score score = getQuiesceScore(-32768, 32768, false, 0);
-    //auto score = eval_.evaluate(-100000, 100000);
+    auto score = 0;
+
+    if (score_static_) {
+      score = eval_.evaluate(-100000, 100000);
+    }
+    else {
+      score = getQuiesceScore(-32768, 32768, false, 0);
+    }
     return game_.pos->side_to_move == side ? score : -score;
   }
 
@@ -609,6 +606,7 @@ private:
 
   Search::PVEntry pv[128][128];
   int pv_length[128];
+  bool score_static_;
 };
 
 }//namespace eval

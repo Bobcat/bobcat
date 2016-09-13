@@ -18,7 +18,7 @@
 
 class Bobcat : public ProtocolListener {
 public:
-  Bobcat() : num_threads(1) {
+  Bobcat() : num_threads(20) {
   }
 
   virtual ~Bobcat() {
@@ -59,7 +59,7 @@ public:
   }
 
   virtual void ponderHit() {
-    search->search_time += search->millisUsed();
+    search->search_time += search->start_time.millisElapsed();
   }
 
   virtual void stop() {

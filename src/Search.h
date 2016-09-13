@@ -53,16 +53,17 @@ public:
         do {
           pv_length[0] = 0;
 
-          if (!getTransposition()) {
-            pos->eval_score = eval->evaluate(alpha, beta);
-          }
+          getTranspositionAndEvaluate(alpha, beta);
+
           auto score = search(true, search_depth, alpha, beta, EXACT);
 
           if (score > alpha && score < beta) {
             break;
           }
-          alpha = -MAXSCORE;
-          beta = MAXSCORE;
+          checkTime();
+
+          alpha = std::max(-MAXSCORE, score - 100);
+          beta = std::min(MAXSCORE, score + 100);
         } while (true);
 
         storePV();
@@ -70,8 +71,8 @@ public:
         if (moveIsEasy()) {
           break;
         }
-        alpha = std::max(-MAXSCORE, pv[0][0].score - 50);
-        beta = std::min(MAXSCORE, pv[0][0].score + 50);
+        alpha = std::max(-MAXSCORE, pv[0][0].score - 20);
+        beta = std::min(MAXSCORE, pv[0][0].score + 20);
       }
       catch (const int) {
         while (ply) {
@@ -96,10 +97,6 @@ public:
     go(0, 0, 0, 0, 0, 0, 0);
   }
 
-  __forceinline uint64_t millisUsed() const {
-    return start_time.millisElapsed();
-  }
-
 protected:
   void initialise(Protocol* protocol, Game* game, Eval* eval, See* see, TranspositionTable* transt, Logger* logger)
   {
@@ -117,7 +114,7 @@ protected:
   Score search(bool pv, const Depth depth, Score alpha, const Score beta, int expectedNodeType)
   {
     if (!pv && isTranspositionScoreValid(depth, alpha, beta)) {
-      return pos->transp_score;
+      return searchNodeScore(pos->transp_score);
     }
 
     if (ply >= MAXDEPTH - 1) {
@@ -125,6 +122,14 @@ protected:
     }
 
     if (!pv && shouldTryNullMove(depth, beta)) {
+
+      if (depth <= 5) {
+        auto score = pos->eval_score - 50 - 100*(depth/2);
+
+        if (score >= beta) {
+          return score;
+        }
+      }
       makeMoveAndEvaluate(0, alpha, beta);
       auto score = searchNextDepth(false, depth - nullMoveReduction(depth), -beta, -beta + 1, ALPHA);
       unmakeMove();
@@ -140,11 +145,10 @@ protected:
       auto score = searchQuiesce(beta - 1, beta, 0, false);
 
       if (score < beta) {
-        return std::max(score, pos->eval_score + razor_margin[depth]);
+        return searchNodeScore(std::max(score, pos->eval_score + razor_margin[depth]));
       }
     }
-
-    Move singular_move = pv ? getSingularMove(depth, true) : 0;
+    Move singular_move = getSingularMove(depth, pv);
 
     pos->generateMoves(this, pos->transp_move, STAGES);
 
@@ -158,11 +162,15 @@ protected:
       if (makeMoveAndEvaluate(move_data->move, alpha, beta)) {
         ++move_count;
 
+        if (protocol && ply == 1 && search_depth >= 20 && (search_time > 5000 || isAnalysing())) {
+          protocol->postInfo(move_data->move, move_count);
+        }
+
         if (move_count == 1 && pv) {
           score = searchNextDepth(true, nextDepthPV(singular_move, depth, move_data), -beta, -alpha, EXACT);
         }
         else {
-          auto next_depth = nextDepthNotPV(pv, depth, move_count, move_data, alpha, best_score);
+          auto next_depth = nextDepthNotPV(pv, depth, move_count, move_data, alpha, best_score, expectedNodeType);
           auto nextExpectedNodeType = (expectedNodeType & (EXACT|ALPHA)) ? BETA : ALPHA;
 
           if (next_depth == -999) {
@@ -196,15 +204,18 @@ protected:
             updatePV(best_move, best_score, depth, EXACT);
             alpha = best_score;
           }
+//          else if (pv) {
+//            updatePV(move_data->move, best_score, depth, ALPHA);
+//          }
         }
       }
     }
 
     if (move_count == 0) {
-      return pos->in_check ? searchNodeScore(-MAXSCORE + ply) : drawScore();
+      return searchNodeScore(pos->in_check ? -MAXSCORE + ply : drawScore());
     }
     else if (pos->reversible_half_move_count >= 100) {
-      return drawScore();
+      return searchNodeScore(drawScore());
     }
     return storeSearchNodeScore(best_score, depth, nodeType(best_score, beta, best_move), best_move);
   }
@@ -213,19 +224,15 @@ protected:
   {
     if (pos->isDraw() || game->isRepetition()) {
       if (!isNullMove(pos->last_move)) {
-        return -drawScore();
+        return searchNodeScore(-drawScore());
       }
     }
     return depth <= 0 ? -searchQuiesce(alpha, beta, 0, pv) : -search(pv, depth, alpha, beta, expectedNodeType);
   }
 
-  __forceinline Move getSingularMove(const Depth depth, const bool is_pv_node)
+  __forceinline Move getSingularMove(const Depth depth, bool pv)
   {
-    if (is_pv_node
-        && (pos->transp_type == EXACT)
-        && depth >= 4
-        && pos->transp_move)
-    {
+    if (pv && pos->transp_move && pos->transp_type == EXACT && depth >= 4) {
       if (searchFailLow(depth/2, std::max(-MAXSCORE, pos->eval_score - 75), pos->transp_move)) {
         return pos->transp_move;
       }
@@ -246,7 +253,7 @@ protected:
       auto best_score = -MAXSCORE; //dummy
 
       if (makeMoveAndEvaluate(move_data->move, alpha, alpha + 1)) {
-        Depth next_depth = nextDepthNotPV(true, depth, ++move_count, move_data, alpha, best_score);
+        Depth next_depth = nextDepthNotPV(true, depth, ++move_count, move_data, alpha, best_score, BETA);
 
         if (next_depth == -999) {
           unmakeMove();
@@ -284,7 +291,8 @@ protected:
                                      const int move_count,
                                      const MoveData* move_data,
                                      const Score alpha,
-                                     Score& best_score)
+                                     Score& best_score,
+                                     int expectedNodeType)
   {
     const auto m = move_data->move;
 
@@ -300,6 +308,10 @@ protected:
         && move_count >= (pv ? 5 : 3))
     {
       Depth next_depth = depth - 2 - depth/8 - (move_count - 6)/10;
+
+      if (expectedNodeType == BETA) {
+          next_depth -= 2;
+      }
 
       if (next_depth <= 3) {
         auto score = -pos->eval_score + futility_margin[std::min(3, std::max(0, next_depth))];
@@ -413,11 +425,11 @@ protected:
       pv_length[ply] = ply;
       ++node_count;
 
-      if (!getTransposition()) {
-        pos->eval_score = eval->evaluate(-beta, -alpha);
-      }
+      checkSometimes();
+
+      getTranspositionAndEvaluate(-beta, -alpha);
+
       max_ply = std::max(max_ply, ply);
-      checkTime();
       return true;
     }
     return false;
@@ -430,21 +442,26 @@ protected:
     ply--;
   }
 
+  __forceinline void checkSometimes()
+  {
+    if ((node_count & 0x3fff) == 0) {
+      checkTime();
+    }
+  }
+
   __forceinline void checkTime()
   {
-    if ((node_count & 0x1fff) == 0) {
-      if (protocol) {
-        if (!isAnalysing() && !protocol->isFixedDepth()) {
-          stop_search = search_depth > 1 && millisUsed() > search_time;
-        }
-        else {
-          protocol->checkInput();
-        }
+    if (protocol) {
+      if (!isAnalysing() && !protocol->isFixedDepth()) {
+        stop_search = search_depth > 1 && start_time.millisElapsed() > (unsigned)search_time;
       }
+      else {
+        protocol->checkInput();
+      }
+    }
 
-      if (stop_search) {
-        throw 1;
-      }
+    if (stop_search) {
+      throw 1;
     }
   }
 
@@ -469,6 +486,7 @@ protected:
     for (auto i = ply + 1; i < pv_length[ply]; ++i) {
       pv[ply][i] = pv[ply + 1][i];
     }
+
     if (ply == 0) {
       pos->pv_length = pv_length[0];
 
@@ -548,25 +566,23 @@ protected:
         search_time = 950*movetime/1000;
       }
       else {
-        int moves_left = std::min(movestogo, movestogo < 80 ? 30 : movestogo/2);
+        int moves_left = movestogo > 30 ? 30 : movestogo;
 
         if (moves_left == 0) {
           moves_left = 30;
         }
-
-        if (lag_buffer == -1) {
-          lag_buffer = wtime > 5000 ? 200 : 50;
-        }
         time_left = pos->side_to_move == 0 ? wtime : btime;
         time_inc = pos->side_to_move == 0 ? winc : binc;
 
-        search_time = 2*(time_left/(moves_left + 1) + time_inc);
-
-        // This helps in very fast controls such as 1000ms/80ms
-        if (movestogo == 0 && search_time > time_left/4) {
-          search_time = time_left/4;
+        if (time_inc == 0 && time_left < 1000) {
+          search_time = time_left/(moves_left*2);
+          n_ = 1;
         }
-        search_time = std::max(0, std::min((int)search_time, (int)time_left - lag_buffer));
+        else {
+          search_time = 2*(time_left/(moves_left + 1) + time_inc);
+          n_ = 2.5;
+        }
+        search_time = std::max(0, std::min(search_time, time_left - 50));
       }
       transt->initialiseSearch();
       stop_search = false;
@@ -662,12 +678,13 @@ protected:
     pos->transposition = transt->insert(pos->key, depth, score, node_type, move, pos->eval_score);
   }
 
-  __forceinline bool getTransposition()
+  __forceinline void getTranspositionAndEvaluate(const Score alpha, const Score beta)
   {
     if ((pos->transposition = transt->find(pos->key)) == 0) {
+      pos->eval_score = eval->evaluate(alpha, beta);
       pos->transp_type = 0;
       pos->transp_move = 0;
-      return false;
+      return;
     }
     pos->transp_score = codecTTableScore(pos->transposition->score, -ply);
     pos->eval_score = codecTTableScore(pos->transposition->eval, -ply);
@@ -675,7 +692,6 @@ protected:
     pos->transp_type = pos->transposition->flags & 7;
     pos->transp_move = pos->transposition->move;
     pos->flags = 0;
-    return true;
   }
 
   __forceinline bool isTranspositionScoreValid(const Depth depth, const Score alpha, const Score beta)
@@ -701,7 +717,7 @@ protected:
         return true;
       }
 
-      if (!isAnalysing() && !protocol->isFixedDepth() && search_time < millisUsed()*2.5) {
+      if (!isAnalysing() && !protocol->isFixedDepth() && search_time < start_time.millisElapsedHighRes()*n_) {
         return true;
       }
     }
@@ -724,14 +740,15 @@ public:
     int eval;
   };
 
+  double n_;
   Depth ply;
   Depth max_ply;
   PVEntry pv[128][128];
   int pv_length[128];
   Stopwatch start_time;
-  uint64_t search_time;
-  uint64_t time_left;
-  uint64_t time_inc;
+  int search_time;
+  int time_left;
+  int time_inc;
   int lag_buffer;
   volatile bool stop_search;
   int verbosity;

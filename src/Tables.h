@@ -153,7 +153,7 @@ public:
   }
 
   void initialise(uint64_t size_mb) {
-    size = 2048*1024*pow2(log2(size_mb))/sizeof(PawnEntry);
+    size = 1024*1024*pow2(log2(size_mb))/sizeof(PawnEntry);
     mask = size - 1;
     delete [] table;
     table = new PawnEntry[size];

@@ -168,7 +168,8 @@ public:
             || isAttackedByKing(sq, side);
   }
 
-  __forceinline BB pieceAttacks(const Piece piece, const Square sq) {
+  __forceinline BB pieceAttacks(const Piece piece, const Square sq) const
+  {
     switch (piece & 7) {
     case Knight:
       return knightAttacks(sq);
@@ -240,6 +241,10 @@ public:
       sprintf(buf+strlen(buf), "\n");
     }
     sprintf(buf+strlen(buf), "BOARD:    a b c d e f g h\n");
+  }
+
+  __forceinline const BB& pieces(int p, int side) const {
+    return piece[p | (side << 3)];
   }
 
   __forceinline const BB& pawns(int side) const {

@@ -122,7 +122,6 @@ protected:
     }
 
     if (!pv && shouldTryNullMove(depth, beta)) {
-
       if (depth <= 5) {
         auto score = pos->eval_score - 50 - 100*(depth/2);
 
@@ -216,6 +215,13 @@ protected:
     }
     else if (pos->reversible_half_move_count >= 100) {
       return searchNodeScore(drawScore());
+    }
+
+    if (best_move && !isCapture(best_move)&& !isPromotion(best_move)) {
+      updateHistoryScores(best_move, depth);
+      updateKillerMoves(best_move);
+
+      counter_moves[movePiece(pos->last_move)][moveTo(pos->last_move)] = best_move;
     }
     return storeSearchNodeScore(best_score, depth, nodeType(best_score, beta, best_move), best_move);
   }
@@ -524,7 +530,7 @@ protected:
   {
     history_scores[movePiece(move)][moveTo(move)] += depth*depth;
 
-    if (history_scores[movePiece(move)][moveTo(move)] > PROMOTIONMOVESCORE - 100) {
+    if (history_scores[movePiece(move)][moveTo(move)] > 2048) {
       for (auto i = 0; i < 16; ++i)
         for (auto k = 0; k < 64; ++k) {
           history_scores[i][k] >>= 2;
@@ -596,6 +602,7 @@ protected:
     memset(pv, 0, sizeof(pv));
     memset(killer_moves, 0, sizeof(killer_moves));
     memset(history_scores, 0, sizeof(history_scores));
+    memset(counter_moves, 0, sizeof(counter_moves));
   }
 
   virtual void sortMove(MoveData& move_data)
@@ -637,6 +644,9 @@ protected:
     else if (m == killer_moves[2][ply]) {
       move_data.score = KILLERMOVESCORE + 18;
     }
+    else if (pos->last_move && counter_moves[movePiece(pos->last_move)][moveTo(pos->last_move)] == m) {
+      move_data.score = 60000;
+    }
     else {
       move_data.score = history_scores[movePiece(m)][moveTo(m)];
     }
@@ -649,10 +659,6 @@ protected:
 
   __forceinline Score storeSearchNodeScore(const Score score, const Depth depth, const int node_type, const Move move)
   {
-    if (move) {
-      updateHistoryScores(move, depth);
-      updateKillerMoves(move);
-    }
     storeTransposition(depth, score, node_type, move);
     return searchNodeScore(score);
   }
@@ -758,6 +764,7 @@ protected:
   Depth search_depth;
   Move killer_moves[4][128];
   int history_scores[16][64];
+  Move counter_moves[16][64];
   int drawScore_[2];
   Game* game;
   Eval* eval;

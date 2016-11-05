@@ -76,14 +76,13 @@ private:
   std::vector<Node> current_game_nodes_;
   int64_t all_nodes_count_;
 };
-
+static bool x_;
 struct Param
 {
   Param(std::string name, int& value, int initial_value, int step) :
     name_(name), initial_value_(initial_value), value_(value), step_(step)
   {
-    //initial_value_ = value;
-   //value = initial_value;
+    if (x_)value = initial_value;
   }
 
   std::string name_;
@@ -153,16 +152,20 @@ public:
     pgn.read("C:\\chess\\lb\\test20160517.pgn");
     pgn.read("C:\\chess\\lb\\test20160518.pgn");
     pgn.read("C:\\chess\\lb\\test20160519.pgn");
-???????????
+    // to do add the missing
     pgn.read("C:\\chess\\lb\\test20160524.pgn");
     pgn.read("C:\\chess\\lb\\test20160525.pgn");
-    pgn.read("C:\\chess\\lb\\test20160526.pgn");
 */
+    pgn.read("C:\\chess\\lb\\test20160526.pgn");
     pgn.read("C:\\chess\\lb\\test20160527.pgn");
+    pgn.read("C:\\chess\\lb\\test20160525.pgn");
+    pgn.read("C:\\chess\\lb\\test20160526.pgn");
+    pgn.read("C:\\chess\\lb\\test20160527.pgn");
+
     // Tune as described in https://chessprogramming.wikispaces.com/Texel%27s+Tuning+Method
 
     eval_.tuning_ = true;
-    score_static_ = false;
+    score_static_ = true;
 
     std::vector<Param> params;
 
@@ -263,6 +266,33 @@ public:
     //auto step1 = 1;
     //auto step2 = 1;
     auto step5 = 1;
+    x_ = 0;
+
+    for (auto i = 0; i < 9; ++i) {
+      params.push_back(Param("knight_mob_mg", eval_.knight_mob_mg[i], 0, step5));
+      params.push_back(Param("knight_mob_eg", eval_.knight_mob_eg[i], 0, step5));
+    }
+
+/*
+    for (auto i = 0; i < 9; ++i) {
+      params.push_back(Param("knight_mob_mg", eval_.knight_mob_mg[i], 0, step5));
+      params.push_back(Param("knight_mob_eg", eval_.knight_mob_eg[i], 0, step5));
+    }
+
+    for (auto i = 0; i < 14; ++i) {
+      params.push_back(Param("bishop_mob_mg", eval_.bishop_mob_mg[i], 0, step5));
+      params.push_back(Param("bishop_mob_eg", eval_.bishop_mob_eg[i], 0, step5));
+    }
+
+    for (auto i = 0; i < 15; ++i) {
+      params.push_back(Param("rook_mob_mg", eval_.rook_mob_mg[i], 0, step5));
+      params.push_back(Param("rook_mob_eg", eval_.rook_mob_eg[i], 0, step5));
+    }
+
+    for (auto i = 0; i < 28; ++i) {
+      params.push_back(Param("queen_mob_mg", eval_.queen_mob_mg[i], 0, step5));
+      params.push_back(Param("queen_mob_eg", eval_.queen_mob_eg[i], 0, step5));
+    }
 
     for (auto i = 0; i < 9; ++i) {
       params.push_back(Param("knight_mob2_mg", eval_.knight_mob2_mg[i], 0, step5));
@@ -305,29 +335,14 @@ public:
       params.push_back(Param("queen_pcsq_eg", eval_.queen_pcsq_eg[i], 0, step5));
     }
 
-    for (auto i = 0; i < 9; ++i) {
-      params.push_back(Param("knight_mob_mg", eval_.knight_mob_mg[i], 0, step5));
-      params.push_back(Param("knight_mob_eg", eval_.knight_mob_eg[i], 0, step5));
-    }
-
-    for (auto i = 0; i < 14; ++i) {
-      params.push_back(Param("bishop_mob_mg", eval_.bishop_mob_mg[i], 0, step5));
-      params.push_back(Param("bishop_mob_eg", eval_.bishop_mob_eg[i], 0, step5));
-    }
-
-    for (auto i = 0; i < 15; ++i) {
-      params.push_back(Param("rook_mob_mg", eval_.rook_mob_mg[i], 0, step5));
-      params.push_back(Param("rook_mob_eg", eval_.rook_mob_eg[i], 0, step5));
-    }
-
-    for (auto i = 0; i < 28; ++i) {
-      params.push_back(Param("queen_mob_mg", eval_.queen_mob_mg[i], 0, step5));
-      params.push_back(Param("queen_mob_eg", eval_.queen_mob_eg[i], 0, step5));
-    }
     params.push_back(Param("knight_in_danger", eval_.knight_in_danger, 0, step5));
     params.push_back(Param("bishop_in_danger", eval_.bishop_in_danger, 0, step5));
     params.push_back(Param("rook_in_danger", eval_.rook_in_danger, 0, step5));
     params.push_back(Param("queen_in_danger", eval_.queen_in_danger, 0, step5));
+    params.push_back(Param("knight_in_danger2", eval_.knight_in_danger2, 0, step5));
+    params.push_back(Param("bishop_in_danger2", eval_.bishop_in_danger2, 0, step5));
+    params.push_back(Param("rook_in_danger2", eval_.rook_in_danger2, 0, step5));
+    params.push_back(Param("queen_in_danger2", eval_.queen_in_danger2, 0, step5));
 
     for (auto i = 0; i < 2; ++i) params.push_back(Param("pawn_isolated_mg", eval_.pawn_isolated_mg[i], 0, step5));
     for (auto i = 0; i < 2; ++i) params.push_back(Param("pawn_isolated_eg", eval_.pawn_isolated_eg[i], 0, step5));
@@ -358,6 +373,7 @@ public:
     params.push_back(Param("bishop_attack_king", eval_.bishop_attack_king, 0, step5));
     params.push_back(Param("rook_attack_king", eval_.rook_attack_king, 0, step5));
     params.push_back(Param("queen_attack_king", eval_.queen_attack_king, 0, step5));
+*/
   }
 
   double E(const std::vector<Node>& nodes,

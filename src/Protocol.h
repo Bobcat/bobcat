@@ -197,11 +197,11 @@ public:
     if (strieq(params[0], "uci")) {
       char buf[2048];
       snprintf(buf, sizeof(buf),
-               "id name Bobcat dev20160907\n" \
+               "id name Bobcat v8.0\n" \
                "id author Gunnar Harms\n" \
-               "option name Hash type spin default 2048 min 8 max 65536\n" \
+               "option name Hash type spin default 1024 min 8 max 65536\n" \
                "option name Ponder type check default true\n" \
-               "option name Threads type spin default 20 min 1 max 64\n" \
+               "option name Threads type spin default 1 min 1 max 64\n" \
                "option name UCI_Chess960 type check default false\n" \
                "uciok");
 
